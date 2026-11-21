@@ -65,5 +65,6 @@ export function useNearbyStation(fix: Fix, gpsOn: boolean): NearbyState {
       verified: true,
     };
   }
-  return localGuess(fix);
+  // Real mode without a GPS fix: the dot is a demo spot, so don't claim "At Park Street".
+  return USE_MOCKS ? localGuess(fix) : { ...localGuess(fix), station: null };
 }
