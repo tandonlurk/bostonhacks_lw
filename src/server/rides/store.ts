@@ -2,6 +2,7 @@
 import { randomUUID } from "node:crypto";
 import type { TeamRouteId } from "@/contracts";
 import { getSql, hasDb } from "@/server/db";
+import { registerMemoryRider } from "./points-bridge";
 import { emptyState, type EngineState, type SessionData, type Sample } from "./engine";
 
 export interface RiderRow {
@@ -69,6 +70,7 @@ export async function createRider(displayName: string, homeTeamRouteId: TeamRout
   }
   const row: RiderRow = { id: newId("rdr"), displayName, homeTeamRouteId, createdAt: new Date().toISOString() };
   mem().riders.set(row.id, row);
+  registerMemoryRider({ riderId: row.id, displayName, homeTeamRouteId }); // B's in-memory game state
   return row;
 }
 
@@ -179,23 +181,4 @@ export async function recordSample(
     insert into ride_samples (session_id, lat, lng, accuracy, speed, ts, matched_vehicle_id, distance_m)
     values (${sessionId}, ${sample.lat}, ${sample.lng}, ${sample.accuracy}, ${sample.speed},
             ${new Date(sample.t)}, ${matchedVehicleId}, ${distance})`;
-}
-
-/** Total stops credited to a rider across all sessions (fallback stat when B's ledger is absent). */
-export async function riderStopTotals(riderId: string): Promise<{ stops: number; points: number }> {
-  if (hasDb()) {
-    const [r] = await getSql()<{ stops: number; points: number }[]>`
-      select coalesce(sum(stops_credited), 0)::int as stops, coalesce(sum(points_awarded), 0)::int as points
-      from ride_sessions where rider_id = ${riderId}`;
-    return r;
-  }
-  let stops = 0;
-  let points = 0;
-  for (const s of mem().sessions.values()) {
-    if (s.riderId === riderId) {
-      stops += s.stopsCredited;
-      points += s.pointsAwarded;
-    }
-  }
-  return { stops, points };
 }

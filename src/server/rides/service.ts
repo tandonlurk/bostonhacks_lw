@@ -142,7 +142,7 @@ export async function handleSample(req: RideSampleRequest): Promise<RideSampleRe
         teamRouteId: next.teamRouteId!,
         type: "ride_stop",
         amount: 1,
-        ref: `ride:${next.id}:${c.stationId}`,
+        ref: `${next.id}:stop:${c.stationId}`,
       });
       next = { ...next, pointsAwarded: next.pointsAwarded + res.pointsAwarded };
     } catch (err) {
