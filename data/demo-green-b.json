@@ -1,0 +1,103 @@
+{
+  "routeId": "Green-B",
+  "teamRouteId": "Green",
+  "shapeId": "canonical-8000012",
+  "sourceUrl": "https://api-v3.mbta.com/shapes/canonical-8000012",
+  "description": "Real MBTA shape vertices from Boston University Central toward Kenmore. Playback is simulated; no live train is claimed.",
+  "coordinates": [
+    [
+      42.34998,
+      -71.10678
+    ],
+    [
+      42.34998,
+      -71.10678
+    ],
+    [
+      42.34992,
+      -71.10624
+    ],
+    [
+      42.34968,
+      -71.10423
+    ],
+    [
+      42.34964,
+      -71.10385
+    ],
+    [
+      42.34964,
+      -71.10385
+    ],
+    [
+      42.34947,
+      -71.10246
+    ],
+    [
+      42.34936,
+      -71.1015
+    ],
+    [
+      42.34926,
+      -71.10066
+    ],
+    [
+      42.3492,
+      -71.10021
+    ],
+    [
+      42.3492,
+      -71.10021
+    ],
+    [
+      42.34918,
+      -71.10006
+    ],
+    [
+      42.34912,
+      -71.09948
+    ],
+    [
+      42.349,
+      -71.09839
+    ],
+    [
+      42.34888,
+      -71.09722
+    ],
+    [
+      42.34887,
+      -71.09673
+    ],
+    [
+      42.3489,
+      -71.09536
+    ]
+  ],
+  "stops": [
+    {
+      "id": "place-bucen",
+      "name": "Boston University Central",
+      "lat": 42.350082,
+      "lng": -71.106865
+    },
+    {
+      "id": "place-buest",
+      "name": "Boston University East",
+      "lat": 42.349735,
+      "lng": -71.103889
+    },
+    {
+      "id": "place-bland",
+      "name": "Blandford Street",
+      "lat": 42.349293,
+      "lng": -71.100258
+    },
+    {
+      "id": "place-kencl",
+      "name": "Kenmore",
+      "lat": 42.348949,
+      "lng": -71.095169
+    }
+  ]
+}

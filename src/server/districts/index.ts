@@ -17,6 +17,6 @@ export function districtFor(team: TeamRouteId, totalPoints: number): District {
     }),
   };
 }
-export function projectDistricts(events: PointEvent[]): District[] {
+export function projectDistricts(events: Pick<PointEvent, "teamRouteId" | "amount">[]): District[] {
   return TEAM_ROUTE_IDS.map(team => districtFor(team, events.filter(e => e.teamRouteId === team).reduce((sum, e) => sum + e.amount, 0)));
 }

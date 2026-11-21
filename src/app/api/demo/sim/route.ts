@@ -1,9 +1,10 @@
-// STUB (T01): returns fixtures until the owner replaces it.
-// Owner: B (T08). Contract: docs/CONTRACTS.md.
-import { demoSimFixture } from "@/contracts/fixtures";
-import { handle, json, readJson } from "@/server/http";
-
+import { apiError, handle, json, readJson } from "@/server/http";
+import { simulationControl } from "@/server/sim";
+import { ScoringError } from "@/server/points/rules";
+import type { DemoSimRequest } from "@/contracts";
 export const POST = handle(async (req: Request) => {
-  await readJson(req);
-  return json(demoSimFixture);
+  if (process.env.ADMIN_TOKEN && req.headers.get("x-admin-token") !== process.env.ADMIN_TOKEN) return apiError(401, "unauthorized", "Demo administrator authorization required.");
+  const body = await readJson<DemoSimRequest>(req);
+  try { return json(await simulationControl(body?.action)); }
+  catch (error) { if (error instanceof ScoringError) return apiError(error.status, error.code, error.message); throw error; }
 });
