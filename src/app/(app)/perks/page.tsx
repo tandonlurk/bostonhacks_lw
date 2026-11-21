@@ -12,8 +12,8 @@ import { EmptyState } from "@/components/EmptyState";
 
 export default function PerksPage() {
   const { rider } = useRider();
-  const { data: tokens, loading: tokensLoading } = useTokens(rider?.riderId ?? null);
-  const { data: perks, loading: perksLoading } = usePerks();
+  const { data: tokens, loading: tokensLoading, refresh: refreshTokens } = useTokens(rider?.riderId ?? null);
+  const { data: perks, loading: perksLoading, refresh: refreshPerks } = usePerks();
   const [redeeming, setRedeeming] = useState<Perk | null>(null);
 
   const balance = tokens?.balance ?? (tokensLoading ? null : 0);
@@ -41,7 +41,10 @@ export default function PerksPage() {
           perk={redeeming}
           riderId={rider?.riderId ?? null}
           onClose={() => setRedeeming(null)}
-          onRedeemed={() => {}}
+          onRedeemed={() => {
+            refreshTokens();
+            refreshPerks();
+          }}
         />
       ) : null}
     </div>

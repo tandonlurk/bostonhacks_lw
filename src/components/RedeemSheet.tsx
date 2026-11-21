@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import type { Perk } from "@/contracts";
+import type { Perk, RedeemPerkResponse } from "@/contracts";
 import { redeemPerk } from "@/hooks/usePerks";
 import { QrCode } from "./QrCode";
 
@@ -9,7 +9,7 @@ interface RedeemSheetProps {
   perk: Perk;
   riderId: string | null;
   onClose: () => void;
-  onRedeemed: () => void;
+  onRedeemed: (result: RedeemPerkResponse) => void;
 }
 
 export function RedeemSheet({ perk, riderId, onClose, onRedeemed }: RedeemSheetProps) {
@@ -28,7 +28,7 @@ export function RedeemSheet({ perk, riderId, onClose, onRedeemed }: RedeemSheetP
       const res = await redeemPerk(riderId, perk.id);
       setCode(res.redemptionCode);
       setStatus("done");
-      onRedeemed();
+      onRedeemed(res);
     } catch (err) {
       setStatus("error");
       setError(err instanceof Error ? err.message : "Couldn't redeem that perk.");
