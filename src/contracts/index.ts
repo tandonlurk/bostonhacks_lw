@@ -115,6 +115,18 @@ export interface Rider {
   points: number;
   tokens: number;
   streakDays: number;
+  /** Additive (#96): lowercase interest tags used to match hotspots. */
+  interests?: string[];
+  /** Additive (#96): small JPEG data URL, or null. */
+  avatarDataUrl?: string | null;
+}
+
+/** PATCH /api/riders/:id (#96). Omitted fields are unchanged. Returns the full Rider. */
+export interface UpdateRiderRequest {
+  /** up to 12 tags, each 1-24 chars; normalized to lowercase and de-duplicated */
+  interests?: string[];
+  /** data:image/jpeg|png|webp;base64,... at most ~150 KB, or null to clear */
+  avatarDataUrl?: string | null;
 }
 
 export type RideState = "searching" | "on_vehicle" | "in_tunnel" | "left";
@@ -146,6 +158,63 @@ export interface RideSampleResponse {
   teamRouteId?: TeamRouteId;
   stopsCredited: number;
   nextStopId?: string;
+  message: string;
+  /** Additive (#96): total points this ride has earned so far, bonuses included. */
+  pointsAwarded?: number;
+  /** Additive (#96): station the ride was started from (Start button). */
+  originStationId?: string;
+  /** Additive (#96): set while teammates (same team) are bound to the same train. */
+  crew?: CrewBonus | null;
+}
+
+// ---------- Section 3b: ride start gate and crew bonus (A, #96) ----------
+export interface NearStation {
+  id: string;
+  name: string;
+  lat: number;
+  lng: number;
+  distanceM: number;
+}
+
+/** GET /api/rides/nearby?lat=..&lng=..&accuracy=.. : lets the UI enable the Start button. */
+export interface NearbyStationResponse {
+  canStart: boolean;
+  /** effective radius used for this fix (grows a little with GPS inaccuracy) */
+  radiusM: number;
+  /** nearest station, even when too far to start */
+  station: NearStation | null;
+  message: string;
+}
+
+/** POST /api/rides/start. 403 not_near_station when too far; 409 ride_active returns nothing new. */
+export interface StartRideRequest {
+  riderId: string;
+  lat: number;
+  lng: number;
+  /** meters; missing is treated as 1000 */
+  accuracy: number;
+}
+export interface StartRideResponse {
+  sessionId: string;
+  state: RideState;
+  station: NearStation;
+  radiusM: number;
+  message: string;
+}
+
+export interface CrewMate {
+  riderId: string;
+  displayName: string;
+}
+/** Teammates riding the same vehicle. The multiplier decays toward 1 the longer the crew rides. */
+export interface CrewBonus {
+  teammates: CrewMate[];
+  /** current multiplier on ride_stop points, e.g. 3 -> 1 */
+  multiplier: number;
+  /** when the bonus reaches 1x */
+  endsAt: string;
+  /** bonus points this rider has earned from the crew on this ride */
+  bonusPoints: number;
   message: string;
 }
 
@@ -283,13 +352,119 @@ export interface DemoSimResponse {
   riders: number;
 }
 
+// ---------- Section 4c: hotspots (A, #96) ----------
+/**
+ * A hotspot is a station on an alternate MBTA route to one of the rider's usual destinations.
+ * Riders on any team can hold the same hotspot; shared interests make that more likely.
+ * Meeting another rider there (phone bump) pays `meetPoints` (= base x multiplier).
+ */
+export interface Hotspot {
+  id: string;
+  stationId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  /** the usual trip this is an alternative to (parent station ids) */
+  fromStationId: string;
+  toStationId: string;
+  /** alternate path, station ids from origin to destination, passing through the hotspot */
+  path: string[];
+  /** MBTA route ids used along the alternate path, in order */
+  viaRouteIds: string[];
+  /** user-ready one-liner, e.g. "Take the Orange Line via Back Bay instead of the Green Line" */
+  reason: string;
+  /** interests the rider shares with others holding this hotspot */
+  sharedInterests: string[];
+  /** other riders (any team) currently holding a hotspot at this station */
+  sharedWith: number;
+  multiplier: number;
+  meetPoints: number;
+  createdAt: string;
+  expiresAt: string;
+}
+/** GET /api/hotspots?riderId=..  and  POST /api/hotspots/generate { riderId } */
+export interface HotspotsResponse {
+  riderId: string;
+  /** completed rides with a known origin and destination */
+  tripsLogged: number;
+  tripsNeeded: number;
+  eligible: boolean;
+  hotspots: Hotspot[];
+}
+
+/** POST /api/hotspots/meet. Both phones call it within a few seconds ("bump"), or one enters the other's code. */
+export interface MeetRequest {
+  riderId: string;
+  hotspotId: string;
+  lat: number;
+  lng: number;
+  /** partner's 4-digit code, when pairing by code instead of a simultaneous bump */
+  code?: string;
+}
+export interface MeetResponse {
+  status: "waiting" | "matched" | "expired";
+  /** this rider's code to show the partner; valid until expiresAt */
+  code: string;
+  expiresAt: string;
+  partner?: { riderId: string; displayName: string; homeTeamRouteId: TeamRouteId };
+  multiplier: number;
+  pointsAwarded: number;
+  message: string;
+}
+
+// ---------- Section 4d: delay photo challenges (A, #96) ----------
+/** Solo scavenger hunt, open only while a delay is active. Gemini grades the photo. */
+export interface PhotoChallenge {
+  id: string;
+  /** what to photograph, generic (never a claim about a specific station) */
+  prompt: string;
+  /** max points; actual award scales with the grade */
+  points: number;
+  done: boolean;
+  pointsAwarded: number;
+}
+/** GET /api/challenges?riderId=.. */
+export interface ChallengesResponse {
+  active: boolean;
+  delay: DelayResponse;
+  /** stable id for this delay window; null when no delay */
+  roundId: string | null;
+  challenges: PhotoChallenge[];
+}
+/** POST /api/challenges/submit */
+export interface ChallengeSubmitRequest {
+  riderId: string;
+  challengeId: string;
+  /** base64 bytes (data: prefix tolerated), at most 3 MB decoded */
+  imageBase64: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+}
+export interface ChallengeSubmitResponse {
+  /** false: grading unavailable (no Gemini key and no demo); nothing awarded */
+  enabled: boolean;
+  passed: boolean | null;
+  /** 0-1 grade */
+  score: number | null;
+  reason: string;
+  pointsAwarded: number;
+  alreadyDone: boolean;
+  /** true when graded by the offline demo grader instead of Gemini */
+  demo?: boolean;
+}
+
 // ---------- Section 6: internal scoring call (B exports, A calls) ----------
 export type PointEventType =
   | "ride_stop"
   | "first_ride"
   | "streak"
   | "hunt"
-  | "landmark";
+  | "landmark"
+  /** #96: crew bonus on top of ride_stop (not subject to the hourly ride cap) */
+  | "co_ride"
+  /** #96: phone bump at a hotspot */
+  | "hotspot_meet"
+  /** #96: graded delay photo challenge */
+  | "challenge";
 
 export interface AwardPointsInput {
   riderId: string;

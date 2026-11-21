@@ -10,6 +10,20 @@ export interface RiderRow {
   displayName: string;
   homeTeamRouteId: TeamRouteId;
   createdAt: string;
+  /** #96 */
+  interests: string[];
+  avatarDataUrl: string | null;
+}
+
+/** #96: a finished ride with a known origin and destination (hotspot pattern mining). */
+export interface TripRow {
+  sessionId: string;
+  riderId: string;
+  originStationId: string;
+  destStationId: string;
+  routeId: string | null;
+  teamRouteId: TeamRouteId | null;
+  endedAt: string;
 }
 
 const newId = (prefix: string) => `${prefix}_${randomUUID().replace(/-/g, "")}`;
@@ -66,24 +80,82 @@ export async function createRider(displayName: string, homeTeamRouteId: TeamRout
       insert into riders (display_name, home_team_route_id)
       values (${displayName}, ${homeTeamRouteId})
       returning id, created_at`;
-    return { id: r.id, displayName, homeTeamRouteId, createdAt: r.created_at.toISOString() };
+    return { id: r.id, displayName, homeTeamRouteId, createdAt: r.created_at.toISOString(), interests: [], avatarDataUrl: null };
   }
-  const row: RiderRow = { id: newId("rdr"), displayName, homeTeamRouteId, createdAt: new Date().toISOString() };
+  const row: RiderRow = {
+    id: newId("rdr"),
+    displayName,
+    homeTeamRouteId,
+    createdAt: new Date().toISOString(),
+    interests: [],
+    avatarDataUrl: null,
+  };
   mem().riders.set(row.id, row);
   registerMemoryRider({ riderId: row.id, displayName, homeTeamRouteId }); // B's in-memory game state
   return row;
 }
 
+type RiderDbRow = {
+  id: string;
+  display_name: string;
+  home_team_route_id: TeamRouteId;
+  created_at: Date;
+  interests: string[] | null;
+  avatar_data_url: string | null;
+};
+const riderFromRow = (r: RiderDbRow): RiderRow => ({
+  id: r.id,
+  displayName: r.display_name,
+  homeTeamRouteId: r.home_team_route_id,
+  createdAt: r.created_at.toISOString(),
+  interests: r.interests ?? [],
+  avatarDataUrl: r.avatar_data_url,
+});
+
 export async function getRider(id: string): Promise<RiderRow | null> {
   if (hasDb()) {
-    const rows = await getSql()<{ id: string; display_name: string; home_team_route_id: TeamRouteId; created_at: Date }[]>`
-      select id, display_name, home_team_route_id, created_at from riders where id = ${id}`;
-    const r = rows[0];
-    return r
-      ? { id: r.id, displayName: r.display_name, homeTeamRouteId: r.home_team_route_id, createdAt: r.created_at.toISOString() }
-      : null;
+    const rows = await getSql()<RiderDbRow[]>`
+      select id, display_name, home_team_route_id, created_at, interests, avatar_data_url from riders where id = ${id}`;
+    return rows[0] ? riderFromRow(rows[0]) : null;
   }
   return mem().riders.get(id) ?? null;
+}
+
+/** #96: riders by id (missing ids are skipped). */
+export async function getRiders(ids: string[]): Promise<RiderRow[]> {
+  if (!ids.length) return [];
+  if (hasDb()) {
+    const rows = await getSql()<RiderDbRow[]>`
+      select id, display_name, home_team_route_id, created_at, interests, avatar_data_url from riders where id = any(${ids})`;
+    return rows.map(riderFromRow);
+  }
+  return ids.map((id) => mem().riders.get(id)).filter((r): r is RiderRow => Boolean(r));
+}
+
+/** #96: update profile fields; undefined leaves a field unchanged. Returns null for an unknown rider. */
+export async function updateRiderProfile(
+  id: string,
+  patch: { interests?: string[]; avatarDataUrl?: string | null },
+): Promise<RiderRow | null> {
+  if (hasDb()) {
+    const sql = getSql();
+    const rows = await sql<RiderDbRow[]>`
+      update riders set
+        interests = coalesce(${patch.interests ?? null}::text[], interests),
+        avatar_data_url = ${patch.avatarDataUrl === undefined ? sql`avatar_data_url` : patch.avatarDataUrl}
+      where id = ${id}
+      returning id, display_name, home_team_route_id, created_at, interests, avatar_data_url`;
+    return rows[0] ? riderFromRow(rows[0]) : null;
+  }
+  const r = mem().riders.get(id);
+  if (!r) return null;
+  const next: RiderRow = {
+    ...r,
+    ...(patch.interests !== undefined ? { interests: patch.interests } : {}),
+    ...(patch.avatarDataUrl !== undefined ? { avatarDataUrl: patch.avatarDataUrl } : {}),
+  };
+  mem().riders.set(id, next);
+  return next;
 }
 
 // ---------- sessions ----------
@@ -181,4 +253,92 @@ export async function recordSample(
     insert into ride_samples (session_id, lat, lng, accuracy, speed, ts, matched_vehicle_id, distance_m)
     values (${sessionId}, ${sample.lat}, ${sample.lng}, ${sample.accuracy}, ${sample.speed},
             ${new Date(sample.t)}, ${matchedVehicleId}, ${distance})`;
+}
+
+/** #96: active sessions bound to a vehicle (crew detection). */
+export async function listActiveOnVehicle(vehicleId: string): Promise<SessionData[]> {
+  if (hasDb()) {
+    const rows = await getSql()<SessionRow[]>`
+      select * from ride_sessions where vehicle_id = ${vehicleId} and ended_at is null
+        and status in ('on_vehicle','in_tunnel')`;
+    return rows.map(fromRow);
+  }
+  const out: SessionData[] = [];
+  for (const id of mem().active.values()) {
+    const s = mem().sessions.get(id);
+    if (s && s.vehicleId === vehicleId && (s.status === "on_vehicle" || s.status === "in_tunnel")) out.push(s);
+  }
+  return out;
+}
+
+/**
+ * #96: finished rides with a known origin and destination, newest first. Pass riderId to scope
+ * to one rider, or omit it for everyone (bounded by limit).
+ */
+export async function listTrips(opts: { riderId?: string; limit?: number; sinceDays?: number } = {}): Promise<TripRow[]> {
+  const limit = opts.limit ?? 200;
+  const since = new Date(Date.now() - (opts.sinceDays ?? 30) * 86_400_000);
+  const toTrip = (s: SessionData): TripRow | null =>
+    s.endedAt && s.state.originStationId && s.state.destStationId && s.state.originStationId !== s.state.destStationId
+      ? {
+          sessionId: s.id,
+          riderId: s.riderId,
+          originStationId: s.state.originStationId,
+          destStationId: s.state.destStationId,
+          routeId: s.routeId,
+          teamRouteId: s.teamRouteId,
+          endedAt: s.endedAt,
+        }
+      : null;
+  if (hasDb()) {
+    const sql = getSql();
+    const rows = await sql<SessionRow[]>`
+      select * from ride_sessions
+      where ended_at is not null and ended_at > ${since}
+        and state->>'originStationId' is not null and state->>'destStationId' is not null
+        ${opts.riderId ? sql`and rider_id = ${opts.riderId}` : sql``}
+      order by ended_at desc limit ${limit}`;
+    return rows.map(fromRow).map(toTrip).filter((t): t is TripRow => t !== null);
+  }
+  return [...mem().sessions.values()]
+    .filter((s) => (!opts.riderId || s.riderId === opts.riderId) && s.endedAt && Date.parse(s.endedAt) > since.getTime())
+    .map(toTrip)
+    .filter((t): t is TripRow => t !== null)
+    .sort((a, b) => b.endedAt.localeCompare(a.endedAt))
+    .slice(0, limit);
+}
+
+/** #96 demo/tests: record a synthetic finished trip (memory and DB). */
+export async function recordSyntheticTrip(
+  riderId: string,
+  originStationId: string,
+  destStationId: string,
+  routeId: string | null,
+  teamRouteId: TeamRouteId | null,
+): Promise<void> {
+  const now = new Date().toISOString();
+  const state = { ...emptyState(), originStationId, destStationId };
+  if (hasDb()) {
+    const sql = getSql();
+    await sql`
+      insert into ride_sessions (rider_id, status, route_id, team_route_id, state, ended_at)
+      values (${riderId}, 'ended', ${routeId}, ${teamRouteId}, ${sql.json(JSON.parse(JSON.stringify(state)))}, ${now})`;
+    return;
+  }
+  const s: SessionData = {
+    id: newId("ses"),
+    riderId,
+    status: "ended",
+    vehicleId: null,
+    routeId,
+    teamRouteId,
+    directionId: null,
+    stopsCredited: 0,
+    pointsAwarded: 0,
+    manual: false,
+    state,
+    startedAt: now,
+    endedAt: now,
+  };
+  mem().sessions.set(s.id, s);
 }

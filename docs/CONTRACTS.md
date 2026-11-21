@@ -84,6 +84,30 @@ POST /api/demo/sim { action: "start"|"stop"|"reset" } -> { running, riders }
 
 `GET /api/landmarks` accepts optional `riderId`: when supplied, `claimed` reflects that rider's prior claims; omitted means anonymous browsing with `claimed:false`. Omitting both `lat` and `lng` returns the catalog. Supplying both filters by `radiusM` (default 800, positive and at most 10000 meters). Invalid or incomplete coordinates return 400 `invalid_location`; invalid radius returns 400 `invalid_radius`. Claims require a location within the landmark's configured geofence (150 meters in the seed catalog); otherwise return 403 `outside_geofence`. Claiming again at a valid location returns zero points and `alreadyClaimed:true`.
 
+## 4e. Social ride loop (A, #96; additive types in `src/contracts/index.ts`)
+```
+GET  /api/rides/nearby?lat=..&lng=..&accuracy=..  -> NearbyStationResponse { canStart, radiusM, station, message }
+POST /api/rides/start  { riderId, lat, lng, accuracy } -> StartRideResponse { sessionId, state, station, radiusM, message }
+     403 not_near_station (message names the nearest station), 409 ride_active (already riding; keep sampling)
+POST /api/rides/sample -> as before, plus optional pointsAwarded, originStationId, crew
+     409 ride_not_started when there is no ride started with /api/rides/start
+PATCH /api/riders/:id  { interests?, avatarDataUrl? } -> Rider (with interests, avatarDataUrl)
+
+GET  /api/hotspots?riderId=..           -> HotspotsResponse
+POST /api/hotspots/generate { riderId } -> HotspotsResponse (recompute now; demo button)
+POST /api/hotspots/meet { riderId, hotspotId, lat, lng, code? } -> MeetResponse
+     poll every 2 s while status is "waiting"
+
+GET  /api/challenges?riderId=..         -> ChallengesResponse (challenges empty when no delay)
+POST /api/challenges/submit { riderId, challengeId, imageBase64, mimeType } -> ChallengeSubmitResponse
+     409 no_delay when no delay is active
+```
+- **Ride start gate.** Rides start only from the Start button, and only within `radiusM` (about 300 m plus a little for GPS error) of a station. After that, GPS decides: the ride binds to the train automatically and ends automatically when the rider gets off (`left`). A started ride that never boards expires after 20 minutes.
+- **Crew bonus.** Two or more riders on the **same team** bound to the **same vehicle** form a crew. Each gets `crew` in the sample response and a bonus on every stop credited while the crew lasts. The multiplier starts at 3x and decays linearly to 1x over 10 minutes from when the crew formed.
+- **Hotspots.** After `tripsNeeded` completed rides with an origin and a destination, the server finds the rider's most frequent trip and picks a station on a different MBTA route to the same destination. Any team can get the same hotspot. Riders with overlapping interests are steered to the same station. Two riders who bump phones (both call `/meet` within about 10 s, within about 150 m of the hotspot) or pair by code each get `meetPoints` (base 10 x 5 = 50). Once per pair per hotspot.
+- **Delay photo challenges.** Solo. Open only while `GET /api/delay` is active. Prompts are generic objects, never claims about a specific station. Gemini grades each photo 0-1; a pass awards `round(points x score)`, once per challenge per delay round. Without `GEMINI_API_KEY` grading is off (`enabled:false`) unless the demo simulator is running, which uses a labeled demo grader.
+- New `PointEventType`s: `co_ride`, `hotspot_meet`, `challenge`. They are not ride types (no hourly cap) and use the caller's amount.
+
 ## 5. Mock mode
 `src/contracts/fixtures.ts` exports one realistic fixture per response above. With `NEXT_PUBLIC_USE_MOCKS=1`, C's data hooks return fixtures instead of fetching, so the UI never waits on a backend.
 

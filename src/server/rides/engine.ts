@@ -64,6 +64,13 @@ export interface EngineState {
   lastReachedIdx: number | null;
   lastStationId: string | null;
   creditedStationIds: string[];
+  /** #96: station the rider pressed Start at (parent station id) */
+  originStationId: string | null;
+  /** #96: last station reached on the ride, i.e. where the rider got off */
+  destStationId: string | null;
+  /** #96: crew bonus bookkeeping (epoch ms the crew formed; bonus points earned) */
+  crewFormedAt: number | null;
+  crewBonusPoints: number;
 }
 
 export type SessionStatus = RideState | "ended";
@@ -123,6 +130,10 @@ export function emptyState(): EngineState {
     lastReachedIdx: null,
     lastStationId: null,
     creditedStationIds: [],
+    originStationId: null,
+    destStationId: null,
+    crewFormedAt: null,
+    crewBonusPoints: 0,
   };
 }
 

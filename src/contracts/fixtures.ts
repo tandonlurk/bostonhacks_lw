@@ -1,7 +1,13 @@
 // One realistic fixture per response in docs/CONTRACTS.md.
 // Used by route stubs and by the UI in mock mode (NEXT_PUBLIC_USE_MOCKS=1).
 import type {
+  ChallengeSubmitResponse,
+  ChallengesResponse,
   ClaimLandmarkResponse,
+  HotspotsResponse,
+  MeetResponse,
+  NearbyStationResponse,
+  StartRideResponse,
   CompleteHuntResponse,
   CreateRiderResponse,
   DelayHeatmapResponse,
@@ -103,6 +109,40 @@ export const rideSampleFixture: RideSampleResponse = {
   stopsCredited: 2,
   nextStopId: "place-kencl",
   message: "On Green Line B toward Government Center. 2 stops credited.",
+};
+
+export const rideSampleCrewFixture: RideSampleResponse = {
+  state: "on_vehicle",
+  sessionId: "ses_demo_1",
+  vehicleId: "G-10224",
+  teamRouteId: "Green",
+  stopsCredited: 3,
+  nextStopId: "place-hymnl",
+  message: "On Green Line B. 3 stops credited.",
+  pointsAwarded: 9,
+  originStationId: "place-bucen",
+  crew: {
+    teammates: [{ riderId: "rdr_demo_sam", displayName: "Sam" }],
+    multiplier: 2.4,
+    endsAt: "2026-11-21T19:10:00.000Z",
+    bonusPoints: 4,
+    message: "Sam (Green) is on your train! 2.4x points per stop, fading fast.",
+  },
+};
+
+export const nearbyStationFixture: NearbyStationResponse = {
+  canStart: true,
+  radiusM: 330,
+  station: { id: "place-bucen", name: "Boston University Central", lat: 42.350082, lng: -71.106865, distanceM: 84 },
+  message: "You're at Boston University Central. Ready to ride.",
+};
+
+export const startRideFixture: StartRideResponse = {
+  sessionId: "ses_demo_1",
+  state: "searching",
+  station: { id: "place-bucen", name: "Boston University Central", lat: 42.350082, lng: -71.106865, distanceM: 84 },
+  radiusM: 330,
+  message: "Ride started at Boston University Central. Board any train; we'll pick it up automatically.",
 };
 
 export const rideSampleTunnelFixture: RideSampleResponse = {
@@ -217,4 +257,76 @@ export const photoCheckDisabledFixture: PhotoCheckResponse = {
   passed: null,
   confidence: null,
   reason: "Photo check is off. Tap to confirm instead.",
+};
+
+export const hotspotsFixture: HotspotsResponse = {
+  riderId: "rdr_demo_alex",
+  tripsLogged: 4,
+  tripsNeeded: 3,
+  eligible: true,
+  hotspots: [
+    {
+      id: "hs_demo_1",
+      stationId: "place-bbsta",
+      name: "Back Bay",
+      lat: 42.34735,
+      lng: -71.075727,
+      fromStationId: "place-bucen",
+      toStationId: "place-dwnxg",
+      path: ["place-bucen", "place-kencl", "place-hymnl", "place-coecl", "place-armnl", "place-boyls", "place-pktrm", "place-dwnxg"],
+      viaRouteIds: ["Green-B", "Orange"],
+      reason: "Switch to the Orange Line at Back Bay instead of riding Green all the way to Park Street.",
+      sharedInterests: ["coffee", "music"],
+      sharedWith: 3,
+      multiplier: 5,
+      meetPoints: 50,
+      createdAt: NOW,
+      expiresAt: "2026-11-22T19:00:00.000Z",
+    },
+  ],
+};
+
+export const meetWaitingFixture: MeetResponse = {
+  status: "waiting",
+  code: "4821",
+  expiresAt: "2026-11-21T19:00:30.000Z",
+  multiplier: 5,
+  pointsAwarded: 0,
+  message: "Bump phones now, or have them enter 4821.",
+};
+
+export const meetMatchedFixture: MeetResponse = {
+  status: "matched",
+  code: "4821",
+  expiresAt: "2026-11-21T19:00:30.000Z",
+  partner: { riderId: "rdr_demo_jo", displayName: "Jo", homeTeamRouteId: "Orange" },
+  multiplier: 5,
+  pointsAwarded: 50,
+  message: "You met Jo (Orange) at Back Bay! 5x: +50 points.",
+};
+
+export const challengesFixture: ChallengesResponse = {
+  active: true,
+  delay: {
+    active: true,
+    source: "simulated",
+    teamRouteIds: ["Green"],
+    message: "Green Line delays of about 15 minutes (demo).",
+    startedAt: "2026-11-21T18:52:00.000Z",
+  },
+  roundId: "delay-2026-11-21T18:52",
+  challenges: [
+    { id: "ch_map", prompt: "Find and photograph a transit map.", points: 15, done: true, pointsAwarded: 12 },
+    { id: "ch_color", prompt: "Snap something the color of your team's line.", points: 10, done: false, pointsAwarded: 0 },
+    { id: "ch_art", prompt: "Photograph a mural, sculpture or other public art.", points: 20, done: false, pointsAwarded: 0 },
+  ],
+};
+
+export const challengeSubmitFixture: ChallengeSubmitResponse = {
+  enabled: true,
+  passed: true,
+  score: 0.82,
+  reason: "That's a transit map, nice find!",
+  pointsAwarded: 12,
+  alreadyDone: false,
 };
