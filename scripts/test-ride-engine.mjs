@@ -131,6 +131,22 @@ test("manual fallback binds to nearest matching vehicle near the stop", () => {
   assert.equal(r.session.status, "on_vehicle"); assert.equal(r.session.vehicleId, "G-near"); assert.equal(r.session.manual, true);
 });
 
+test("manual fallback prefers the train at the station over one that already passed", () => {
+  const passed = vehicle({ id: "G-passed", lng: -71.1045, currentStatus: "IN_TRANSIT_TO", stopId: "place-d" });
+  const arriving = vehicle({ id: "G-arriving", lng: -71.108, currentStatus: "IN_TRANSIT_TO", stopId: "place-b" });
+  const r = run(fresh(), { lat: 42.35, lng: -71.105, accuracy: 50 }, [passed, arriving], { routeId: "Green-B", directionId: 1, stopId: "place-b" });
+  assert.equal(r.session.vehicleId, "G-arriving");
+});
+
+test("manual session keeps tracking while the client stays in manual mode", () => {
+  const hint = { routeId: "Green-B", directionId: 1, stopId: "place-b" };
+  let s = run(fresh(), { lat: 42.35, lng: -71.105, accuracy: 50 }, [vehicle({ lng: -71.104 })], hint).session;
+  assert.equal(s.status, "on_vehicle");
+  for (let i = 0; i < 6; i++) { tick(2 * 60_000); s = run(s, { lat: 42.35, lng: -71.105, accuracy: 50 }, [vehicle({ lng: -71.1, currentStatus: "STOPPED_AT", stopId: "place-c" })], hint).session; }
+  assert.equal(s.status, "on_vehicle");
+  assert.equal(s.stopsCredited, 2);
+});
+
 test("manual fallback rejects a rider far from the stop with good GPS", () => {
   const r = run(fresh(), { lat: 42.40, lng: -71.105, accuracy: 10 }, [vehicle({ lng: -71.104 })], { routeId: "Green-B", directionId: 1, stopId: "place-b" });
   assert.equal(r.session.status, "searching");

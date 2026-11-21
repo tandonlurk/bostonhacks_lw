@@ -28,6 +28,8 @@ export const CFG = {
   manualVehicleRadiusM: 2000,
   /** manual fallback: rider (with good GPS) must be within this of the chosen stop */
   manualRiderRadiusM: 1500,
+  /** manual check-ins (client has no usable GPS) stay bound this long while the train is in service */
+  manualGraceMs: 30 * 60_000,
   /** a jump of more than this many stations between samples credits only the arrival station */
   maxStationJump: 3,
 };
@@ -273,6 +275,21 @@ export function step(
     const near = d <= matchRadiusM(sample.accuracy, v, now);
     const order = ctx.stopOrder(v.routeId, v.directionId);
 
+    // Manual mode: the client is still sending the manual hint, i.e. it has no real GPS fix.
+    // Trust the train's progress instead of the (placeholder) sample position.
+    if (session.manual && manual) {
+      if (now - Date.parse(session.startedAt) > CFG.manualGraceMs) {
+        return { session: end(session, "left", now), credits: [], message: rideOverMessage(session, "Manual check-in timed out.") };
+      }
+      const progressed = creditProgress({ ...session, status: "on_vehicle" }, v, ctx);
+      return {
+        session: progressed.session,
+        credits: progressed.credits,
+        message: `On ${routeLabel(v.routeId)} (manual check-in). ${plural(progressed.session.stopsCredited, "stop")} credited.`,
+        nextStopId: nextStopFor(v, order),
+      };
+    }
+
     if (near) {
       session = { ...session, status: "on_vehicle", state: { ...session.state, lastGoodMatchT: now, awayCount: 0, lastAwayPos: null } };
     } else if (goodFix) {
@@ -312,11 +329,22 @@ export function step(
     if (goodFix && distanceM(sample, stop) > CFG.manualRiderRadiusM) {
       return { session, credits: [], message: "You seem too far from that station. Try again once you're aboard." };
     }
+    // Prefer the train at (or just leaving) the station, then the next ones arriving; fall back
+    // to plain distance when the stop order is unknown.
+    const order = ctx.stopOrder(manual.routeId, manual.directionId);
+    const stopIdx = order.indexOf(manual.stopId);
     let best: { v: LiveVehicle; d: number } | null = null;
     for (const v of ctx.vehicles) {
       if (v.routeId !== manual.routeId || v.directionId !== manual.directionId) continue;
-      const d = v.stopId === manual.stopId ? 0 : distanceM(stop, v);
-      if (d > CFG.manualVehicleRadiusM) continue;
+      const meters = distanceM(stop, v);
+      if (meters > CFG.manualVehicleRadiusM) continue;
+      let d = meters;
+      const reached = stopIdx >= 0 ? reachedIndex(v, order) : null;
+      if (reached != null) {
+        const stopsAway = stopIdx - reached; // 0 = at/just left the station, 1+ = approaching
+        if (stopsAway < 0 || stopsAway > 3) continue;
+        d = stopsAway * 10_000 + meters;
+      }
       if (!best || d < best.d) best = { v, d };
     }
     if (!best) {
