@@ -400,6 +400,8 @@ export interface MeetRequest {
   hotspotId: string;
   lat: number;
   lng: number;
+  /** meters; widens the 150 m check by up to 100 m */
+  accuracy?: number;
   /** partner's 4-digit code, when pairing by code instead of a simultaneous bump */
   code?: string;
 }

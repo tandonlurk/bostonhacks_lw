@@ -127,7 +127,7 @@ export const rideSampleCrewFixture: RideSampleResponse = {
     multiplier: 2.4,
     endsAt: "2026-11-21T19:10:00.000Z",
     bonusPoints: 4,
-    message: "Sam (Green) is on your train! 2.4x points per stop, fading fast.",
+    message: "Sam is on your train! 2.4x points, fading fast.",
   },
 };
 
