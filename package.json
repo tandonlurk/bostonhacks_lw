@@ -13,6 +13,8 @@
     "smoke": "node scripts/smoke.mjs"
   },
   "dependencies": {
+    "@solana/spl-token": "^0.4.15",
+    "@solana/web3.js": "^1.99.0",
     "next": "16.4.6",
     "postgres": "^3.4.9",
     "qrcode-generator": "^2.0.4",
