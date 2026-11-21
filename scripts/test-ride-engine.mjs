@@ -158,6 +158,48 @@ test("big station jump (branch switch) credits only the arrival", () => {
   assert.deepEqual(r.credits.map((c) => c.stationId), ["place-e"]);
 });
 
+test("#96: bind records boundAt; no minutes credited yet", () => {
+  const s = boundSession();
+  assert.equal(typeof s.state.boundAt, "number");
+  assert.equal(s.state.minutesCredited, 0);
+});
+
+test("#96: destStationId follows the last station reached while bound", () => {
+  let s = boundSession();
+  assert.equal(s.state.destStationId, null); // IN_TRANSIT_TO b: nothing reached yet
+  tick(); s = run(s, { lat: 42.35, lng: -71.105 }, [vehicle({ lng: -71.105, currentStatus: "STOPPED_AT", stopId: "place-b" })]).session;
+  assert.equal(s.state.destStationId, "place-b");
+  tick(); s = run(s, { lat: 42.35, lng: -71.0955 }, [vehicle({ lng: -71.0955, currentStatus: "INCOMING_AT", stopId: "place-d" })]).session;
+  assert.equal(s.state.destStationId, "place-c");
+  // Rider gets off: dest stays at the last station reached.
+  for (let i = 0; i < 3; i++) { tick(); s = run(s, { lat: 42.36, lng: -71.0955 + i * 0.0003, accuracy: 10, speed: 1 }, [vehicle({ lng: -71.08, stopId: "place-d" })]).session; }
+  assert.equal(s.status, "left"); assert.equal(s.state.destStationId, "place-c");
+});
+
+test("#96: destStationId set when binding at a stopped station", () => {
+  let s = fresh();
+  const v = (lng) => vehicle({ lng, speed: 8, currentStatus: "STOPPED_AT", stopId: "place-a" });
+  for (const lng of [-71.11, -71.1094, -71.1088]) { s = run(s, { lat: 42.35, lng }, [v(lng)]).session; tick(); }
+  assert.equal(s.status, "on_vehicle"); assert.equal(s.state.destStationId, "place-a");
+});
+
+test("#96: a started ride that never binds ends after the start timeout", () => {
+  let s = fresh();
+  s = run(s, { lat: 42.4, lng: -71.0 }, [vehicle()]).session; assert.equal(s.status, "searching");
+  tick(CFG.startBindTimeoutMs + 1000);
+  const r = run(s, { lat: 42.4, lng: -71.0 }, [vehicle()]);
+  assert.equal(r.session.status, "left"); assert.ok(r.session.endedAt); assert.match(r.message, /couldn't find your train/);
+});
+
+test("#96: messages name the line, never the branch", () => {
+  let s = fresh(); let r;
+  for (const lng of [-71.108, -71.1072, -71.1064]) { r = run(s, { lat: 42.35, lng }, [vehicle({ lng })]); s = r.session; tick(); }
+  assert.equal(r.message, "Found you on Green Line.");
+  r = run(s, { lat: 42.35, lng: -71.105 }, [vehicle({ lng: -71.105 })]);
+  assert.equal(r.message, "On Green Line.");
+  assert.doesNotMatch(r.message, /stops? credited/);
+});
+
 for (const [st, n, e] of results) console.log(`${st}  ${n}${e ? "\n      " + e : ""}`);
 const failed = results.filter((r) => r[0] === "FAIL").length;
 console.log(`\n${results.length - failed}/${results.length} passed`);

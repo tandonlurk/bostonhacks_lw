@@ -23,9 +23,12 @@ import {
   crewEndsAt,
   crewMessage,
   crewMultiplier,
-  crewStopBonus,
+  crewMinuteBonus,
+  creditableUntil,
   formatDistance,
+  minutesToCredit,
   nearestStation,
+  rideSummary,
   startRadiusM,
 } from "./social";
 import * as store from "./store";
@@ -104,6 +107,7 @@ function toResponse(s: SessionData, message: string, nextStopId?: string, crew: 
     stopsCredited: s.stopsCredited,
     ...(nextStopId ? { nextStopId } : {}),
     message,
+    minutesRidden: s.state.minutesCredited,
     pointsAwarded: s.pointsAwarded,
     ...(s.state.originStationId ? { originStationId: s.state.originStationId } : {}),
     crew,
@@ -112,21 +116,88 @@ function toResponse(s: SessionData, message: string, nextStopId?: string, crew: 
 
 const isBound = (s: SessionData) => s.status === "on_vehicle" || s.status === "in_tunnel";
 
+/** Engine copy plus the ride summary once the rider has been on a train ("On Green Line. 7 min, 7 pts."). */
+function withSummary(s: SessionData, message: string): string {
+  if (s.state.boundAt == null) return message;
+  if (isBound(s) && s.state.minutesCredited === 0) return message;
+  return `${message} ${rideSummary(s.state.minutesCredited, s.pointsAwarded)}`;
+}
+
+/**
+ * Ride points are time-based (CONTRACTS.md section 6): 1 ride_stop point per full minute bound to a
+ * train, ref `<sessionId>:min:<n>`, so B's hourly cap and daily bonuses still apply. While a crew
+ * is riding together each minute also earns (multiplier - 1) co_ride points, fractions carried.
+ * Idempotent: minutes already credited are never re-awarded, and refs dedupe on retries.
+ */
+async function creditMinutes(s: SessionData, end: number, multiplier = 1): Promise<SessionData> {
+  if (s.state.boundAt == null || !s.teamRouteId) return s;
+  const until = creditableUntil(
+    { ...s.state, manual: s.manual, startedAt: Date.parse(s.startedAt) },
+    end,
+    { tunnelGraceMs: CFG.tunnelGraceMs, vehicleMissingMs: CFG.vehicleMissingMs, manualGraceMs: CFG.manualGraceMs },
+  );
+  let next = s;
+  for (const n of minutesToCredit(s.state.boundAt, until, s.state.minutesCredited)) {
+    let minutePoints: number;
+    try {
+      const res = await awardPoints({
+        riderId: next.riderId,
+        teamRouteId: s.teamRouteId,
+        type: "ride_stop",
+        amount: 1,
+        ref: `${next.id}:min:${n}`,
+      });
+      minutePoints = res.pointsAwarded;
+    } catch (err) {
+      console.error("[rides] awardPoints failed; will retry next sample", n, err);
+      break; // minutesCredited stays put, so this minute is retried
+    }
+    next = {
+      ...next,
+      pointsAwarded: next.pointsAwarded + minutePoints,
+      state: { ...next.state, minutesCredited: n },
+    };
+    // No crew bonus on a minute the hourly ride cap zeroed out.
+    if (multiplier <= 1 || minutePoints <= 0) continue;
+    const bonus = crewMinuteBonus(next.state.crewBonusCarry, multiplier);
+    next = { ...next, state: { ...next.state, crewBonusCarry: bonus.carry } };
+    if (bonus.points <= 0) continue;
+    try {
+      const res = await awardBonus({
+        riderId: next.riderId,
+        teamRouteId: s.teamRouteId,
+        type: "co_ride",
+        amount: bonus.points,
+        ref: `${next.id}:crew:${n}`,
+      });
+      next = {
+        ...next,
+        pointsAwarded: next.pointsAwarded + res.pointsAwarded,
+        state: { ...next.state, crewBonusPoints: next.state.crewBonusPoints + res.pointsAwarded },
+      };
+    } catch (err) {
+      console.error("[rides] crew bonus failed", n, err);
+    }
+  }
+  return next;
+}
+
 /** A session that should be closed before anything else happens (quiet for too long). */
 function isStale(s: SessionData, now: number): boolean {
   if (s.state.lastSampleT) return now - s.state.lastSampleT > CFG.staleSessionMs;
   return now - Date.parse(s.startedAt) > CFG.startBindTimeoutMs;
 }
 
-/** End a session, filling in where the rider got off if the engine hadn't yet. */
+/** End a session: credit the completed minutes up to now and fill in where the rider got off. */
 async function closeSession(s: SessionData, now: number): Promise<SessionData> {
+  const credited = await creditMinutes(s, now);
   const ended: SessionData = {
-    ...s,
+    ...credited,
     status: "ended",
     endedAt: new Date(now).toISOString(),
     state: {
-      ...s.state,
-      destStationId: s.state.destStationId ?? s.state.creditedStationIds.at(-1) ?? s.state.lastStationId,
+      ...credited.state,
+      destStationId: credited.state.destStationId ?? credited.state.creditedStationIds.at(-1) ?? credited.state.lastStationId,
     },
   };
   await store.saveSession(ended);
@@ -198,8 +269,6 @@ async function findCrew(s: SessionData, now: number): Promise<{ riderId: string;
     .filter((r) => r.id !== me.id && r.homeTeamRouteId === me.homeTeamRouteId)
     .map((r) => ({ riderId: r.id, displayName: r.displayName }));
 }
-
-export async function endRide(
 
 async function requireRider(riderId: string) {
   const rider = await store.getRider(riderId);
@@ -279,43 +348,9 @@ export async function handleSample(req: RideSampleRequest): Promise<RideSampleRe
   const formedAt = next.state.crewFormedAt;
   const multiplier = crewMates.length && formedAt != null ? crewMultiplier(formedAt, now) : 1;
 
-  for (const c of result.credits) {
-    let stopPoints = 0;
-    try {
-      const res = await awardPoints({
-        riderId: next.riderId,
-        teamRouteId: next.teamRouteId!,
-        type: "ride_stop",
-        amount: 1,
-        ref: `${next.id}:stop:${c.stationId}`,
-      });
-      stopPoints = res.pointsAwarded;
-      next = { ...next, pointsAwarded: next.pointsAwarded + res.pointsAwarded };
-    } catch (err) {
-      console.error("[rides] awardPoints failed", c, err);
-    }
-    // No crew bonus on a stop the hourly ride cap (or an error) zeroed out.
-    if (multiplier <= 1 || stopPoints <= 0) continue;
-    const bonus = crewStopBonus(next.state.crewBonusCarry, multiplier);
-    next = { ...next, state: { ...next.state, crewBonusCarry: bonus.carry } };
-    if (bonus.points <= 0) continue;
-    try {
-      const res = await awardBonus({
-        riderId: next.riderId,
-        teamRouteId: next.teamRouteId!,
-        type: "co_ride",
-        amount: bonus.points,
-        ref: `${next.id}:crew:${c.stationId}`,
-      });
-      next = {
-        ...next,
-        pointsAwarded: next.pointsAwarded + res.pointsAwarded,
-        state: { ...next.state, crewBonusPoints: next.state.crewBonusPoints + res.pointsAwarded },
-      };
-    } catch (err) {
-      console.error("[rides] crew bonus failed", c, err);
-    }
-  }
+  // Stops are still tracked (display, hotspots), but ride points are per full minute on the train.
+  // On an automatic "left" this credits the completed minutes up to the end of the ride.
+  next = await creditMinutes(next, now, multiplier);
 
   const crew: CrewBonus | null =
     crewMates.length && isBound(next) && formedAt != null
@@ -334,7 +369,7 @@ export async function handleSample(req: RideSampleRequest): Promise<RideSampleRe
     .recordSample(next.id, sample, next.vehicleId ?? next.state.candidateVehicleId, bound ? distanceM(sample, bound) : null)
     .catch((err) => console.warn("[rides] recordSample failed", String(err)));
 
-  return toResponse(next, result.message, result.nextStopId, crew);
+  return toResponse(next, withSummary(next, result.message), result.nextStopId, crew);
 }
 
 export async function endRide(riderId: string): Promise<EndRideResponse> {

@@ -183,7 +183,8 @@ export async function getLatestSession(riderId: string): Promise<SessionData | n
   return latest;
 }
 
-export async function createSession(riderId: string): Promise<SessionData> {
+/** Start a ride session (status searching). `init` seeds engine state, e.g. the origin station. */
+export async function createSession(riderId: string, init: Partial<EngineState> = {}): Promise<SessionData> {
   const base: Omit<SessionData, "id"> = {
     riderId,
     status: "searching",
@@ -194,7 +195,7 @@ export async function createSession(riderId: string): Promise<SessionData> {
     stopsCredited: 0,
     pointsAwarded: 0,
     manual: false,
-    state: emptyState(),
+    state: { ...emptyState(), ...init },
     startedAt: new Date().toISOString(),
     endedAt: null,
   };

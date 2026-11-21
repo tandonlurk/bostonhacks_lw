@@ -64,7 +64,7 @@ export function formatDistance(m: number): string {
 }
 
 // ---------- crew bonus ----------
-/** Multiplier on ride_stop points: 3x when the crew forms, down to 1x after 10 minutes (1 decimal). */
+/** Multiplier on ride points (per minute): 3x when the crew forms, down to 1x after 10 minutes (1 decimal). */
 export function crewMultiplier(crewFormedAt: number, now: number): number {
   const elapsed = Math.max(0, now - crewFormedAt);
   const raw = SOCIAL.crewMaxMultiplier - ((SOCIAL.crewMaxMultiplier - 1) * elapsed) / SOCIAL.crewDecayMs;
@@ -76,10 +76,10 @@ export function crewEndsAt(crewFormedAt: number): number {
 }
 
 /**
- * Bonus for one credited stop: (multiplier - 1) points, accumulated in tenths so fractions are
+ * Bonus for one credited minute: (multiplier - 1) points, accumulated in tenths so fractions are
  * never lost. Returns whole points to pay now and the remainder to carry.
  */
-export function crewStopBonus(carry: number, multiplier: number): { points: number; carry: number } {
+export function crewMinuteBonus(carry: number, multiplier: number): { points: number; carry: number } {
   const tenths = Math.round(carry * 10) + Math.max(0, Math.round((multiplier - 1) * 10));
   const points = Math.floor(tenths / 10);
   return { points, carry: (tenths - points * 10) / 10 };
@@ -97,5 +97,57 @@ export function crewMessage(names: string[], multiplier: number): string {
   if (multiplier <= 1) return `Riding with ${who}.`;
   const verb = names.length === 1 ? "is" : "are";
   const fading = multiplier < SOCIAL.crewMaxMultiplier ? ", fading fast" : "";
-  return `${who} ${verb} on your train! ${multiplier}x points per stop${fading}.`;
+  return `${who} ${verb} on your train! ${multiplier}x points${fading}.`;
+}
+
+// ---------- time-based ride points ----------
+const MINUTE_MS = 60_000;
+
+export interface RideClock {
+  /** epoch ms the ride bound to a train; null = never boarded */
+  boundAt: number | null;
+  lastSampleT: number | null;
+  lastGoodMatchT: number | null;
+  lastVehicleSeenT: number | null;
+  manual: boolean;
+  /** epoch ms of the Start press (manual check-ins time out from here) */
+  startedAt: number;
+}
+
+export interface RideWindows {
+  tunnelGraceMs: number;
+  vehicleMissingMs: number;
+  manualGraceMs: number;
+}
+
+/**
+ * Latest moment of a ride that can earn points: never past the last sample (no evidence after
+ * that), never past the tunnel-grace or vehicle-missing windows that end a ride, never past `end`.
+ */
+export function creditableUntil(c: RideClock, end: number, w: RideWindows): number {
+  let until = end;
+  if (c.lastSampleT != null) until = Math.min(until, c.lastSampleT);
+  if (c.lastVehicleSeenT != null) until = Math.min(until, c.lastVehicleSeenT + w.vehicleMissingMs);
+  if (c.manual) until = Math.min(until, c.startedAt + w.manualGraceMs);
+  else if (c.lastGoodMatchT != null) until = Math.min(until, c.lastGoodMatchT + w.tunnelGraceMs);
+  return until;
+}
+
+/** Whole minutes ridden between boarding and `until`. */
+export function minutesRidden(boundAt: number | null, until: number): number {
+  if (boundAt == null || until <= boundAt) return 0;
+  return Math.floor((until - boundAt) / MINUTE_MS);
+}
+
+/** Minute indices (1-based) still owed, given how many were already credited. Idempotent. */
+export function minutesToCredit(boundAt: number | null, until: number, alreadyCredited: number): number[] {
+  const total = minutesRidden(boundAt, until);
+  const out: number[] = [];
+  for (let n = alreadyCredited + 1; n <= total; n++) out.push(n);
+  return out;
+}
+
+/** "7 min, 7 pts." */
+export function rideSummary(minutes: number, points: number): string {
+  return `${minutes} min, ${points} ${points === 1 ? "pt" : "pts"}.`;
 }
