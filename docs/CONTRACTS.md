@@ -60,6 +60,8 @@ GET /api/districts
 GET /api/hunts?stopId=place-xxx
  -> { huntId, stopId, clues: [{ id, text, verified }] }
 POST /api/hunts/complete { riderId, clueId } -> { pointsAwarded, tokensAwarded, alreadyDone }
+POST /api/photo-check { clueId, clueText, imageBase64, mimeType }        (A, T17, optional)
+ -> { enabled, passed, confidence, reason }   enabled:false => fall back to tap-to-confirm; never awards points
 
 GET /api/landmarks?lat=..&lng=..&radiusM=800
  -> [{ id, name, lat, lng, stopId, bonusPoints, claimed }]

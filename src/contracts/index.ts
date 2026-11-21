@@ -208,6 +208,22 @@ export interface CompleteHuntResponse {
   alreadyDone: boolean;
 }
 
+/** POST /api/photo-check (T17, optional Gemini check). Does not award points. */
+export interface PhotoCheckRequest {
+  clueId: string;
+  clueText: string;
+  /** base64 image bytes without a data: prefix, at most 3 MB decoded */
+  imageBase64: string;
+  mimeType: "image/jpeg" | "image/png" | "image/webp";
+}
+export interface PhotoCheckResponse {
+  /** false: no key or Gemini unavailable, so the UI falls back to tap-to-confirm */
+  enabled: boolean;
+  passed: boolean | null;
+  confidence: number | null;
+  reason: string;
+}
+
 export interface Landmark {
   id: string;
   name: string;

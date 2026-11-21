@@ -16,6 +16,7 @@ import type {
   Lot,
   LotTier,
   PerksResponse,
+  PhotoCheckResponse,
   RedeemPerkResponse,
   RideSampleResponse,
   Rider,
@@ -202,4 +203,18 @@ export const heatmapFixture: DelayHeatmapResponse = {
     { stopId: "place-aport", name: "Airport", lat: 42.374262, lng: -71.030395, teamRouteId: "Blue", observations: 30, slowShare: 0.07, avgSpeedMps: 9.8 },
     { stopId: "place-wtcst", name: "World Trade Center", lat: 42.34863, lng: -71.04246, teamRouteId: "Silver", observations: 21, slowShare: 0.29, avgSpeedMps: 4.6 },
   ],
+};
+
+export const photoCheckFixture: PhotoCheckResponse = {
+  enabled: true,
+  passed: true,
+  confidence: 0.86,
+  reason: "Looks like the station sign. Nice find!",
+};
+
+export const photoCheckDisabledFixture: PhotoCheckResponse = {
+  enabled: false,
+  passed: null,
+  confidence: null,
+  reason: "Photo check is off. Tap to confirm instead.",
 };
