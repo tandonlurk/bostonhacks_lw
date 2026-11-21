@@ -2,9 +2,10 @@
 
 import { useMemo, useState } from "react";
 import { TEAMS, TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
-import type { Landmark, Vehicle } from "@/contracts";
+import type { HeatmapStation, Landmark, Vehicle } from "@/contracts";
 import { useVehicles } from "@/hooks/useVehicles";
 import { useLandmarks } from "@/hooks/useLandmarks";
+import { useHeatmap } from "@/hooks/useHeatmap";
 import { LineChip } from "./LineChip";
 import { EmptyState } from "./EmptyState";
 import { LandmarkPanel } from "./LandmarkPanel";
@@ -87,11 +88,50 @@ function LandmarkMarker({ landmark, onSelect }: { landmark: Landmark; onSelect: 
   );
 }
 
+/** green < 15% of samples crawling, amber < 35%, red above — per A's T18 handoff on #1. */
+function slowShareColor(slowShare: number): string {
+  if (slowShare < 0.15) return "var(--line-green)";
+  if (slowShare < 0.35) return "var(--line-orange)";
+  return "var(--line-red)";
+}
+
+function HeatmapCircle({ station }: { station: HeatmapStation }) {
+  const { left, top } = project(station.lat, station.lng);
+  const radius = Math.min(40, 14 + station.observations * 0.3);
+  return (
+    <div
+      role="img"
+      aria-label={`${station.name}: ${Math.round(station.slowShare * 100)}% of trains crawling, ${station.observations} observations`}
+      title={`${station.name}: ${Math.round(station.slowShare * 100)}% crawling`}
+      style={{
+        position: "absolute",
+        left: `${left}%`,
+        top: `${top}%`,
+        width: radius * 2,
+        height: radius * 2,
+        marginLeft: -radius,
+        marginTop: -radius,
+        borderRadius: "50%",
+        background: slowShareColor(station.slowShare),
+        opacity: 0.45,
+        pointerEvents: "none",
+      }}
+    />
+  );
+}
+
 export function LiveMap({ riderId = null }: { riderId?: string | null }) {
   const [activeTeams, setActiveTeams] = useState<Set<TeamRouteId>>(new Set(TEAM_ROUTE_IDS));
   const [selected, setSelected] = useState<Vehicle | Landmark | null>(null);
+  const [heatmapOn, setHeatmapOn] = useState(false);
   const { data, loading, error } = useVehicles();
   const { data: landmarks, refresh: refreshLandmarks } = useLandmarks(riderId);
+  const { data: heatmap } = useHeatmap(heatmapOn);
+
+  const worstStation = useMemo(
+    () => (heatmap?.stations.length ? [...heatmap.stations].sort((a, b) => b.slowShare - a.slowShare)[0] : null),
+    [heatmap],
+  );
 
   const vehicles = useMemo(
     () => (data?.vehicles ?? []).filter((v) => activeTeams.has(v.teamRouteId)),
@@ -135,7 +175,31 @@ export function LiveMap({ riderId = null }: { riderId?: string | null }) {
             <LineChip teamRouteId={team} size="sm" label="short" />
           </button>
         ))}
+        <button
+          type="button"
+          onClick={() => setHeatmapOn((v) => !v)}
+          aria-pressed={heatmapOn}
+          style={{
+            minHeight: "var(--tap-min)",
+            padding: "4px 12px",
+            borderRadius: "var(--radius-pill)",
+            border: "1px solid var(--border)",
+            background: heatmapOn ? "var(--ink)" : "var(--surface)",
+            color: heatmapOn ? "var(--paper)" : "var(--ink)",
+            fontSize: 12,
+            fontWeight: 600,
+            whiteSpace: "nowrap",
+          }}
+        >
+          🔥 Heatmap
+        </button>
       </div>
+
+      {heatmapOn ? (
+        <p style={{ fontSize: 12, color: "var(--muted)", padding: "0 var(--space-4)", margin: "0 0 var(--space-2)" }}>
+          Where trains crawl (last 2h){worstStation ? ` · worst right now: ${worstStation.name} (${Math.round(worstStation.slowShare * 100)}% crawling)` : ""}
+        </p>
+      ) : null}
 
       <div
         style={{
@@ -158,6 +222,28 @@ export function LiveMap({ riderId = null }: { riderId?: string | null }) {
             title="No vehicles on these lines right now"
             body={error ? `Last error: ${error}` : "Try toggling a different line above."}
           />
+        ) : null}
+
+        {heatmapOn && heatmap?.available
+          ? heatmap.stations.map((s) => <HeatmapCircle key={s.stopId} station={s} />)
+          : null}
+
+        {heatmapOn && heatmap && !heatmap.available ? (
+          <div
+            style={{
+              position: "absolute",
+              top: 8,
+              left: 8,
+              right: 8,
+              fontSize: 12,
+              color: "var(--muted)",
+              background: "var(--surface)",
+              borderRadius: "var(--radius-card)",
+              padding: "var(--space-2) var(--space-3)",
+            }}
+          >
+            History is still warming up — check back once there&apos;s a database and some ride traffic.
+          </div>
         ) : null}
 
         {vehicles.map((v) => (
