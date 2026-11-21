@@ -23,6 +23,10 @@ const BRANCHES: { team: TeamRouteId; stops: string[] }[] = (Object.keys(LINES) a
   .filter((b) => b.stops.length > 1);
 
 let spot: DemoSpot | null = null;
+/** Last points award from a demo hop, for the "+5 pts" pop on the Ride screen. */
+export interface DemoAward { id: number; points: number; teamRouteId: TeamRouteId; stationName: string }
+let award: DemoAward | null = null;
+let awardSeq = 0;
 let branch = 0;
 let index = 0;
 const listeners = new Set<() => void>();
@@ -31,6 +35,24 @@ const emit = () => listeners.forEach((l) => l());
 /** Current override, or null to use real GPS. Safe to call from render loops and timers. */
 export function getDemoSpot(): DemoSpot | null {
   return spot;
+}
+
+/** Demo simulation: a hop to an adjacent station earns points (server checks sim + adjacency). */
+function awardHop(fromStationId: string, toStationId: string) {
+  const riderId = typeof window !== "undefined" ? window.localStorage.getItem("tcity.riderId") : null;
+  if (!riderId) return;
+  fetch("/api/rides/demo-step", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ riderId, fromStationId, toStationId }),
+  })
+    .then((r) => (r.ok ? r.json() : null))
+    .then((b: { pointsAwarded: number; teamRouteId: TeamRouteId; stationName: string } | null) => {
+      if (!b || b.pointsAwarded <= 0) return;
+      award = { id: ++awardSeq, points: b.pointsAwarded, teamRouteId: b.teamRouteId, stationName: b.stationName };
+      emit();
+    })
+    .catch(() => {});
 }
 
 function moveTo(nextBranch: number, nextIndex: number) {
@@ -76,8 +98,11 @@ export function useDemoStepper(team: TeamRouteId | null, here: () => { lat: numb
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
       e.preventDefault();
       if (!spot) return start(team, here());
-      if (e.key === "ArrowRight") moveTo(branch, index + 1);
-      if (e.key === "ArrowLeft") moveTo(branch, index - 1);
+      if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
+        const from = spot.stationId;
+        moveTo(branch, index + (e.key === "ArrowRight" ? 1 : -1));
+        if (spot.stationId !== from) awardHop(from, spot.stationId);
+      }
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         // Switch branch, landing on the nearest station of the new branch.
         const nb = (branch + (e.key === "ArrowDown" ? 1 : -1) + BRANCHES.length) % BRANCHES.length;
@@ -106,6 +131,18 @@ export function useDemoSpot(): DemoSpot | null {
       return () => listeners.delete(l);
     },
     () => spot,
+    () => null,
+  );
+}
+
+/** React subscription to the latest demo hop award (null until the first one). */
+export function useDemoAward(): DemoAward | null {
+  return useSyncExternalStore(
+    (l) => {
+      listeners.add(l);
+      return () => listeners.delete(l);
+    },
+    () => award,
     () => null,
   );
 }

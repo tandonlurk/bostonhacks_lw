@@ -17,6 +17,7 @@ import { useRiderPosition } from "./useRiderPosition";
 import { useNearbyStation } from "./useNearbyStation";
 import { useDemoSpot, useDemoStepper } from "./demoLocation";
 import { NextTrainTimer } from "./NextTrainTimer";
+import { DemoAwardPop } from "./DemoAwardPop";
 import { previewNearby, usePreview, usePreviewContext } from "./preview";
 import { distanceM, nearestPlace } from "./geo";
 import { useHydrated, useReducedMotion } from "./util";
@@ -119,6 +120,7 @@ export function RideScreen() {
   return (
     <div className="screen-bleed" style={{ overflow: "hidden" }}>
       <h1 className="visually-hidden">Ride</h1>
+      <DemoAwardPop />
       <NavMap
         getFix={pos.getFix}
         team={team}

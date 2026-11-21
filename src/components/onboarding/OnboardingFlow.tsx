@@ -19,6 +19,8 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
   const [name, setName] = useState("");
   const [team, setTeam] = useState<TeamRouteId | null>(null);
   const [selected, setSelected] = useState<string[]>([]);
+  const [otherOpen, setOtherOpen] = useState(false);
+  const [otherText, setOtherText] = useState("");
   const [photo, setPhoto] = useState<string | null>(null);
   const [photoLoading, setPhotoLoading] = useState(false);
   const [photoError, setPhotoError] = useState("");
@@ -38,6 +40,13 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
     if (step === 0 && (!name.trim() || !team)) return;
     if (step === 1 && location !== "granted" && location !== "demo") return;
     if (step < 3) setStep(step + 1);
+  }
+
+  function addOther() {
+    const value = otherText.trim().replace(/\s+/g, " ").slice(0, 24);
+    if (value && !selected.some((item) => item.toLowerCase() === value.toLowerCase())) setSelected((current) => [...current, value]);
+    setOtherText("");
+    setOtherOpen(false);
   }
 
   function requestLocation() {
@@ -149,11 +158,15 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
                 <legend className={styles.fieldLabel}>Pick your home line</legend>
                 <div className={styles.teamGrid}>{TEAM_ROUTE_IDS.map((id) => <button key={id} type="button" aria-pressed={team === id} className={`${styles.teamButton} ${team === id ? styles.teamSelected : ""}`} onClick={() => setTeam(id)} style={{ "--line-color": TEAMS[id].color } as CSSProperties}><span className={styles.teamDot} />{id}<span aria-hidden="true">{team === id ? "✓" : "+"}</span></button>)}</div>
               </fieldset>
-              <div className={styles.pointsNote}><strong>Your commute builds the city.</strong><p>Verified rides earn points. First daily ride: +5. Hunts: +10. Streaks: up to +10. Every 10 points earns a token.</p><p>Everyone’s points pool together to grow a district. Points go to the line you actually ride, even when it’s away from your home color.</p></div>
             </>}
             {step === 2 && <>
               <p className={styles.stepIntro}>The best part might be a stop you haven’t tried yet. Pick a few things you love, or keep an open mind.</p>
-              <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className={styles.fieldLabel}>Your interests · pick as many as you like</legend><div className={styles.interestGrid}>{interests.map((interest) => <button key={interest} type="button" aria-pressed={selected.includes(interest)} className={`${styles.interestButton} ${selected.includes(interest) ? styles.interestSelected : ""}`} onClick={() => setSelected((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest])}><span aria-hidden="true">{selected.includes(interest) ? "✓" : "+"}</span>{interest}</button>)}</div></fieldset>
+              <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className={styles.fieldLabel}>Your interests · pick as many as you like</legend><div className={styles.interestGrid}>{[...interests, ...selected.filter((item) => !interests.includes(item))].map((interest) => <button key={interest} type="button" aria-pressed={selected.includes(interest)} className={`${styles.interestButton} ${selected.includes(interest) ? styles.interestSelected : ""}`} onClick={() => setSelected((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest])}><span aria-hidden="true">{selected.includes(interest) ? "✓" : "+"}</span>{interest}</button>)}
+                {!otherOpen && <button type="button" className={styles.interestButton} onClick={() => setOtherOpen(true)}><span aria-hidden="true">+</span>Other</button>}</div>
+                {otherOpen && <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+                  <input className={styles.nameInput} aria-label="Your own interest" placeholder="Something else you love" maxLength={24} autoFocus value={otherText} onChange={(event) => setOtherText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addOther(); } }} />
+                  <button type="button" className={styles.primaryButton} onClick={addOther} disabled={!otherText.trim()}>Add</button>
+                </div>}</fieldset>
               <p className={styles.storageNote}>A little inspiration for your demo profile.</p>
             </>}
             {step === 3 && <>
@@ -174,7 +187,6 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
             {step === 1 && <>
               <p className={styles.stepIntro}>Location is needed to verify real rides and award ride points. It also helps find nearby stops and quests.</p>
               <div className={styles.locationArt} aria-hidden="true"><span>YOU</span><span>◉</span><span>BOSTON</span></div>
-              <p className={styles.storageNote}>Your browser will ask for permission when you tap below. This onboarding checks access once; your coordinates aren’t saved in the demo profile.</p>
               <div className={styles.locationStatus} role="status" aria-live="polite">
                 {location === "idle" && "Ready when you are."}
                 {location === "loading" && "Finding you… this can take a few seconds."}

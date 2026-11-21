@@ -102,8 +102,8 @@ export function WelcomeExperience() {
   return (
     <div className={styles.welcome}>
       <header className={styles.header}>
+        <a href="/welcome" className={styles.logo} aria-label="T-spots home"><span className={styles.tMark}>t</span><span>t-spots</span></a>
         <div className={styles.headerActions}>
-          <a href="/welcome" className={styles.logo} aria-label="T-spots home"><span className={styles.tMark}>t</span><span>t-spots</span></a>
           <button ref={startRef} className={styles.start} onClick={() => setStarted(true)}>Get started</button>
         </div>
       </header>
