@@ -2,7 +2,7 @@ import { randomUUID } from "node:crypto";
 import { TEAM_ROUTE_IDS } from "@/contracts";
 import type { DemoSimAction, DemoSimResponse } from "@/contracts";
 import { getSql, hasDb } from "@/server/db";
-import { awardPoints, GAME_LOCK, registerMemoryRider } from "@/server/points";
+import { awardSimulatedStop, GAME_LOCK, registerMemoryRider } from "@/server/points";
 import { memoryGame } from "@/server/points/state";
 import { ScoringError } from "@/server/points/rules";
 import { projectDistricts } from "@/server/districts";
@@ -22,23 +22,17 @@ async function readState(): Promise<SimState> {
   return row ? { running: row.running, runId: row.run_id, startedAt: new Date(row.started_at).getTime(), processedTick: row.processed_tick }
     : { running: false, runId: "", startedAt: Date.now(), processedTick: -1 };
 }
-async function seedRiders() {
-  if (!hasDb()) { SIM_RIDERS.forEach(registerMemoryRider); return; }
-  for (const rider of SIM_RIDERS) await getSql()`insert into riders (id,display_name,home_team_route_id,is_simulated)
-    values (${rider.riderId},${rider.displayName},${rider.homeTeamRouteId},true) on conflict (id) do nothing`;
-}
 async function advance() {
   const state = await readState();
   if (!state.running) return;
-  await seedRiders();
   const tick = Math.floor((Date.now() - state.startedAt) / TICK_MS);
   // Bound cold-start catch-up to two minutes rather than replaying hours of awards.
   const first = Math.max(state.processedTick + 1, tick - 23);
   for (let t = first; t <= tick; t++) {
     const current = await readState();
     if (!current.running || current.runId !== state.runId) return;
-    await Promise.all(SIM_RIDERS.map(rider => awardPoints({ riderId: rider.riderId, teamRouteId: rider.homeTeamRouteId,
-      type: "ride_stop", amount: 1, ref: `sim:${state.runId}:${t}:${rider.riderId}` })));
+    await Promise.all(SIM_RIDERS.map(rider => awardSimulatedStop({ riderId: rider.riderId, teamRouteId: rider.homeTeamRouteId,
+      type: "ride_stop", amount: 1, ref: `sim:${state.runId}:${t}:${rider.riderId}` }, state.runId)));
   }
   if (!hasDb()) { if (memoryState().runId === state.runId) memoryState().processedTick = Math.max(memoryState().processedTick, tick); }
   else await getSql()`update demo_sim_state set processed_tick=greatest(processed_tick,${tick}) where id='main' and run_id=${state.runId}`;
@@ -64,6 +58,7 @@ export async function simulationControl(action: DemoSimAction): Promise<DemoSimR
     } else if (action === "start" && !state.running) {
       state.running = true; state.startedAt = Date.now(); state.processedTick = -1; state.runId = randomUUID();
     } else if (action === "stop") state.running = false;
+    if (action === "start") SIM_RIDERS.forEach(registerMemoryRider);
   } else {
     await getSql().begin(async sql => {
       await sql`select pg_advisory_xact_lock(${GAME_LOCK})`;
@@ -81,6 +76,8 @@ export async function simulationControl(action: DemoSimAction): Promise<DemoSimR
       await sql`insert into demo_sim_state (id,running,run_id,started_at,processed_tick)
         values ('main',${action === "start"},${randomUUID()},now(),-1)
         on conflict (id) do update set running=excluded.running, run_id=excluded.run_id, started_at=excluded.started_at, processed_tick=-1`;
+      if (action === "start") for (const rider of SIM_RIDERS) await sql`insert into riders (id,display_name,home_team_route_id,is_simulated)
+        values (${rider.riderId},${rider.displayName},${rider.homeTeamRouteId},true) on conflict (id) do nothing`;
     });
   }
   if (action === "start") await advanceSimulation();

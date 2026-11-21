@@ -2,7 +2,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { require } from '../../../scripts/sim/register-ts.mjs';
 const { simulationControl, advanceSimulation, TICK_MS } = require('@/server/sim/index.ts');
-const { awardPoints, registerMemoryRider, leaderboard, getRiderStats } = require('@/server/points/index.ts');
+const { awardPoints, awardSimulatedStop, registerMemoryRider, leaderboard, getRiderStats } = require('@/server/points/index.ts');
 const { memoryGame } = require('@/server/points/state.ts');
 
 test('start is idempotent, polls advance each tick once, stop freezes, reset preserves human awards', async t => {
@@ -38,7 +38,11 @@ test('Postgres concurrent starts and reset retain human ledger', {skip:!process.
     await Promise.all([simulationControl('start'),simulationControl('start')]);
     const [row]=await sql`select sum(amount)::int as points from point_events where rider_id='rdr_sim_red_0'`;
     assert.equal(row.points,8);
+    const [run]=await sql`select run_id from demo_sim_state where id='main'`;
     await simulationControl('reset');
+    assert.deepEqual(await awardSimulatedStop({riderId:'rdr_sim_red_0',teamRouteId:'Red',type:'ride_stop',amount:1,ref:'late-stale-tick'},run.run_id),{pointsAwarded:0,tokensAwarded:0});
+    const [remaining]=await sql`select count(*)::int as count from riders where is_simulated=true`;
+    assert.equal(remaining.count,0);
     assert.equal((await getRiderStats('sim_test_human')).points,15);
     const [count]=await sql`select count(*)::int as count from point_events where rider_id like 'rdr_sim_%'`;
     assert.equal(count.count,0);

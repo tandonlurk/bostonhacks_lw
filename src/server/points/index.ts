@@ -21,7 +21,11 @@ export async function awardPoints(input: AwardPointsInput): Promise<AwardPointsR
 export async function awardCompletion(input: AwardPointsInput, kind: "hunt" | "landmark", id: string): Promise<AwardPointsResult> {
   return commitAward(input, { kind, id });
 }
-async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" | "landmark"; id: string }): Promise<AwardPointsResult> {
+/** DB controls and late ticks share GAME_LOCK; stale runs become no-ops. */
+export async function awardSimulatedStop(input: AwardPointsInput, runId: string): Promise<AwardPointsResult> {
+  return commitAward(input, undefined, runId);
+}
+async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" | "landmark"; id: string }, simRunId?: string): Promise<AwardPointsResult> {
   validateAward(input);
   if (!hasDb()) {
     const state = memoryGame();
@@ -36,6 +40,10 @@ async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" 
   }
   return await getSql().begin(async sql => {
     await sql`select pg_advisory_xact_lock(${GAME_LOCK})`;
+    if (simRunId !== undefined) {
+      const [run] = await sql`select running,run_id from demo_sim_state where id='main'`;
+      if (!run?.running || run.run_id !== simRunId) return { pointsAwarded: 0, tokensAwarded: 0 };
+    }
     const riders = await sql`select id from riders where id = ${input.riderId}`;
     if (!riders.length) throw new ScoringError("rider_not_found", "Create a rider before earning points.", 404);
     const events = await sql<PointEvent[]>`select rider_id as "riderId", team_route_id as "teamRouteId", type, amount, ref,
