@@ -6,7 +6,8 @@ import type { Landmark } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import { MAP_STATIONS } from "./mapModel";
 
-export type GameKind = "clue" | "trivia" | "photo" | "landmark";
+/** To add a kind (e.g. hotspots): extend this union, add GAME_META in gameMeta.tsx and a case in StationSheet's GameView. */
+export type GameKind = "clue" | "trivia" | "photo" | "landmark" | "challenge";
 
 export interface StationGame {
   id: string;
@@ -26,7 +27,7 @@ export interface StationGames {
 /** A few busy hubs that always carry practice games so the demo is never empty. */
 export const PRACTICE_STOPS = ["place-pktrm", "place-sstat", "place-kencl", "place-harsq", "place-north"];
 
-const TITLES: Record<Exclude<GameKind, "landmark">, string[]> = {
+const TITLES: Record<"clue" | "trivia" | "photo", string[]> = {
   clue: ["Station hunt", "Platform clue trail", "Find the hidden sign"],
   trivia: ["T trivia blitz", "Name that stop", "Line lore quiz"],
   photo: ["Snap the sign", "Tile mosaic snap", "Platform selfie"],
@@ -44,7 +45,7 @@ export function hash(s: string) {
 
 function gamesFor(stopId: string, landmark: Landmark | undefined): StationGame[] {
   const h = hash(stopId);
-  const pick = (kind: Exclude<GameKind, "landmark">, salt: number) => {
+  const pick = (kind: keyof typeof TITLES, salt: number) => {
     const pool = TITLES[kind];
     return pool[(h >>> salt) % pool.length];
   };
@@ -82,6 +83,25 @@ export function placeholderGameMap(delayedTeams: TeamRouteId[], landmarks: Landm
     if (live || PRACTICE_STOPS.includes(s.id) || byStop.has(s.id)) {
       out.set(s.id, { stopId: s.id, live, games: gamesFor(s.id, byStop.get(s.id)) });
     }
+  }
+  return out;
+}
+
+/**
+ * Real delay photo challenges (GET /api/challenges, not a placeholder) replace the placeholder photo game at every
+ * live station. The challenge round is rider-wide, not per station, so each live station opens the same list.
+ */
+export function withChallenges(map: Map<string, StationGames>, maxPoints: number | null): Map<string, StationGames> {
+  if (maxPoints == null) return map;
+  const out = new Map<string, StationGames>();
+  for (const [id, sg] of map) {
+    if (!sg.live) {
+      out.set(id, sg);
+      continue;
+    }
+    const games = sg.games.filter((g) => g.kind !== "photo");
+    games.splice(1, 0, { id: `${id}:challenge`, kind: "challenge", title: "Delay photo challenge", rewardPoints: maxPoints, rewardTokens: 0 });
+    out.set(id, { ...sg, games });
   }
   return out;
 }

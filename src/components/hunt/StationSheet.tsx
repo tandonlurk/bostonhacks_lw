@@ -1,11 +1,12 @@
 "use client";
 
-import type { Landmark, Perk } from "@/contracts";
-import type { TeamRouteId } from "@/contracts/routes";
+import type { ChallengesResponse, Landmark, Perk } from "@/contracts";
+import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { BoltIcon, ChevronIcon } from "@/components/icons";
 import { LineChip } from "@/components/LineChip";
 import { Sheet } from "@/components/ui/Sheet";
 import { GAME_META, HEAT, heatLevel } from "./gameMeta";
+import { ChallengeGame } from "./ChallengeGame";
 import { BackIcon } from "./huntIcons";
 import { LandmarkClaim } from "./LandmarkClaim";
 import { STATION_BY_ID } from "./mapModel";
@@ -29,6 +30,8 @@ interface StationSheetProps {
   balance: number | null;
   perks: Perk[];
   landmarks: Landmark[];
+  /** Live delay photo challenges, or null when unavailable (then the placeholder photo game shows instead). */
+  challenges: ChallengesResponse | null;
   onEarned: () => void;
 }
 
@@ -69,7 +72,7 @@ function StationOverview({ stopId, games, onPlay, delayedTeams, delayMessage, sl
         {delayedHere.length ? (
           <StatusPill color="var(--hot)" strong>
             <BoltIcon size={14} weight={2.4} />
-            Delay on {delayedHere.join(" + ")}
+            Delay on {delayedHere.map((t) => TEAMS[t].name).join(" + ")}
           </StatusPill>
         ) : (
           <StatusPill color="var(--glow-green)">Running normally</StatusPill>
@@ -107,8 +110,9 @@ function StationOverview({ stopId, games, onPlay, delayedTeams, delayMessage, sl
 }
 
 function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; onPlay: () => void }) {
-  const { Icon, color, label, blurb } = GAME_META[game.kind];
-  const real = game.kind === "landmark";
+  const { Icon, color, blurb } = GAME_META[game.kind];
+  // Landmark bonuses and photo challenges come from real endpoints; the rest are placeholder previews.
+  const real = game.kind === "landmark" || game.kind === "challenge";
   return (
     <button
       type="button"
@@ -131,15 +135,12 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
         <span style={{ display: "block", fontWeight: 800, fontSize: 16 }}>{game.title}</span>
-        <span style={{ display: "block", fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>
-          {label === game.title ? blurb : `${label} · ${blurb}`}
-        </span>
+        <span style={{ display: "block", fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{blurb}</span>
       </span>
       <span style={{ textAlign: "right", flexShrink: 0 }}>
-        <span className="num" style={{ display: "block", fontWeight: 800, fontSize: 17, color: "var(--accent)" }}>+{game.rewardPoints}</span>
-        <span style={{ display: "block", fontSize: 10.5, fontWeight: 750, color: "var(--muted)", letterSpacing: "0.04em" }}>
-          {real ? "PTS" : game.rewardTokens ? `PTS · ${game.rewardTokens} TK` : "PTS"}
-          {real ? "" : " · PREVIEW"}
+        <span className="num" style={{ display: "block", fontWeight: 800, fontSize: 18, color: "var(--accent)", lineHeight: 1.1 }}>+{game.rewardPoints}</span>
+        <span style={{ display: "block", fontSize: 10, fontWeight: 800, color: "var(--muted)", letterSpacing: "0.06em", marginTop: 2 }}>
+          {game.kind === "challenge" ? "MAX PTS" : real ? "PTS" : "PREVIEW"}
         </span>
       </span>
       <ChevronIcon size={16} weight={2.4} style={{ color: "var(--muted)", flexShrink: 0 }} />
@@ -147,7 +148,7 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
   );
 }
 
-function GameView({ stopId, game, onBack, riderId, landmarks, onEarned }: StationSheetProps & { game: StationGame; onBack: () => void }) {
+function GameView({ stopId, game, onBack, riderId, landmarks, challenges, onEarned }: StationSheetProps & { game: StationGame; onBack: () => void }) {
   const station = STATION_BY_ID.get(stopId!)!;
   const kind: GameKind = game.kind;
   const landmark = kind === "landmark" ? landmarks.find((l) => game.id.endsWith(`:${l.id}`)) : undefined;
@@ -175,6 +176,13 @@ function GameView({ stopId, game, onBack, riderId, landmarks, onEarned }: Statio
 
       {kind === "trivia" ? <TriviaGame key={game.id} stopId={station.id} game={game} onExit={onBack} /> : null}
       {kind === "clue" || kind === "photo" ? <StationHunt stopId={station.id} riderId={riderId} photoFirst={kind === "photo"} onEarned={onEarned} /> : null}
+      {kind === "challenge" ? (
+        challenges ? (
+          <ChallengeGame data={challenges} riderId={riderId} onEarned={onEarned} />
+        ) : (
+          <p style={{ color: "var(--muted)" }}>Photo challenges close when the delay clears.</p>
+        )
+      ) : null}
       {kind === "landmark" ? (
         landmark ? (
           <LandmarkClaim landmark={landmark} riderId={riderId} onClaimed={onEarned} />

@@ -88,8 +88,7 @@ export function TransitMap({ delayedTeams, heat, games, vehicles, selectedId, on
     [games, onSelect],
   );
 
-  const pz = usePanZoom({ minK: 0.3, maxK: 9, world: WORLD_SIZE, onTap });
-  const { ready, fit, focus, zoomAt, getView, getSize, zoom } = pz;
+  const { svgRef, groupRef, ready, fit, focus, zoomAt, getView, getSize, zoom } = usePanZoom({ minK: 0.3, maxK: 9, world: WORLD_SIZE, onTap });
 
   const reduced = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion, () => false);
   const sizes = useMemo(() => sizesFor(zoom), [zoom]);
@@ -126,7 +125,7 @@ export function TransitMap({ delayedTeams, heat, games, vehicles, selectedId, on
   return (
     <div style={{ position: "absolute", inset: 0, overflow: "hidden", background: "var(--bg)" }}>
       <svg
-        ref={pz.svgRef}
+        ref={svgRef}
         role="application"
         aria-label="Transit map. Drag to pan, pinch or scroll to zoom, double tap to zoom in. Stations with mini-games are listed below the map."
         width="100%"
@@ -138,7 +137,7 @@ export function TransitMap({ delayedTeams, heat, games, vehicles, selectedId, on
             <circle cx="7" cy="7" r="0.9" fill="rgba(255,255,255,0.07)" />
           </pattern>
         </defs>
-        <g ref={pz.groupRef} style={{ opacity: ready ? 1 : 0, transition: "opacity 300ms" }}>
+        <g ref={groupRef} style={{ visibility: ready ? "visible" : "hidden" }}>
           <rect x={-FULL.w} y={-FULL.h} width={FULL.w * 3} height={FULL.h * 3} fill="url(#hunt-dots)" />
           <StaticLines inv={inv} sizes={sizes} delayed={delayed} anyDelay={anyDelay} />
           {anyDelay ? <DelayCrawl inv={inv} sizes={sizes} delayed={delayed} animate={!reduced} /> : null}
@@ -234,7 +233,7 @@ const StaticLines = memo(function StaticLines({
       {ordered.map((b, i) => {
         const hot = delayed.has(b.team);
         return (
-          <g key={`l${i}`} opacity={anyDelay && !hot ? 0.38 : 1}>
+          <g key={`l${i}`} opacity={anyDelay && !hot ? 0.5 : 1}>
             {hot ? <path d={b.d} stroke={GLOW[b.team]} strokeOpacity={0.22} strokeWidth={width(b.team) * 2.6} /> : null}
             <path d={b.d} stroke={GLOW[b.team]} strokeWidth={width(b.team)} />
           </g>

@@ -143,10 +143,15 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
   const getView = useCallback(() => view.current, []);
   const getSize = useCallback(() => size.current, []);
 
-  // Size tracking.
+  // Size tracking: measure once up front (ResizeObserver can lag a frame), then follow resizes.
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg) return;
+    const first = svg.getBoundingClientRect();
+    if (first.width > 0 && size.current.w === 0) {
+      size.current = { w: first.width, h: first.height };
+      setReady(true);
+    }
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
       const prev = size.current;

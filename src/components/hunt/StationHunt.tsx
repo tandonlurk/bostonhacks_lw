@@ -7,32 +7,8 @@ import type { CompleteHuntResponse } from "@/contracts";
 import { CameraIcon, CheckIcon } from "@/components/icons";
 import { completeHuntClue, useHunt } from "@/hooks/useHunt";
 import { checkPhoto } from "@/hooks/usePhotoCheck";
+import { downscaleToJpegBase64 } from "./downscale";
 import { primaryButton, secondaryButton } from "./styles";
-
-const MAX_DIMENSION = 1024;
-
-function downscaleToJpegBase64(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    const url = URL.createObjectURL(file);
-    img.onload = () => {
-      const scale = Math.min(1, MAX_DIMENSION / Math.max(img.width, img.height));
-      const canvas = document.createElement("canvas");
-      canvas.width = Math.round(img.width * scale);
-      canvas.height = Math.round(img.height * scale);
-      const ctx = canvas.getContext("2d");
-      URL.revokeObjectURL(url);
-      if (!ctx) return reject(new Error("Canvas unavailable"));
-      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-      resolve(canvas.toDataURL("image/jpeg", 0.8).split(",")[1] ?? "");
-    };
-    img.onerror = () => {
-      URL.revokeObjectURL(url);
-      reject(new Error("Couldn't read that photo"));
-    };
-    img.src = url;
-  });
-}
 
 interface StationHuntProps {
   stopId: string;

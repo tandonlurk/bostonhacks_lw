@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import type { TeamRouteId } from "@/contracts/routes";
+import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { CoinIcon } from "@/components/icons";
 import { LayersIcon } from "./huntIcons";
 import { SHORT } from "./mapModel";
@@ -56,7 +56,7 @@ export function HuntHeader({ delayedTeams, liveStations, balance, legendOpen, on
           </span>
           {live ? (
             <span style={{ color: "var(--hot)", overflow: "hidden", textOverflow: "ellipsis" }}>
-              Delay on {delayedTeams.map((t) => SHORT[t]).join(" + ")} · {liveStations} game stops
+              {delayedTeams.length === 1 ? `${TEAMS[delayedTeams[0]].name} delay` : `Delays on ${delayedTeams.map((t) => SHORT[t]).join(" + ")}`} · {liveStations} game stops
             </span>
           ) : (
             <span style={{ color: "var(--muted)" }}>All clear · practice games open</span>

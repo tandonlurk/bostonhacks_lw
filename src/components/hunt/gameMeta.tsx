@@ -7,9 +7,10 @@ export const GAME_META: Record<GameKind, { label: string; blurb: string; color: 
   trivia: { label: "Trivia", blurb: "3 quick questions, 12s each", color: "#7cc4ff", Icon: TriviaIcon },
   photo: { label: "Photo snap", blurb: "Snap the thing, AI checks it", color: "#ff9bd0", Icon: CameraIcon },
   landmark: { label: "Landmark", blurb: "Check in nearby for a bonus", color: "#ffd15c", Icon: StarIcon },
+  challenge: { label: "Photo challenge", blurb: "Delay scavenger hunt, AI graded", color: "#ff3d7f", Icon: CameraIcon },
 };
 
-export const GAME_ORDER: GameKind[] = ["clue", "trivia", "photo", "landmark"];
+export const GAME_ORDER: GameKind[] = ["clue", "trivia", "photo", "challenge", "landmark"];
 
 export type HeatLevel = "ok" | "slow" | "crawl";
 

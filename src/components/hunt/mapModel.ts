@@ -6,7 +6,7 @@ import { BOSTON_BOUNDS, CORE_BOUNDS, LINES, STATIONS, makeProjector, type Bounds
 export const WORLD = makeProjector(BOSTON_BOUNDS, 1000);
 
 /** Downtown framing for the first paint: a touch wider than CORE_BOUNDS so BU and Kendall are in view. */
-export const START_BOUNDS: Bounds = { ...CORE_BOUNDS, minLng: -71.118, maxLng: -71.024, minLat: 42.333, maxLat: 42.372 };
+export const START_BOUNDS: Bounds = { ...CORE_BOUNDS, minLng: -71.102, maxLng: -71.038, minLat: 42.338, maxLat: 42.368 };
 
 export const GLOW: Record<TeamRouteId, string> = {
   Red: "var(--glow-red)",

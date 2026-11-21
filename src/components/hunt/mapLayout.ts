@@ -94,7 +94,41 @@ export function layoutFor(
   const labels: PlacedLabel[] = [];
   const iconStep = sizes.badgeIcon + 4;
 
-  // 1. Game badges: selected first, then live by importance, then practice.
+  const placeLabel = (s: MapStation) => {
+    if (s.minor) return;
+    if (z < LABEL_MIN_Z[s.importance] && s.id !== selectedId) return;
+    const strong = s.importance === 3;
+    const fs = strong ? sizes.font + 0.5 : sizes.font;
+    const textW = s.name.length * fs * 0.56;
+    const radius = s.transfer ? sizes.transfer : sizes.stop;
+    let side = s.side;
+    let gap = radius + 5;
+    let ox = 0;
+    let oy = 0;
+    if (s.terminus && s.out) {
+      // Push the name past the terminus badge.
+      ox = s.out.dx * 20;
+      oy = s.out.dy * 20;
+      side = sideFromOut(s.out);
+      gap = 13;
+    }
+    const geo = labelGeometry(side, gap, fs);
+    const dx = geo.dx + ox;
+    const dy = geo.dy + oy;
+    const ax = s.x * z + dx;
+    const ay = s.y * z + dy;
+    const x0 = geo.anchor === "start" ? ax : geo.anchor === "end" ? ax - textW : ax - textW / 2;
+    const r = { x0: x0 - 2, x1: x0 + textW + 2, y0: ay - fs * 0.5, y1: ay + fs * 0.5 };
+    if (taken.some((t) => overlaps(t, r))) return;
+    taken.push(r);
+    labels.push({ id: s.id, text: s.name, dx, dy: dy + fs * 0.35, anchor: geo.anchor, strong });
+  };
+
+  // 1. Transfer and terminus names win: they are how riders orient.
+  const major = MAP_STATIONS.filter((s) => s.importance === 3).sort((a, b) => (b.terminus ? 1 : 0) - (a.terminus ? 1 : 0));
+  major.forEach(placeLabel);
+
+  // 2. Game badges: selected first, then live by importance, then practice.
   const badgeMinImportance = z < 0.8 ? 3 : z < 1.7 ? 2 : 1;
   const candidates = MAP_STATIONS.filter((s) => {
     const g = games.get(s.id);
@@ -120,37 +154,10 @@ export function layoutFor(
     badges.push({ id: s.id, dy: -lift, w, h });
   }
 
-  // 2. Labels: termini always, then by importance; skipped when they would collide.
-  const ordered = [...MAP_STATIONS].sort((a, b) => b.importance - a.importance || (b.terminus ? 1 : 0) - (a.terminus ? 1 : 0));
-  for (const s of ordered) {
-    if (s.minor) continue;
-    if (z < LABEL_MIN_Z[s.importance] && s.id !== selectedId) continue;
-    const strong = s.importance === 3;
-    const fs = strong ? sizes.font + 0.5 : sizes.font;
-    const textW = s.name.length * fs * 0.56;
-    const radius = s.transfer ? sizes.transfer : sizes.stop;
-    let side = s.side;
-    let gap = radius + 5;
-    let ox = 0;
-    let oy = 0;
-    if (s.terminus && s.out) {
-      // Push the name past the terminus badge.
-      ox = s.out.dx * 20;
-      oy = s.out.dy * 20;
-      side = sideFromOut(s.out);
-      gap = 13;
-    }
-    const geo = labelGeometry(side, gap, fs);
-    const dx = geo.dx + ox;
-    const dy = geo.dy + oy;
-    const ax = s.x * z + dx;
-    const ay = s.y * z + dy;
-    const x0 = geo.anchor === "start" ? ax : geo.anchor === "end" ? ax - textW : ax - textW / 2;
-    const r = { x0: x0 - 2, x1: x0 + textW + 2, y0: ay - fs * 0.5, y1: ay + fs * 0.5 };
-    if (taken.some((t) => overlaps(t, r))) continue;
-    taken.push(r);
-    labels.push({ id: s.id, text: s.name, dx, dy: dy + fs * 0.35, anchor: geo.anchor, strong });
-  }
+  // 3. Everything else, by importance, where it fits.
+  MAP_STATIONS.filter((s) => s.importance < 3)
+    .sort((a, b) => b.importance - a.importance)
+    .forEach(placeLabel);
 
   return { labels, badges };
 }
