@@ -10,7 +10,8 @@
     "typecheck": "next typegen && tsc --noEmit",
     "db:migrate": "node scripts/migrate.mjs",
     "test:rides": "node scripts/test-ride-engine.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "test:photo": "node scripts/test-photo-check.mjs"
   },
   "dependencies": {
     "@solana/spl-token": "^0.4.15",

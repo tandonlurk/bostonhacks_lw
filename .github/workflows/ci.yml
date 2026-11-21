@@ -20,6 +20,7 @@ jobs:
       - run: npm run typecheck
       - run: npm run lint
       - run: npm run test:rides
+      - run: npm run test:photo
       - name: Game specs (B)
         run: |
           for f in $(find src/server -name '*.spec.mjs'); do echo "== $f"; node "$f"; done
