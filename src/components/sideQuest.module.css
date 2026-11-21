@@ -1,0 +1,34 @@
+.card {
+  position: relative;
+  overflow: hidden;
+  padding: 20px;
+  border: 1px solid rgba(181,192,199,.28);
+  border-radius: 22px;
+  background: linear-gradient(125deg,rgba(181,192,199,.11),rgba(18,22,29,.95) 70%);
+  color: var(--ink);
+}
+.header { display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap; }
+.kicker { display:inline-flex; align-items:center; gap:8px; color:var(--glow-silver); font-size:12px; font-weight:800; letter-spacing:.08em; }
+.lineBadge { display:grid; place-items:center; width:27px; height:27px; border-radius:9px; background:var(--glow-silver); color:#11181d; font-size:12px; letter-spacing:0; }
+.reward { display:inline-flex; align-items:center; gap:5px; font-size:14px; font-weight:800; color:var(--accent); white-space:nowrap; }
+.title { margin-top:12px; font-size:23px; line-height:1.12; letter-spacing:-.025em; }
+.intro { margin-top:8px; color:#bac2cb; font-size:16px; line-height:1.5; }
+.progressRow { display:flex; align-items:center; gap:12px; margin-top:16px; }
+.progress { flex:1; min-width:0; width:100%; height:7px; border:0; border-radius:999px; overflow:hidden; background:var(--surface-3); accent-color:var(--glow-silver); }
+.progress::-webkit-progress-bar { background:var(--surface-3); border-radius:999px; }
+.progress::-webkit-progress-value { background:var(--glow-silver); border-radius:999px; }
+.progress::-moz-progress-bar { background:var(--glow-silver); border-radius:999px; }
+.counter { font-family:var(--font-mono); font-size:13px; color:var(--ink); white-space:nowrap; }
+.note { margin-top:10px; font-size:14px; line-height:1.5; color:#bac2cb; }
+.reset { margin-top:10px; color:var(--muted); font-size:12px; line-height:1.5; }
+.card[data-done=true] { border-color:rgba(228,255,58,.28); }
+.card[data-done=true] .progress { accent-color:var(--accent); }
+.card[data-done=true] .progress::-webkit-progress-value { background:var(--accent); }
+.card[data-done=true] .progress::-moz-progress-bar { background:var(--accent); }
+.compact { padding:12px; border-radius:16px; }
+.compact .title { display:none; }
+.compact .header { gap:8px; }
+.compact .kicker { font-size:12px; letter-spacing:.02em; }
+.compact .progressRow { margin-top:9px; gap:8px; }
+.compact .note { margin-top:6px; font-size:12px; }
+.compact .lineBadge { width:24px; height:24px; }

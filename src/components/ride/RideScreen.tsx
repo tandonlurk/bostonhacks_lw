@@ -164,12 +164,14 @@ export function RideScreen() {
       {phase === "live" ? (
         <LivePanel
           team={session.teamRouteId ?? team}
+          homeTeam={team}
           state={session.state}
           startedAt={session.startedAt}
           stopsCredited={session.stopsCredited}
           minutesRidden={session.minutesRidden}
           pointsAwarded={session.pointsAwarded}
           crew={session.crew}
+          sideQuest={session.sideQuest}
           message={session.message}
           teamStats={teamStats}
           onEnd={end}

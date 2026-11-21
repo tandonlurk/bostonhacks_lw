@@ -1,3 +1,4 @@
+import type { TransactionSql } from "postgres";
 import { getSql, hasDb } from "@/server/db";
 import { TEAM_ROUTE_IDS } from "@/contracts";
 import type { AwardPointsInput, AwardPointsResult, LeaderboardResponse } from "@/contracts";
@@ -25,7 +26,10 @@ export async function awardCompletion(input: AwardPointsInput, kind: "hunt" | "l
 export async function awardSimulatedStop(input: AwardPointsInput, runId: string): Promise<AwardPointsResult> {
   return commitAward(input, undefined, runId);
 }
-async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" | "landmark"; id: string }, simRunId?: string): Promise<AwardPointsResult> {
+export async function awardPointsInTransaction(input: AwardPointsInput, sql: TransactionSql): Promise<AwardPointsResult> {
+  return commitAward(input, undefined, undefined, sql);
+}
+async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" | "landmark"; id: string }, simRunId?: string, transaction?: TransactionSql): Promise<AwardPointsResult> {
   validateAward(input);
   if (!hasDb()) {
     const state = memoryGame();
@@ -38,7 +42,7 @@ async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" 
       reason: `points:${input.type}`, ref: `points:${input.ref}`, createdAt: added[0].createdAt });
     return result;
   }
-  return await getSql().begin(async sql => {
+  const commit = async (sql: TransactionSql) => {
     await sql`select pg_advisory_xact_lock(${GAME_LOCK})`;
     if (simRunId !== undefined) {
       const [run] = await sql`select running,run_id from demo_sim_state where id='main'`;
@@ -69,7 +73,8 @@ async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" 
     if (completion?.kind === "landmark") await sql`insert into landmark_claims (rider_id,landmark_id)
       values (${input.riderId},${completion.id}) on conflict do nothing`;
     return result;
-  });
+  };
+  return transaction ? commit(transaction) : await getSql().begin(commit);
 }
 export async function getRiderStats(riderId: string) {
   const events = (await pointEvents()).filter(e => e.riderId === riderId);

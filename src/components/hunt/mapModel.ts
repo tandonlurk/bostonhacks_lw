@@ -1,6 +1,6 @@
 // Static geometry for the Hunt delay map: projected stations, line branches, transfers, termini and label hints.
 // Built once from the shared MBTA geometry (src/components/map) in a fixed "world" space 1000 units wide.
-import { TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
+import { LINE_IDS, type TeamRouteId } from "@/contracts/routes";
 import { BOSTON_BOUNDS, CORE_BOUNDS, LINES, STATIONS, makeProjector, type Bounds } from "@/components/map/projection";
 
 export const WORLD = makeProjector(BOSTON_BOUNDS, 1000);
@@ -189,7 +189,7 @@ function build() {
 
   const branches: MapBranch[] = [];
   const ends: [string, string][] = [];
-  for (const team of TEAM_ROUTE_IDS) {
+  for (const team of LINE_IDS) {
     for (const branch of LINES[team]) {
       const geo = branch.map((id) => STATIONS[id]).filter(Boolean);
       const pts = geo.map((s) => {

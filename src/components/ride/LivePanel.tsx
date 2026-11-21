@@ -1,8 +1,9 @@
 "use client";
 
-import type { CrewBonus, LeaderboardTeam, RideState } from "@/contracts";
+import type { CrewBonus, LeaderboardTeam, RideState, SideQuest } from "@/contracts";
 import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { LineChip } from "@/components/LineChip";
+import { SideQuestCard } from "@/components/SideQuestCard";
 import { ClockIcon, TeamIcon, TrophyIcon } from "@/components/icons";
 import { HoldToEnd } from "./HoldToEnd";
 import { StateBadge } from "./TopCard";
@@ -11,12 +12,14 @@ import styles from "./ride.module.css";
 
 interface LivePanelProps {
   team: TeamRouteId | null;
+  homeTeam?: TeamRouteId | null;
   state: RideState | null;
   startedAt: number | null;
   stopsCredited: number;
   minutesRidden: number | null;
   pointsAwarded: number | null;
   crew: CrewBonus | null;
+  sideQuest?: SideQuest | null;
   message: string | null;
   teamStats: LeaderboardTeam | null;
   onEnd: () => void;
@@ -123,6 +126,8 @@ export function LivePanel(p: LivePanelProps) {
         zIndex: 5,
         borderRadius: 28,
         padding: 14,
+        maxHeight: p.sideQuest ? "calc(100svh - var(--nav-clearance) - 160px)" : undefined,
+        overflowY: p.sideQuest ? "auto" : undefined,
         boxShadow: "var(--shadow-float)",
       }}
     >
@@ -162,11 +167,13 @@ export function LivePanel(p: LivePanelProps) {
 
       {p.crew && p.crew.teammates.length > 0 ? <CrewChip crew={p.crew} /> : null}
 
+      {p.sideQuest ? <div style={{ marginTop: 12 }}><SideQuestCard quest={p.sideQuest} homeTeam={p.homeTeam} compact /></div> : null}
+
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr 0.75fr", gap: 8, marginTop: 12 }}>
         <Stat label="pts this ride" accent>
           {p.pointsAwarded != null ? `+${formatPoints(ridePoints)}` : "+0"}
         </Stat>
-        <Stat label={p.team ? `${TEAMS[p.team].name} pts` : "team points"}>
+        <Stat label={p.homeTeam ? `${TEAMS[p.homeTeam].name} pts` : "team points"}>
           {p.teamStats ? formatPoints(teamPoints) : "—"}
         </Stat>
         <Stat label="team rank">

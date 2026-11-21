@@ -11,9 +11,9 @@ test('start is idempotent, polls advance each tick once, stop freezes, reset pre
   await awardPoints({riderId:'human',teamRouteId:'Green',type:'landmark',amount:15,ref:'human:landmark'});
   const start = Date.now();
   t.mock.method(Date,'now',()=>start);
-  assert.deepEqual(await simulationControl('start'),{running:true,riders:25});
+  assert.deepEqual(await simulationControl('start'),{running:true,riders:20});
   assert.equal((await leaderboard()).teams.find(t=>t.teamRouteId==='Red').points,40);
-  assert.deepEqual(await simulationControl('start'),{running:true,riders:25});
+  assert.deepEqual(await simulationControl('start'),{running:true,riders:20});
   assert.equal((await leaderboard()).teams.find(t=>t.teamRouteId==='Red').points,40);
   Date.now.mock.mockImplementation(()=>start+TICK_MS+1);
   await Promise.all([advanceSimulation(),advanceSimulation()]);

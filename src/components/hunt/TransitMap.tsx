@@ -1,7 +1,7 @@
 "use client";
 
 import { memo, useCallback, useEffect, useMemo, useRef, useSyncExternalStore } from "react";
-import type { Vehicle } from "@/contracts";
+import type { Hotspot, Vehicle } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import { PlusIcon } from "@/components/icons";
 import { BOSTON_BOUNDS } from "@/components/map/projection";
@@ -25,6 +25,8 @@ import type { StationGames } from "./placeholderGames";
 import { prefersReducedMotion, usePanZoom, type View } from "./usePanZoom";
 
 interface TransitMapProps {
+  hotspots?: Hotspot[];
+  hotspotRoute?: Hotspot | null;
   delayedTeams: TeamRouteId[];
   /** stopId -> slowShare (0-1) from the delay heatmap. */
   heat: Map<string, number>;
@@ -56,7 +58,7 @@ function subscribeReducedMotion(cb: () => void) {
   return () => mq.removeEventListener("change", cb);
 }
 
-export function TransitMap({ delayedTeams, heat, games, vehicles, selectedId, onSelect, insetTop, insetBottom }: TransitMapProps) {
+export function TransitMap({ hotspots = [], hotspotRoute, delayedTeams, heat, games, vehicles, selectedId, onSelect, insetTop, insetBottom }: TransitMapProps) {
   const layoutRef = useRef<{ badges: PlacedBadge[]; sizes: Sizes }>({ badges: [], sizes: sizesFor(1) });
 
   const onTap = useCallback(
@@ -141,11 +143,13 @@ export function TransitMap({ delayedTeams, heat, games, vehicles, selectedId, on
           <rect x={-FULL.w} y={-FULL.h} width={FULL.w * 3} height={FULL.h * 3} fill="url(#hunt-dots)" />
           <StaticLines inv={inv} sizes={sizes} delayed={delayed} anyDelay={anyDelay} />
           {anyDelay ? <DelayCrawl inv={inv} sizes={sizes} delayed={delayed} animate={!reduced} /> : null}
+          {hotspotRoute && <path d={hotspotRoute.path.map(id=>STATION_BY_ID.get(id)).filter((p):p is MapStation=>!!p).map((p,i)=>`${i?"L":"M"}${p.x},${p.y}`).join(" ")} stroke="var(--accent)" strokeWidth={6*inv} fill="none" strokeDasharray={`${9*inv} ${6*inv}`} strokeLinecap="round" opacity={0.9}/>}
           <Stations inv={inv} sizes={sizes} heat={heat} games={games} delayed={delayed} anyDelay={anyDelay} zoom={zoom} />
           {zoom >= 0.7 ? <Vehicles inv={inv} vehicles={vehicles} /> : null}
           <Termini inv={inv} />
           <Labels inv={inv} sizes={sizes} labels={layout.labels} />
           <Badges inv={inv} sizes={sizes} badges={layout.badges} games={games} selectedId={selectedId} />
+          {hotspots.map(h=>{const point=projectLatLng(h.lat,h.lng);return <g key={h.id} role="button" tabIndex={0} aria-label={`${h.name} hotspot, ${h.multiplier} times meeting bonus`} onClick={()=>onSelect(h.stationId)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(h.stationId);}}} transform={`translate(${point.x},${point.y}) scale(${inv})`} style={{cursor:"pointer"}}><circle r={22} fill="var(--surface)" stroke="var(--accent)" strokeWidth={2}/><text textAnchor="middle" dominantBaseline="central" fontSize={15} fontWeight={800} fill="var(--accent)">{h.multiplier}×</text></g>;})}
           {selectedId ? <Selection inv={inv} id={selectedId} /> : null}
         </g>
       </svg>

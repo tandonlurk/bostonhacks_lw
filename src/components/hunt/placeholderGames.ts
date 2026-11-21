@@ -1,7 +1,5 @@
-// PLACEHOLDER until B ships GET /api/hunts/map (issue #93)
-// Deterministic per-station mini-game lists so the Hunt map always has something to show. Shape mirrors the
-// proposed contract: [{ stopId, games: [{ id, kind, title, rewardPoints, rewardTokens }] }]. Rewards here are
-// previews only; nothing in this file awards points.
+// Offline fallback for the server catalog at GET /api/hunts/map.
+// Practice trivia and real landmark claims remain browsable while it loads.
 import type { Landmark } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import { MAP_STATIONS } from "./mapModel";
@@ -27,12 +25,6 @@ export interface StationGames {
 /** A few busy hubs that always carry practice games so the demo is never empty. */
 export const PRACTICE_STOPS = ["place-pktrm", "place-sstat", "place-kencl", "place-harsq", "place-north"];
 
-const TITLES: Record<"clue" | "trivia" | "photo", string[]> = {
-  clue: ["Station hunt", "Platform clue trail", "Find the hidden sign"],
-  trivia: ["T trivia blitz", "Name that stop", "Line lore quiz"],
-  photo: ["Snap the sign", "Tile mosaic snap", "Platform selfie"],
-};
-
 /** Small stable string hash (FNV-1a). */
 export function hash(s: string) {
   let h = 2166136261;
@@ -44,26 +36,10 @@ export function hash(s: string) {
 }
 
 function gamesFor(stopId: string, landmark: Landmark | undefined): StationGame[] {
-  const h = hash(stopId);
-  const pick = (kind: keyof typeof TITLES, salt: number) => {
-    const pool = TITLES[kind];
-    return pool[(h >>> salt) % pool.length];
-  };
-  // Every station has a clue hunt; trivia and photo show up on roughly 2 of 3 stations each, never both missing.
-  const games: StationGame[] = [{ id: `${stopId}:clue`, kind: "clue", title: pick("clue", 3), rewardPoints: 10, rewardTokens: 1 }];
-  const trivia = h % 3 !== 0;
-  const photo = (h >>> 5) % 3 !== 0 || !trivia;
-  if (trivia) games.push({ id: `${stopId}:trivia`, kind: "trivia", title: pick("trivia", 7), rewardPoints: 15, rewardTokens: 2 });
-  if (photo) games.push({ id: `${stopId}:photo`, kind: "photo", title: pick("photo", 11), rewardPoints: 12, rewardTokens: 1 });
-  if (landmark) {
-    games.push({
-      id: `${stopId}:landmark:${landmark.id}`,
-      kind: "landmark",
-      title: landmark.name,
-      rewardPoints: landmark.bonusPoints,
-      rewardTokens: 0,
-    });
-  }
+  // Safe offline catalog: trivia is explicitly practice until the server grants a reward.
+  // Physical clues and photo challenges are listed only by the live catalog.
+  const games: StationGame[] = [{ id: `${stopId}:trivia`, kind: "trivia", title: "T trivia blitz", rewardPoints: 0, rewardTokens: 0 }];
+  if (landmark) games.push({ id: `${stopId}:landmark:${landmark.id}`, kind: "landmark", title: landmark.name, rewardPoints: landmark.bonusPoints, rewardTokens: 0 });
   return games;
 }
 

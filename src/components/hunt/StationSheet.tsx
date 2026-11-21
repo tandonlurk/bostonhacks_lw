@@ -111,8 +111,8 @@ function StationOverview({ stopId, games, onPlay, delayedTeams, delayMessage, sl
 
 function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; onPlay: () => void }) {
   const { Icon, color, blurb } = GAME_META[game.kind];
-  // Landmark bonuses and photo challenges come from real endpoints; the rest are placeholder previews.
-  const real = game.kind === "landmark" || game.kind === "challenge";
+  // Game availability and maximum rewards come from the server catalog.
+  const real = game.kind === "landmark" || game.kind === "challenge" || game.kind === "trivia" || game.kind === "clue";
   return (
     <button
       type="button"
@@ -140,7 +140,7 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
       <span style={{ textAlign: "right", flexShrink: 0 }}>
         <span className="num" style={{ display: "block", fontWeight: 800, fontSize: 18, color: "var(--accent)", lineHeight: 1.1 }}>+{game.rewardPoints}</span>
         <span style={{ display: "block", fontSize: 10, fontWeight: 800, color: "var(--muted)", letterSpacing: "0.06em", marginTop: 2 }}>
-          {game.kind === "challenge" ? "MAX PTS" : real ? "PTS" : "PREVIEW"}
+          {game.kind === "challenge" ? "MAX PTS" : game.rewardPoints === 0 ? "PRACTICE" : real ? "PTS" : "PREVIEW"}
         </span>
       </span>
       <ChevronIcon size={16} weight={2.4} style={{ color: "var(--muted)", flexShrink: 0 }} />
@@ -174,7 +174,7 @@ function GameView({ stopId, game, onBack, riderId, landmarks, challenges, onEarn
         </div>
       </div>
 
-      {kind === "trivia" ? <TriviaGame key={game.id} stopId={station.id} game={game} onExit={onBack} /> : null}
+      {kind === "trivia" ? <TriviaGame key={game.id} stopId={station.id} game={game} onExit={onBack} riderId={riderId} onEarned={onEarned} /> : null}
       {kind === "clue" || kind === "photo" ? <StationHunt stopId={station.id} riderId={riderId} photoFirst={kind === "photo"} onEarned={onEarned} /> : null}
       {kind === "challenge" ? (
         challenges ? (

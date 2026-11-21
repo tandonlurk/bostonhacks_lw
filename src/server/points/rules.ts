@@ -4,7 +4,7 @@ import type { PointEvent } from "./state";
 
 export const RIDE_HOURLY_CAP = 60;
 export const LOT_THRESHOLDS = [20, 60, 140, 300, 600] as const;
-const TYPES: PointEventType[] = ["ride_stop", "first_ride", "streak", "hunt", "landmark"];
+const TYPES: PointEventType[] = ["ride_stop", "first_ride", "streak", "hunt", "landmark", "co_ride", "hotspot_meet", "challenge"];
 const RIDE_TYPES: PointEventType[] = ["ride_stop", "first_ride", "streak"];
 export class ScoringError extends Error {
   constructor(public code: string, message: string, public status = 400) { super(message); }

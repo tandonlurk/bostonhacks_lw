@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState } from "react";
+import { useId, useRef, useState } from "react";
 import type { Rider } from "@/contracts";
 import { BountyIcon, PlusIcon, StarIcon, TradeIcon } from "@/components/icons";
 import type { BoardPost, PostKind } from "./types";
@@ -38,11 +38,15 @@ export function handleFor(name: string): string {
 interface Props {
   rider: Rider;
   available: number;
-  onPost: (post: BoardPost) => void;
+  onPost: (post: BoardPost, requestId: string) => Promise<void>;
 }
 
 export function PostComposer({ rider, available, onPost }: Props) {
   const uid = useId();
+  const requestId = useRef<string | null>(null);
+  const submitting = useRef(false);
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [kind, setKind] = useState<PostKind>("bounty");
   const [title, setTitle] = useState("");
   const [body, setBody] = useState("");
@@ -52,12 +56,12 @@ export function PostComposer({ rider, available, onPost }: Props) {
 
   const spends = kind !== "offer";
   const min = kind === "bounty" ? 1 : 0;
-  const max = spends ? Math.max(0, available) : 50;
+  const max = spends ? Math.min(1000, Math.max(0, available)) : 50;
   const value = Math.min(Math.max(reward, min), Math.max(min, max));
   const broke = kind === "bounty" && available < 1;
   const titleOk = title.trim().length >= 4;
   const tradeOk = kind !== "trade" || (have.trim().length > 0 && want.trim().length > 0);
-  const canPost = titleOk && tradeOk && !broke && (!spends || value <= available);
+  const canPost = titleOk && body.trim().length > 0 && tradeOk && !broke && (!spends || value <= available);
 
   const draft: BoardPost = {
     id: "draft",
@@ -74,14 +78,18 @@ export function PostComposer({ rider, available, onPost }: Props) {
     mine: true,
   };
 
-  function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
-    if (!canPost) return;
-    onPost({ ...draft, id: `mine-${Date.now().toString(36)}`, createdAt: Date.now(), ageMin: undefined });
+    if (!canPost || submitting.current) return;
+    submitting.current = true; setPending(true); setError(null);
+    requestId.current ??= crypto.randomUUID?.() ?? `post-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    try { await onPost(draft, requestId.current); }
+    catch (err) { setError(err instanceof Error ? err.message : "Your post could not be pinned. Try again."); }
+    finally { submitting.current = false; setPending(false); }
   }
 
   return (
-    <form onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
+    <form aria-busy={pending} onSubmit={submit} style={{ display: "flex", flexDirection: "column", gap: 16 }}>
       <fieldset style={{ border: "none" }}>
         <legend style={legend}>What are you posting?</legend>
         <div style={{ display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: 8, marginTop: 8 }}>
@@ -195,7 +203,7 @@ export function PostComposer({ rider, available, onPost }: Props) {
           </StepBtn>
         </div>
         <p style={{ fontSize: 12.5, color: broke ? "var(--hot)" : "var(--muted)", marginTop: 8 }}>
-          {broke ? "You need at least 1 token for a bounty. Ride a few stops to earn some." : REWARD_HINT[kind]}
+          {broke ? "You need at least 1 token for a bounty. Ride and complete quests to earn some." : REWARD_HINT[kind]}
         </p>
       </div>
 
@@ -206,9 +214,10 @@ export function PostComposer({ rider, available, onPost }: Props) {
         </div>
       </div>
 
+      {error ? <p role="alert" style={{ color: "var(--hot)", fontSize: 14, lineHeight: 1.5 }}>{error}</p> : null}
       <button
         type="submit"
-        disabled={!canPost}
+        disabled={!canPost || pending}
         className={s.inkBtn}
         style={{
           minHeight: 54,
@@ -221,7 +230,7 @@ export function PostComposer({ rider, available, onPost }: Props) {
         }}
       >
         <PinGlyph />
-        {canPost ? "Pin it to the board" : !titleOk ? "Add a title to post" : !tradeOk ? "Fill in have and want" : "Not enough tokens"}
+        {pending ? "Pinning…" : canPost ? "Pin it to the board" : !titleOk ? "Add a title to post" : !body.trim() ? "Add delivery details" : !tradeOk ? "Fill in have and want" : "Not enough tokens"}
       </button>
     </form>
   );

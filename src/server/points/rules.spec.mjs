@@ -131,3 +131,12 @@ test('Postgres awards are atomic under concurrent retries and persistence failur
     delete process.env.DATABASE_URL;
   }
 });
+
+test('crew, hotspot and graded challenge points preserve amounts outside the ride cap', () => {
+  const events = [];
+  add(events, input('cap:ride', { amount: 60 }));
+  for (const [type,amount] of [['co_ride',2],['hotspot_meet',50],['challenge',15]]) {
+    assert.equal(add(events,input(`social:${type}`,{type,amount})).pointsAwarded,amount);
+    assert.equal(add(events,input(`social:${type}`,{type,amount})).pointsAwarded,0);
+  }
+});

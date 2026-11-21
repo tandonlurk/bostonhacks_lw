@@ -54,7 +54,6 @@ function usePreviewBonus(live: boolean): Bonus {
       ["Orange", 2],
       ["Blue", 1.4],
       ["Green", 2.4],
-      ["Silver", 1],
     ];
     const total = weights.reduce((s, w) => s + w[1], 0);
     const id = window.setInterval(() => {

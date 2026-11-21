@@ -1,110 +1,81 @@
 "use client";
 
-// Local-only state for the bounty board: the rider's own posts and what they did to other posts.
-// Persisted in localStorage (every access wrapped; private mode or blocked storage just means it won't survive a reload).
-// useSyncExternalStore keeps SSR and hydration clean: the server snapshot is always empty.
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import type { BountiesResponse, BountyAction, BountyMutationResponse, BountyPost, CreateBountyRequest } from "@/contracts";
+import { bountiesFixture } from "@/contracts/game-fixtures";
+import { USE_MOCKS } from "@/hooks/useMocks";
 import type { BoardPost, PostAction } from "./types";
-import { PLACEHOLDER_BOARD } from "./placeholderBoard";
-
-const KEY = "tcity.board.v1";
-
-interface BoardLocal {
-  myPosts: BoardPost[];
-  actions: Record<string, PostAction>;
-}
-
-const EMPTY: BoardLocal = { myPosts: [], actions: {} };
-
-let cache: BoardLocal | null = null;
-const listeners = new Set<() => void>();
-
-function load(): BoardLocal {
-  try {
-    const raw = window.localStorage.getItem(KEY);
-    if (!raw) return EMPTY;
-    const parsed = JSON.parse(raw) as Partial<BoardLocal>;
-    return {
-      myPosts: Array.isArray(parsed.myPosts) ? parsed.myPosts : [],
-      actions: parsed.actions && typeof parsed.actions === "object" ? parsed.actions : {},
-    };
-  } catch {
-    return EMPTY;
-  }
-}
-
-function getSnapshot(): BoardLocal {
-  if (!cache) cache = load();
-  return cache;
-}
-
-function getServerSnapshot(): BoardLocal {
-  return EMPTY;
-}
-
-function subscribe(cb: () => void) {
-  listeners.add(cb);
-  return () => listeners.delete(cb);
-}
-
-function write(next: BoardLocal) {
-  cache = next;
-  try {
-    window.localStorage.setItem(KEY, JSON.stringify(next));
-  } catch {
-    // storage full or blocked: keep the in-memory copy for this session
-  }
-  listeners.forEach((l) => l());
-}
 
 export interface BoardItem {
   post: BoardPost;
-  /** What this rider did to it, if anything. */
   action: PostAction | null;
-  /** Effective status after local actions. */
   status: "open" | "claimed";
-  /** True for posts created during this session, used for the pin-drop entrance. */
   fresh: boolean;
+  server?: BountyPost;
+  pending?: boolean;
 }
-
-const freshIds = new Set<string>();
-
-export function useBoard() {
-  const local = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
-
-  const items: BoardItem[] = useMemo(() => {
-    const all = [...local.myPosts, ...PLACEHOLDER_BOARD];
-    return all.map((post) => {
-      const action = local.actions[post.id] ?? null;
-      const status = post.status === "claimed" || action === "took" || action === "claimed" ? "claimed" : "open";
-      return { post, action, status, fresh: freshIds.has(post.id) };
-    });
-  }, [local]);
-
-  /** Tokens locked in this rider's own open bounties and trade sweeteners. */
-  const escrow = useMemo(
-    () => local.myPosts.filter((p) => p.kind !== "offer").reduce((sum, p) => sum + p.reward, 0),
-    [local.myPosts],
-  );
-
-  const addPost = useCallback((post: BoardPost) => {
-    freshIds.add(post.id);
-    const cur = getSnapshot();
-    write({ ...cur, myPosts: [post, ...cur.myPosts] });
+function mapPost(post: BountyPost, riderId: string | null): BoardPost {
+  return { id: post.id, kind: post.kind, title: post.title, body: post.body, reward: post.rewardTokens, author: { handle: post.authorName, team: post.teamRouteId }, have: post.have, want: post.want, station: post.station, status: post.status === "open" ? "open" : "claimed", interested: 0, createdAt: Date.parse(post.createdAt), mine: post.authorId === riderId };
+}
+async function response<T>(res: Response): Promise<T> {
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error?.message ?? "The board could not be updated. Try again.");
+  return data;
+}
+export function useBoard(riderId: string | null) {
+  const [posts, setPosts] = useState<BountyPost[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState<string | null>(null);
+  const actor = useRef(riderId);
+  useEffect(() => { actor.current = riderId; }, [riderId]);
+  const generation = useRef(0);
+  const mounted = useRef(false);
+  const [fresh, setFresh] = useState<Set<string>>(() => new Set());
+  const mutation = useRef(false);
+  const refresh = useCallback(async () => {
+    const request = ++generation.current;
+    try {
+      const data = await (USE_MOCKS ? Promise.resolve(bountiesFixture) : fetch("/api/bounties", { cache: "no-store" }).then(response<BountiesResponse>));
+      if (mounted.current && request === generation.current) { setPosts(data.posts); setError(null); }
+    } catch (err) {
+      if (mounted.current && request === generation.current) setError(err instanceof Error ? err.message : "The board is unavailable.");
+    } finally { if (mounted.current && request === generation.current) setLoading(false); }
   }, []);
-
-  const removePost = useCallback((id: string) => {
-    const cur = getSnapshot();
-    write({ ...cur, myPosts: cur.myPosts.filter((p) => p.id !== id) });
-  }, []);
-
-  const setAction = useCallback((id: string, action: PostAction | null) => {
-    const cur = getSnapshot();
-    const actions = { ...cur.actions };
-    if (action) actions[id] = action;
-    else delete actions[id];
-    write({ ...cur, actions });
-  }, []);
-
-  return { items, escrow, addPost, removePost, setAction };
+  useEffect(() => {
+    mounted.current = true;
+    const initial = window.setTimeout(() => { void refresh(); }, 0);
+    const timer = window.setInterval(() => { if (!mutation.current) void refresh(); }, 8000);
+    return () => { mounted.current = false; window.clearTimeout(initial); window.clearInterval(timer); };
+  }, [refresh]);
+  const mutate = useCallback(async (path: string, body: unknown): Promise<BountyMutationResponse> => {
+    if (!riderId) throw new Error("Join a line before using the board.");
+    if (USE_MOCKS) throw new Error("This is a sample board. Turn off mock mode to post or transfer tokens.");
+    if (mutation.current) throw new Error("Wait for the current board update to finish.");
+    mutation.current = true; generation.current++;
+    setBusy(path === "/api/bounties" ? "new" : path.split("/").at(-1)!);
+    try {
+      const result = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(body) }).then(response<BountyMutationResponse>);
+      if (mounted.current && actor.current === riderId) {
+        setFresh(current => new Set(current).add(result.post.id));
+        setPosts(current => [result.post, ...current.filter(p => p.id !== result.post.id)].filter(p => p.status !== "cancelled"));
+      }
+      return result;
+    } finally {
+      mutation.current = false;
+      if (mounted.current) { setBusy(null); void refresh(); }
+    }
+  }, [riderId, refresh]);
+  const create = useCallback((post: BoardPost, requestId: string) => {
+    const input: CreateBountyRequest = { riderId: riderId!, requestId, kind: post.kind, title: post.title, body: post.body, rewardTokens: post.reward, have: post.have, want: post.want, station: post.station };
+    return mutate("/api/bounties", input);
+  }, [mutate, riderId]);
+  const act = useCallback((id: string, action: BountyAction) => mutate(`/api/bounties/${encodeURIComponent(id)}`, { riderId, action }), [mutate, riderId]);
+  const items = useMemo<BoardItem[]>(() => posts.map(server => {
+    const mine = server.claimantId === riderId;
+    const action = mine && server.status === "reserved" ? server.kind === "bounty" ? "took" : server.kind === "trade" ? "offered" : "claimed" : null;
+    return { post: mapPost(server, riderId), server, action, status: server.status === "open" ? "open" : "claimed", fresh: fresh.has(server.id), pending: busy === server.id };
+  }), [posts, riderId, busy, fresh]);
+  const escrow = posts.filter(p => (p.status === "open" || p.status === "reserved") && (p.kind === "offer" ? p.status === "reserved" && p.claimantId === riderId : p.authorId === riderId)).reduce((sum, p) => sum + p.rewardTokens, 0);
+  return { items, escrow, loading, error, busy, refresh, create, act, mock: USE_MOCKS };
 }

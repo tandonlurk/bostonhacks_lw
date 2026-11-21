@@ -27,7 +27,7 @@ async function fetchChallenges(riderId: string | null): Promise<ChallengesRespon
   return null;
 }
 
-/** `enabled` should be true only while a delay is active, so we don't poll for nothing. */
+/** Standing side quests remain available even when there is no delay. */
 export function useChallenges(riderId: string | null, enabled: boolean) {
   const [state, setState] = useState<ChallengesState>(
     USE_MOCKS ? { data: challengesFixture, available: true } : { data: null, available: false },
@@ -59,7 +59,7 @@ export function useChallenges(riderId: string | null, enabled: boolean) {
   }, [enabled, refresh]);
 
   const live = enabled && state.available && !!state.data?.active && (state.data?.challenges.length ?? 0) > 0;
-  return { data: live ? state.data : null, refresh };
+  return { data: live ? state.data : null, sideQuests: state.data?.sideQuests ?? [], refresh };
 }
 
 export async function submitChallenge(riderId: string, challengeId: string, imageBase64: string): Promise<ChallengeSubmitResponse> {

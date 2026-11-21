@@ -15,11 +15,12 @@ interface Props {
   now: number | null;
   rider: Rider | null;
   onPrimary: (item: BoardItem) => void;
+  onCancel: (item: BoardItem) => void;
   onCompose: () => void;
   onNeedJoin: () => void;
 }
 
-export function BoardView({ items, now, rider, onPrimary, onCompose, onNeedJoin }: Props) {
+export function BoardView({ items, now, rider, onPrimary, onCancel, onCompose, onNeedJoin }: Props) {
   const [kind, setKind] = useState<KindFilter>("all");
   const [myLine, setMyLine] = useState(false);
   const team = rider?.homeTeamRouteId ?? null;
@@ -97,7 +98,7 @@ export function BoardView({ items, now, rider, onPrimary, onCompose, onNeedJoin 
       {shown.length ? (
         <div className={s.board}>
           {shown.map((item) => (
-            <BountyNotice key={item.post.id} item={item} now={now} onPrimary={onPrimary} />
+            <BountyNotice key={item.post.id} item={item} now={now} onPrimary={onPrimary} onCancel={onCancel} />
           ))}
           <p style={{ textAlign: "center", fontSize: 12.5, color: "var(--muted)", padding: "4px 0 8px" }}>
             That&apos;s the whole board. Got something to post?

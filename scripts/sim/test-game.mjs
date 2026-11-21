@@ -5,7 +5,7 @@ import path from 'node:path';
 import {fileURLToPath} from 'node:url';
 import {spawnSync} from 'node:child_process';
 const root=fileURLToPath(new URL('../../',import.meta.url));
-const lanes=['points','districts','hunts','landmarks','perks','tokens','sim'];
+const lanes=['points','districts','hunts','landmarks','perks','tokens','sim','bounties'];
 function find(dir){
  if(!fs.existsSync(dir))return [];
  return fs.readdirSync(dir,{withFileTypes:true}).flatMap(entry=>entry.isDirectory()?find(path.join(dir,entry.name)):entry.name.endsWith('.spec.mjs')?[path.join(dir,entry.name)]:[]);

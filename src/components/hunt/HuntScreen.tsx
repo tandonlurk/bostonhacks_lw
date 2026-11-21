@@ -1,6 +1,11 @@
 "use client";
 
 import { useCallback, useMemo, useState, useSyncExternalStore } from "react";
+import type { Hotspot } from "@/contracts";
+import { SideQuestCard } from "@/components/SideQuestCard";
+import { Sheet } from "@/components/ui/Sheet";
+import { HotspotPanel } from "./HotspotPanel";
+import { useStationGames } from "./useStationGames";
 import type { TeamRouteId } from "@/contracts/routes";
 import { useDelay } from "@/hooks/useDelay";
 import { useHeatmap } from "@/hooks/useHeatmap";
@@ -50,11 +55,17 @@ export function HuntScreen() {
 
   const delayKey = delay.active && !forceClear ? delay.teamRouteIds.join(",") : "";
   const delayedTeams = useMemo(() => (delayKey ? (delayKey.split(",") as TeamRouteId[]) : NO_TEAMS), [delayKey]);
-  const { data: challenges, refresh: refreshChallenges } = useChallenges(riderId, delayedTeams.length > 0);
-  const challengeMax = challenges ? Math.max(...challenges.challenges.map((c) => c.points)) : null;
+  const { data: challenges, sideQuests, refresh: refreshChallenges } = useChallenges(riderId, true);
+  const {data: stationCatalog, error: catalogError, refresh: refreshGames} = useStationGames();
+  const [hotspots,setHotspots] = useState<Hotspot[]>([]);
+  const [route,setRoute] = useState<Hotspot|null>(null);
+  const [questsOpen,setQuestsOpen] = useState(false);
+  const challengeMax = challenges?.challenges.length ? Math.max(...challenges.challenges.map((c) => c.points)) : null;
   const games = useMemo(
-    () => withChallenges(placeholderGameMap(delayedTeams, landmarks), challengeMax),
-    [delayedTeams, landmarks, challengeMax],
+    () => stationCatalog && !forceClear
+      ? new Map(stationCatalog.map(s => [s.stopId,{stopId:s.stopId,live:s.delayed,games:s.games}]))
+      : withChallenges(placeholderGameMap(delayedTeams, landmarks), challengeMax),
+    [stationCatalog, forceClear, delayedTeams, landmarks, challengeMax],
   );
 
   const heat = useMemo(() => {
@@ -95,7 +106,8 @@ export function HuntScreen() {
     refreshTokens();
     refreshLandmarks();
     refreshChallenges();
-  }, [refreshTokens, refreshLandmarks, refreshChallenges]);
+    refreshGames();
+  }, [refreshTokens, refreshLandmarks, refreshChallenges, refreshGames]);
 
   const balance = tokens?.balance ?? null;
   const bannerPx = delay.active ? 64 : 0;
@@ -107,7 +119,9 @@ export function HuntScreen() {
         heat={heat}
         games={games}
         vehicles={vehicleData?.vehicles ?? []}
-        selectedId={selected}
+        hotspots={hotspots}
+        hotspotRoute={route}
+        selectedId={selected ?? route?.stationId ?? null}
         onSelect={select}
         insetTop={HEADER_SPACE + bannerPx}
         insetBottom={BOTTOM_SPACE}
@@ -120,6 +134,15 @@ export function HuntScreen() {
         legendOpen={legendOpen}
         onToggleLegend={() => setLegendOpen((o) => !o)}
       />
+      <div style={{position:"absolute",left:16,top:"calc(env(safe-area-inset-top, 0px) + var(--banner-space) + 96px)",zIndex:12,display:"flex",gap:8,flexWrap:"wrap",maxWidth:"calc(100% - 80px)"}}>
+        <HotspotPanel riderId={riderId} onHotspots={setHotspots} onEarned={earned} onSelect={hotspot=>{setRoute(hotspot);close();}} />
+        <button type="button" onClick={()=>setQuestsOpen(true)} style={{minHeight:48,padding:"10px 14px",borderRadius:999,border:"1px solid var(--glass-border)",background:"var(--surface)",fontSize:14,fontWeight:750}}>Daily quest · +25</button>
+      </div>
+      {catalogError && <p role="status" style={{position:"absolute",left:16,top:"calc(var(--banner-space) + 154px)",fontSize:12,color:"var(--muted)"}}>Game catalog offline · showing previews</p>}
+      {route && <div className="glass" style={{position:"absolute",left:16,right:16,bottom:"calc(var(--nav-clearance) + 162px)",padding:"12px 14px",borderRadius:18,display:"flex",gap:12,alignItems:"center",zIndex:10}}><div style={{flex:1,minWidth:0}}><p style={{fontSize:14,fontWeight:750,color:"var(--accent)"}}>Your alternate route</p><p style={{fontSize:14,marginTop:4}}>{route.reason}</p></div><button type="button" aria-label="Clear alternate route" onClick={()=>setRoute(null)} style={{minWidth:44,minHeight:44,border:0,borderRadius:99,background:"var(--surface-2)",fontSize:24}}>×</button></div>}
+      <Sheet open={questsOpen} onClose={()=>setQuestsOpen(false)} title="A little extra for your team">
+        {sideQuests.length ? sideQuests.map(quest=><SideQuestCard key={quest.id} quest={quest} homeTeam={rider?.homeTeamRouteId}/>) : <p style={{fontSize:16,lineHeight:1.6}}>Ride the Silver Line for three verified minutes in one ride to earn +25 points for your home team. Progress appears here when the quest service is available.</p>}
+      </Sheet>
       {legendOpen ? <Legend heatAvailable={!!heatData?.available} /> : null}
 
       <GameStrip live={delayedTeams.length > 0} stations={stripStations} heat={heat} onPick={select} />

@@ -18,6 +18,7 @@ interface NoticeProps {
   /** Preview mode for the composer: no action button, no tilt. */
   preview?: boolean;
   onPrimary?: (item: BoardItem) => void;
+  onCancel?: (item: BoardItem) => void;
 }
 
 function KindIcon({ kind }: { kind: BoardPost["kind"] }) {
@@ -43,23 +44,26 @@ function Seal({ post }: { post: BoardPost }) {
 }
 
 function primaryLabel(item: BoardItem): { text: string; done: boolean; disabled: boolean } {
-  const { post, action, status } = item;
-  if (post.mine) return { text: "Take it down", done: true, disabled: false };
-  if (action === "took") return { text: "Taken. Tap to drop it", done: true, disabled: false };
-  if (action === "offered") return { text: "Offer sent. Tap to cancel", done: true, disabled: false };
-  if (action === "claimed") return { text: "Claimed. Tap to undo", done: true, disabled: false };
-  if (status === "claimed") return { text: "Already claimed", done: true, disabled: true };
+  const { post, action, server } = item;
+  if (item.pending) return { text: "Updating…", done: true, disabled: true };
+  if (server?.status === "completed") return { text: "Delivery complete", done: true, disabled: true };
+  if (server?.status === "cancelled") return { text: "Taken down", done: true, disabled: true };
+  if (post.mine && server?.status === "reserved") return { text: post.kind === "offer" ? "Confirm delivery · collect payment" : `Confirm delivery · pay ${post.reward}`, done: false, disabled: false };
+  if (post.mine) return { text: post.kind === "offer" ? "Take down" : "Take down & refund", done: true, disabled: false };
+  if (action) return { text: post.kind === "offer" ? "Release & refund payment" : "Release reservation", done: true, disabled: false };
+  if (server?.status === "reserved" || item.status === "claimed") return { text: "Reserved by another rider", done: true, disabled: true };
   if (post.kind === "bounty") return { text: "Take bounty", done: false, disabled: false };
-  if (post.kind === "trade") return { text: "Offer trade", done: false, disabled: false };
-  return { text: post.reward > 0 ? `Claim for ${post.reward}` : "Claim", done: false, disabled: false };
+  if (post.kind === "trade") return { text: "Arrange trade", done: false, disabled: false };
+  return { text: post.reward > 0 ? `Reserve for ${post.reward}` : "Reserve offer", done: false, disabled: false };
 }
 
-export function BountyNotice({ item, now, preview, onPrimary }: NoticeProps) {
+export function BountyNotice({ item, now, preview, onPrimary, onCancel }: NoticeProps) {
   const { post, status, action } = item;
   const ink = KIND_INK[post.kind];
   const tilt = preview ? 0 : tiltFor(post.id);
   const label = primaryLabel(item);
-  const byYou = action === "took" || action === "claimed";
+  const byYou = !!action;
+  const completed = item.server?.status === "completed";
 
   return (
     <article
@@ -196,12 +200,16 @@ export function BountyNotice({ item, now, preview, onPrimary }: NoticeProps) {
             </p>
           </div>
           {status === "claimed" ? (
-            <Stamp key={`c-${action ?? "x"}`} label={byYou ? "Yours" : "Claimed"} color={STAMP_RED} size={15} rot={-9} slam={byYou} />
+            <Stamp key={`c-${action ?? "x"}`} label={completed ? "Delivered" : byYou ? "Yours" : "Reserved"} color={STAMP_RED} size={15} rot={-9} slam={byYou} />
           ) : (
             <Stamp key="open" label={action === "offered" ? "Pending" : "Open"} color={action === "offered" ? KIND_INK.trade : STAMP_GREEN} rot={6} slam={action === "offered"} />
           )}
         </div>
 
+        {!preview && item.server?.status === "reserved" ? <p style={{ fontSize: 14, lineHeight: 1.5, color: PAPER_MUTED, marginTop: 12 }}>
+          Reserved by <strong>{item.server.claimantName}</strong>. {post.mine ? "Confirm only after delivery; this transfers the held tokens." : byYou ? "Arrange delivery with the author, who confirms the transfer." : "This task is already being handled."}
+        </p> : null}
+        {!preview && completed ? <p style={{ fontSize: 14, lineHeight: 1.5, color: PAPER_MUTED, marginTop: 12 }}>Delivery confirmed. {post.reward} CitiTokens transferred.</p> : null}
         {!preview ? (
           <button
             type="button"
@@ -221,6 +229,7 @@ export function BountyNotice({ item, now, preview, onPrimary }: NoticeProps) {
             {!label.done && post.kind !== "trade" && post.reward > 0 ? <Coin size={20} /> : null}
           </button>
         ) : null}
+        {!preview && post.mine && item.server?.status === "reserved" ? <button type="button" disabled={item.pending} onClick={() => onCancel?.(item)} style={{ width: "100%", minHeight: 44, marginTop: 8, border: `1px solid ${PAPER_MUTED}66`, borderRadius: 10, background: "transparent", color: PAPER_INK, fontSize: 14, fontWeight: 700 }}>Cancel reservation & refund</button> : null}
       </div>
     </article>
   );

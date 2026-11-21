@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { CrewBonus, ManualRideHint, NearStation, RideSampleResponse, RideState, StartRideResponse } from "@/contracts";
+import type { CrewBonus, ManualRideHint, NearStation, RideSampleResponse, RideState, SideQuest, StartRideResponse } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import {
   rideSampleCrewFixture,
@@ -69,6 +69,8 @@ interface RideSessionState {
   pointsAwarded: number | null;
   /** #96: teammates on the same train, null when riding solo. */
   crew: CrewBonus | null;
+  /** Daily Silver Line quest, supplied only while this ride is on Silver. */
+  sideQuest: SideQuest | null;
   originStationId: string | null;
   /** Station the start gate matched, when /api/rides/start is available. */
   startStation: NearStation | null;
@@ -88,6 +90,7 @@ const IDLE: RideSessionState = {
   minutesRidden: null,
   pointsAwarded: null,
   crew: null,
+  sideQuest: null,
   originStationId: null,
   startStation: null,
   lastResult: null,
@@ -123,6 +126,7 @@ export function useRideSession(riderId: string | null) {
       minutesRidden: res.minutesRidden ?? prev.minutesRidden,
       pointsAwarded: res.pointsAwarded ?? prev.pointsAwarded,
       crew: res.crew === undefined ? prev.crew : res.crew,
+      sideQuest: res.sideQuest ?? null,
       originStationId: res.originStationId ?? prev.originStationId,
       error: null,
     }));

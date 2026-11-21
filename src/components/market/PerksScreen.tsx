@@ -1,13 +1,13 @@
 "use client";
 
 import { useCallback, useMemo, useState } from "react";
-import type { Perk, RedeemPerkResponse } from "@/contracts";
+import type { BountyAction, Perk, RedeemPerkResponse } from "@/contracts";
 import { riderFixture } from "@/contracts/fixtures";
 import { useRider } from "@/hooks/useRider";
 import { useTokens } from "@/hooks/useTokens";
 import { usePerks } from "@/hooks/usePerks";
 import { Sheet } from "@/components/ui/Sheet";
-import { BountyIcon, CheckIcon, CloseIcon, PerkIcon, PlusIcon, TradeIcon } from "@/components/icons";
+import { BountyIcon, CheckIcon, PerkIcon, PlusIcon } from "@/components/icons";
 import { useBoard, type BoardItem } from "./boardStore";
 import type { BoardPost } from "./types";
 import { CoinCounter } from "./CoinCounter";
@@ -31,7 +31,7 @@ export function PerksScreen() {
 
   const { data: tokens, refresh: refreshTokens } = useTokens(riderId);
   const { data: perks, loading: perksLoading, refresh: refreshPerks } = usePerks();
-  const board = useBoard();
+  const board = useBoard(riderId);
   const now = useNow();
   const { toast, show } = useToast();
 
@@ -51,11 +51,9 @@ export function PerksScreen() {
     return perks.map((p) => (taken[p.id] ? { ...p, remaining: Math.max(0, p.remaining - taken[p.id]) } : p));
   }, [perks, stockAdjust]);
 
-  const offerSpend = board.items
-    .filter((i) => i.action === "claimed" && i.post.kind === "offer")
-    .reduce((sum, i) => sum + i.post.reward, 0);
-  const held = board.escrow + offerSpend;
-  const available = Math.max(0, (balance ?? 0) - held);
+  // Escrow is already debited by the server. The wallet balance is what can be spent.
+  const held = board.escrow;
+  const available = Math.max(0, balance ?? 0);
 
   const [composerOpen, setComposerOpen] = useState(false);
   const [redeeming, setRedeeming] = useState<Perk | null>(null);
@@ -65,59 +63,27 @@ export function PerksScreen() {
     [show],
   );
 
-  const onPrimary = useCallback(
-    (item: BoardItem) => {
-      const { post, action } = item;
-      if (!rider) return promptJoin(post.kind === "bounty" ? "take bounties" : post.kind === "trade" ? "trade" : "claim offers");
-      if (post.mine) {
-        board.removePost(post.id);
-        const back = post.kind === "offer" ? 0 : post.reward;
-        return show({ text: back ? `Taken down. ${back} tokens back in your pocket.` : "Taken down.", icon: <CloseIcon size={20} /> });
-      }
-      if (action) {
-        board.setAction(post.id, null);
-        const what = action === "took" ? "Bounty dropped" : action === "offered" ? "Trade offer cancelled" : "Claim undone";
-        return show({ text: `${what}.`, tone: "plain" });
-      }
-      if (item.status === "claimed") return;
-      if (post.kind === "bounty") {
-        board.setAction(post.id, "took");
-        return show({
-          text: `It's yours. Deliver to earn ${post.reward} tokens.`,
-          tone: "accent",
-          icon: <BountyIcon size={22} />,
-        });
-      }
-      if (post.kind === "trade") {
-        board.setAction(post.id, "offered");
-        return show({ text: `Offer sent to @${post.author.handle}.`, tone: "accent", icon: <TradeIcon size={22} /> });
-      }
-      if (post.reward > available) {
-        return show({ text: `You need ${post.reward - available} more tokens for that.`, tone: "hot" });
-      }
-      board.setAction(post.id, "claimed");
-      show({
-        text: post.reward ? `Claimed for ${post.reward} tokens. @${post.author.handle} will find you.` : `Claimed. @${post.author.handle} will find you.`,
-        tone: "accent",
-        icon: <CheckIcon size={22} />,
-      });
-    },
-    [rider, board, show, promptJoin, available],
-  );
-
-  const onPost = useCallback(
-    (post: BoardPost) => {
-      board.addPost(post);
-      setComposerOpen(false);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-      show({
-        text: post.kind === "offer" || post.reward === 0 ? "Pinned to the board." : `Pinned. ${post.reward} tokens held for the winner.`,
-        tone: "accent",
-        icon: <CheckIcon size={22} />,
-      });
-    },
-    [board, show],
-  );
+  const updateBoard = async (item: BoardItem, action: BountyAction) => {
+    if (!rider) return promptJoin("use the board");
+    try {
+      const res = await board.act(item.post.id, action);
+      setBalanceOverride({ src: tokens, value: res.tokensLeft });
+      refreshTokens();
+      show({ text: action === "complete" ? "Delivery confirmed. Tokens transferred." : action === "cancel" ? "Post taken down. Held tokens refunded." : action === "release" ? "Reservation released. Any held payment was refunded." : "Reserved. Arrange delivery, then the author confirms it.", tone: "accent", icon: <CheckIcon size={20} /> });
+    } catch (err) { show({ text: err instanceof Error ? err.message : "That update did not go through.", tone: "hot" }); }
+  };
+  const onPrimary = (item: BoardItem) => {
+    const action: BountyAction = item.post.mine ? item.server?.status === "reserved" ? "complete" : "cancel" : item.action ? "release" : "claim";
+    void updateBoard(item, action);
+  };
+  const onPost = async (post: BoardPost, requestId: string) => {
+    const res = await board.create(post, requestId);
+    setBalanceOverride({ src: tokens, value: res.tokensLeft });
+    refreshTokens();
+    setComposerOpen(false);
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    show({ text: post.kind === "offer" || post.reward === 0 ? "Pinned to the shared board." : `Pinned. ${post.reward} tokens held until delivery or cancellation.`, tone: "accent", icon: <CheckIcon size={22} /> });
+  };
 
   const onRedeemed = useCallback(
     (res: RedeemPerkResponse, perkId: string) => {
@@ -159,7 +125,14 @@ export function PerksScreen() {
       </header>
 
       {tab === "board" ? (
-        <BoardView items={board.items} now={now} rider={rider} onPrimary={onPrimary} onCompose={() => setComposerOpen(true)} onNeedJoin={() => promptJoin("filter by your line")} />
+        <>
+          <div style={{ margin: "0 16px 16px", padding: "12px 14px", borderRadius: 16, background: "var(--surface-2)", color: "var(--muted)", fontSize: 14, lineHeight: 1.5 }}>
+            {board.mock ? "Sample board · actions do not transfer tokens in mock mode." : "A board for your fellow riders. Tokens are held safely until the author confirms delivery. Trades arrange items between riders; only CitiTokens transfer here."}
+          </div>
+          {board.loading ? <p role="status" style={{ padding: 16 }}>Loading the board…</p> : null}
+          {board.error ? <div role="alert" style={{ padding: 16, color: "var(--hot)" }}>{board.error}<button type="button" onClick={() => void board.refresh()} style={{ display: "block", minHeight: 44, background: "transparent", border: "none", textDecoration: "underline" }}>Try again</button></div> : null}
+          {!board.loading && !board.error ? <BoardView items={board.items} now={now} rider={rider} onPrimary={onPrimary} onCancel={(item) => void updateBoard(item, "cancel")} onCompose={() => setComposerOpen(true)} onNeedJoin={() => promptJoin("filter by your line")} /> : null}
+        </>
       ) : (
         <CatalogView perks={catalog} loading={perksLoading} balance={balance} joined={!!rider} now={now} onOpen={setRedeeming} />
       )}
