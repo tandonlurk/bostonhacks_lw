@@ -1,9 +1,13 @@
 "use client";
 
-// Device-local profile bits for the Me screen (avatar, interests, bio). They live in localStorage only:
-// there is no profile endpoint yet. Optional backend sync is requested in issue #94.
+// Device-local profile bits for the Me screen (avatar, interests, bio). localStorage is the source of truth on
+// this device; avatar + interests are also pushed to A's PATCH /api/riders/:id (#94/#98, interests drive hotspot
+// matching) in the background. Push failures (endpoint not deployed, offline) are ignored on purpose.
 // Every read/write is wrapped in try/catch (private windows, quota errors, blocked storage).
-import { useCallback, useMemo, useSyncExternalStore } from "react";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import type { Rider, UpdateRiderRequest } from "@/contracts";
+import { USE_MOCKS } from "./useMocks";
+import { RIDER_ID_KEY } from "./useRider";
 
 export const AVATAR_KEY = "tcity.avatar";
 export const INTERESTS_KEY = "tcity.interests";
@@ -41,6 +45,18 @@ function write(key: string, value: string | null): boolean {
   return ok;
 }
 
+/** Fire-and-forget sync of profile fields to the rider record. */
+function pushToServer(patch: UpdateRiderRequest) {
+  if (USE_MOCKS) return;
+  const riderId = read(RIDER_ID_KEY);
+  if (!riderId) return;
+  fetch(`/api/riders/${encodeURIComponent(riderId)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(patch),
+  }).catch(() => {});
+}
+
 /** Reactive localStorage string. Server render and first client render both see `null`. */
 function useProfileString(key: string) {
   const value = useSyncExternalStore(
@@ -54,7 +70,16 @@ function useProfileString(key: string) {
 
 /** Profile picture as a ~256px JPEG data URL, or null for the illustrated default. */
 export function useProfileAvatar() {
-  return useProfileString(AVATAR_KEY);
+  const [value, setLocal] = useProfileString(AVATAR_KEY);
+  const set = useCallback(
+    (next: string | null) => {
+      const ok = setLocal(next);
+      pushToServer({ avatarDataUrl: next });
+      return ok;
+    },
+    [setLocal],
+  );
+  return [value, set] as const;
 }
 
 export function useProfileBio() {
@@ -73,6 +98,25 @@ export function useProfileInterests() {
       return [];
     }
   }, [raw]);
-  const setInterests = useCallback((next: string[]) => setRaw(JSON.stringify(next)), [setRaw]);
+  const setInterests = useCallback(
+    (next: string[]) => {
+      const ok = setRaw(JSON.stringify(next));
+      pushToServer({ interests: next });
+      return ok;
+    },
+    [setRaw],
+  );
   return [interests, setInterests] as const;
+}
+
+/**
+ * New device / cleared storage: seed local avatar + interests from the rider record when the server has them.
+ * Never overwrites values already on this device.
+ */
+export function useSeedProfileFromRider(rider: Rider | null) {
+  useEffect(() => {
+    if (!rider) return;
+    if (rider.avatarDataUrl && read(AVATAR_KEY) === null) write(AVATAR_KEY, rider.avatarDataUrl);
+    if (rider.interests?.length && read(INTERESTS_KEY) === null) write(INTERESTS_KEY, JSON.stringify(rider.interests));
+  }, [rider]);
 }

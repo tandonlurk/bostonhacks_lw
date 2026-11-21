@@ -4,7 +4,7 @@ import { useCallback, useRef, useState } from "react";
 import type { Rider } from "@/contracts";
 import { useTokens } from "@/hooks/useTokens";
 import { useLandmarks } from "@/hooks/useLandmarks";
-import { useProfileBio, useProfileInterests } from "@/hooks/useProfileLocal";
+import { useProfileBio, useProfileInterests, useSeedProfileFromRider } from "@/hooks/useProfileLocal";
 import { ActivityList } from "./ActivityFeed";
 import { EditProfileSheet } from "./EditProfileSheet";
 import { EmptyHint, Highlights } from "./Highlights";
@@ -20,6 +20,7 @@ type MeSheet = "edit" | "interests" | null;
 export function MeProfile({ rider }: { rider: Rider }) {
   const tokens = useTokens(rider.riderId);
   const landmarks = useLandmarks(rider.riderId);
+  useSeedProfileFromRider(rider);
   const [interests, setInterests] = useProfileInterests();
   const [bio] = useProfileBio();
   const [sheet, setSheet] = useState<MeSheet>(null);

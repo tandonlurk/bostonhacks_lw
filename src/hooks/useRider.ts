@@ -40,11 +40,17 @@ async function createRider(displayName: string, homeTeamRouteId: TeamRouteId): P
 }
 
 export function useRider() {
-  const [state, setState] = useState<RiderState>({ rider: null, loading: !!readStoredRiderId(), error: null });
+  // Start as loading on both server and client so the first client render matches SSR (no hydration
+  // mismatch); the effect resolves it immediately when there's no stored rider.
+  const [state, setState] = useState<RiderState>({ rider: null, loading: true, error: null });
 
   useEffect(() => {
     const stored = readStoredRiderId();
-    if (!stored) return;
+    if (!stored) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- one-shot resolve after hydration
+      setState({ rider: null, loading: false, error: null });
+      return;
+    }
     let cancelled = false;
     fetchRider(stored)
       .then((rider) => {
