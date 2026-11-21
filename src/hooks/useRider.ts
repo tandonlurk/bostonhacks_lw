@@ -6,7 +6,9 @@ import type { TeamRouteId } from "@/contracts/routes";
 import { createRiderFixture, riderFixture } from "@/contracts/fixtures";
 import { USE_MOCKS } from "./useMocks";
 
-const STORAGE_KEY = "tcity.riderId";
+/** localStorage key for the joined rider's id; exported so useRideSession can clear it on rider_not_found. */
+export const RIDER_ID_KEY = "tcity.riderId";
+const STORAGE_KEY = RIDER_ID_KEY;
 
 interface RiderState {
   rider: Rider | null;

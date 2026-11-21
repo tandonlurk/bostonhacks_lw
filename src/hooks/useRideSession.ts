@@ -10,6 +10,7 @@ import {
   endRideFixture,
 } from "@/contracts/fixtures";
 import { USE_MOCKS } from "./useMocks";
+import { RIDER_ID_KEY } from "./useRider";
 
 const SAMPLE_INTERVAL_MS = 10_000;
 /** Cross-tab hint for which station to show a hunt for; read by useHunt's default stopId. */
@@ -62,6 +63,30 @@ export function useRideSession(riderId: string | null) {
     }));
   }, []);
 
+  const stop = useCallback(async () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    timerRef.current = null;
+    if (!riderId) {
+      setSession(IDLE);
+      return;
+    }
+    try {
+      const result = USE_MOCKS
+        ? endRideFixture
+        : await fetch("/api/rides/end", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ riderId }),
+          }).then(async (res) => {
+            if (!res.ok) throw new Error(`rides/end ${res.status}`);
+            return res.json();
+          });
+      setSession({ ...IDLE, lastResult: { stopsCredited: result.stopsCredited, pointsAwarded: result.pointsAwarded } });
+    } catch (err) {
+      setSession({ ...IDLE, error: err instanceof Error ? err.message : "failed to end ride" });
+    }
+  }, [riderId]);
+
   const sendSample = useCallback(
     async (lat: number, lng: number, accuracy: number, speed: number | null, manual?: ManualRideHint) => {
       if (!riderId) return;
@@ -70,6 +95,7 @@ export function useRideSession(riderId: string | null) {
           const fixture = MOCK_SEQUENCE[Math.min(sampleCountRef.current, MOCK_SEQUENCE.length - 1)];
           sampleCountRef.current += 1;
           applySample(fixture);
+          if (fixture.state === "left") await stop();
           return;
         }
         const res = await fetch("/api/rides/sample", {
@@ -85,13 +111,23 @@ export function useRideSession(riderId: string | null) {
             manual,
           }),
         });
-        if (!res.ok) throw new Error(`rides/sample ${res.status}`);
-        applySample(await res.json());
+        if (!res.ok) {
+          const body: { error?: { code?: string; message?: string } } | null = await res.json().catch(() => null);
+          if (body?.error?.code === "rider_not_found") {
+            window.localStorage.removeItem(RIDER_ID_KEY);
+            throw new Error("Your session expired. Refresh and rejoin from the Ride tab.");
+          }
+          throw new Error(body?.error?.message ?? `rides/sample ${res.status}`);
+        }
+        const result: RideSampleResponse = await res.json();
+        applySample(result);
+        // Server ends the session once the rider leaves the vehicle; stop sampling and show the summary.
+        if (result.state === "left") await stop();
       } catch (err) {
         setSession((prev) => ({ ...prev, error: err instanceof Error ? err.message : "sample failed" }));
       }
     },
-    [riderId, applySample],
+    [riderId, applySample, stop],
   );
 
   const startGeo = useCallback(() => {
@@ -132,30 +168,6 @@ export function useRideSession(riderId: string | null) {
     },
     [riderId, sendSample],
   );
-
-  const stop = useCallback(async () => {
-    if (timerRef.current) clearInterval(timerRef.current);
-    timerRef.current = null;
-    if (!riderId) {
-      setSession(IDLE);
-      return;
-    }
-    try {
-      const result = USE_MOCKS
-        ? endRideFixture
-        : await fetch("/api/rides/end", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ riderId }),
-          }).then(async (res) => {
-            if (!res.ok) throw new Error(`rides/end ${res.status}`);
-            return res.json();
-          });
-      setSession({ ...IDLE, lastResult: { stopsCredited: result.stopsCredited, pointsAwarded: result.pointsAwarded } });
-    } catch (err) {
-      setSession({ ...IDLE, error: err instanceof Error ? err.message : "failed to end ride" });
-    }
-  }, [riderId]);
 
   return { session, startGeo, startManual, stop };
 }
