@@ -12,6 +12,8 @@ import {
 import { USE_MOCKS } from "./useMocks";
 
 const SAMPLE_INTERVAL_MS = 10_000;
+/** Cross-tab hint for which station to show a hunt for; read by useHunt's default stopId. */
+export const LAST_STOP_KEY = "tcity.lastStopId";
 const MOCK_SEQUENCE = [rideSampleSearchingFixture, rideSampleSearchingFixture, rideSampleFixture, rideSampleTunnelFixture];
 
 interface RideSessionState {
@@ -44,6 +46,9 @@ export function useRideSession(riderId: string | null) {
   const sampleCountRef = useRef(0);
 
   const applySample = useCallback((res: RideSampleResponse) => {
+    if (typeof window !== "undefined" && res.nextStopId) {
+      window.localStorage.setItem(LAST_STOP_KEY, res.nextStopId);
+    }
     setSession((prev) => ({
       ...prev,
       active: true,
