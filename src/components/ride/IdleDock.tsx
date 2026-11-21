@@ -1,5 +1,7 @@
 "use client";
 
+import type { ReactNode } from "react";
+
 import type { LeaderboardTeam } from "@/contracts";
 import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { CheckIcon, PinIcon, TrophyIcon } from "@/components/icons";
@@ -59,7 +61,7 @@ function GateLine({ nearby }: { nearby: NearbyState }) {
 }
 
 /** Idle state: team standing, the big shutter Start button, start-gate status, manual fallback. */
-export function IdleDock({ team, teamStats, nearby, onStart, onPickStop }: IdleDockProps) {
+export function IdleDock({ team, teamStats, nearby, onStart, onPickStop, children }: IdleDockProps & { children?: ReactNode }) {
   return (
     <div
       className={styles.rise}
@@ -113,6 +115,7 @@ export function IdleDock({ team, teamStats, nearby, onStart, onPickStop }: IdleD
 
       <StartButton team={team} onStart={onStart} disabled={!nearby.canStart} />
       <GateLine nearby={nearby} />
+      {children}
 
       <button type="button" className={styles.textBtn} onClick={onPickStop}>
         Can&apos;t get GPS? Pick your stop

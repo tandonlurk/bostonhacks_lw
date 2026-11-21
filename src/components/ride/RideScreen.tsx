@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useVehicles } from "@/hooks/useVehicles";
 import { USE_MOCKS } from "@/hooks/useMocks";
@@ -15,6 +15,8 @@ import { JoinCard } from "./JoinCard";
 import { ManualPickSheet } from "./ManualPickSheet";
 import { useRiderPosition } from "./useRiderPosition";
 import { useNearbyStation } from "./useNearbyStation";
+import { useDemoSpot, useDemoStepper } from "./demoLocation";
+import { NextTrainTimer } from "./NextTrainTimer";
 import { previewNearby, usePreview, usePreviewContext } from "./preview";
 import { distanceM, nearestPlace } from "./geo";
 import { useHydrated, useReducedMotion } from "./util";
@@ -81,7 +83,16 @@ export function RideScreen() {
   const { data: leaderboard } = useLeaderboard();
   const { data: vehicles } = useVehicles();
   const pos = useRiderPosition({ riding: session.active, reducedMotion });
-  const nearby = previewNearby(preview, useNearbyStation(pos.snapshot, pos.gpsState === "on"));
+  const snapshotRef = useRef(pos.snapshot);
+  useEffect(() => {
+    snapshotRef.current = pos.snapshot;
+  }, [pos.snapshot]);
+  const hereForDemo = useCallback(() => snapshotRef.current, []);
+  useDemoStepper(rider?.homeTeamRouteId ?? null, hereForDemo);
+  const demoSpot = useDemoSpot();
+  // The pinned demo spot counts as a real fix, and updates immediately instead of at the 1 Hz snapshot.
+  const fixNow = demoSpot ? { lat: demoSpot.lat, lng: demoSpot.lng, heading: demoSpot.heading, accuracy: 10 } : pos.snapshot;
+  const nearby = previewNearby(preview, useNearbyStation(fixNow, pos.gpsState === "on" || demoSpot !== null));
 
   const [manualOpen, setManualOpen] = useState(false);
   const [ending, setEnding] = useState(false);
@@ -90,7 +101,7 @@ export function RideScreen() {
 
   const team = rider?.homeTeamRouteId ?? null;
   const teamStats = leaderboard?.teams.find((t) => t.teamRouteId === team) ?? null;
-  const nearest = nearestPlace(pos.snapshot);
+  const nearest = nearestPlace(fixNow);
   const showSummary = !session.active && session.lastResult !== null && session.lastResult !== dismissedResult;
 
   const phase: Phase = !hydrated || riderLoading ? "loading" : !rider ? "join" : session.active ? "live" : showSummary ? "summary" : "idle";
@@ -139,7 +150,7 @@ export function RideScreen() {
           active={session.active}
           state={session.state}
           nearestName={nearest?.name ?? null}
-          nearestDistance={nearest ? distanceM(pos.snapshot, nearest) : null}
+          nearestDistance={nearest ? distanceM(fixNow, nearest) : null}
           gpsState={pos.gpsState}
           accuracy={pos.snapshot.accuracy}
           onRequestGps={pos.requestGps}
@@ -158,7 +169,9 @@ export function RideScreen() {
       {phase === "join" ? <JoinCard onJoin={join} loading={riderLoading} error={riderError} /> : null}
 
       {phase === "idle" ? (
-        <IdleDock team={team} teamStats={teamStats} nearby={nearby} onStart={startGeo} onPickStop={() => setManualOpen(true)} />
+        <IdleDock team={team} teamStats={teamStats} nearby={nearby} onStart={startGeo} onPickStop={() => setManualOpen(true)}>
+          <NextTrainTimer stopId={nearest?.id ?? null} />
+        </IdleDock>
       ) : null}
 
       {phase === "live" ? (

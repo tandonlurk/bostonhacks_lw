@@ -13,6 +13,7 @@ import {
 } from "@/contracts/fixtures";
 import { USE_MOCKS } from "./useMocks";
 import { RIDER_ID_KEY } from "./useRider";
+import { getDemoSpot } from "@/components/ride/demoLocation";
 
 const SAMPLE_INTERVAL_MS = 10_000;
 /** Cross-tab hint for which station to show a hunt for; read by useHunt's default stopId. */
@@ -235,6 +236,19 @@ export function useRideSession(riderId: string | null) {
 
   const startGeo = useCallback(() => {
     if (!riderId) return;
+    // Hidden arrow-key demo override: sample the pinned station instead of real GPS.
+    if (getDemoSpot()) {
+      sampleCountRef.current = 0;
+      startedAtRef.current = Date.now();
+      setSession({ ...IDLE, active: true, state: "searching", message: "Checking you're at a station…", startedAt: startedAtRef.current });
+      const pinnedTick = () => {
+        const p = getDemoSpot();
+        if (p) sendSample(p.lat, p.lng, 10, null);
+      };
+      const p = getDemoSpot()!;
+      void begin(p.lat, p.lng, 10, pinnedTick);
+      return;
+    }
     if (!("geolocation" in navigator)) {
       setSession((prev) => ({ ...prev, error: "This device doesn't report location. Use the manual fallback below." }));
       return;
@@ -244,6 +258,11 @@ export function useRideSession(riderId: string | null) {
     setSession({ ...IDLE, active: true, state: "searching", message: "Checking you're at a station…", startedAt: startedAtRef.current });
 
     const tick = () => {
+      const pinned = getDemoSpot();
+      if (pinned) {
+        sendSample(pinned.lat, pinned.lng, 10, null);
+        return;
+      }
       navigator.geolocation.getCurrentPosition(
         (pos) => {
           const { latitude, longitude, accuracy, speed } = pos.coords;

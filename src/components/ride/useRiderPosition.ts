@@ -6,6 +6,7 @@
 // 1 Hz snapshot (for "Near Park Street" and the GPS badge).
 import { useCallback, useEffect, useRef, useState } from "react";
 import { USE_MOCKS } from "@/hooks/useMocks";
+import { getDemoSpot } from "./demoLocation";
 import { bearingDeg, demoAt, distanceM, type LatLng } from "./geo";
 
 export interface Fix extends LatLng {
@@ -86,6 +87,13 @@ export function useRiderPosition({ riding, reducedMotion }: { riding: boolean; r
 
   /** Called by the render loop every frame. Advances the demo drift. */
   const getFix = useCallback((now: number): Fix => {
+    // Hidden arrow-key demo override (demoLocation.ts) wins over GPS and the drift.
+    const pinned = getDemoSpot();
+    if (pinned) {
+      const fix: Fix = { lat: pinned.lat, lng: pinned.lng, heading: pinned.heading, accuracy: 10 };
+      currentRef.current = fix;
+      return fix;
+    }
     const gps = gpsFixRef.current;
     if (gps) {
       currentRef.current = gps;

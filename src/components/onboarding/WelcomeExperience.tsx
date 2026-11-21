@@ -102,28 +102,24 @@ export function WelcomeExperience() {
   return (
     <div className={styles.welcome}>
       <header className={styles.header}>
-        <p className={styles.edition}>BOSTON, ONE RIDE AT A TIME.</p>
         <div className={styles.headerActions}>
           <a href="/welcome" className={styles.logo} aria-label="T-spots home"><span className={styles.tMark}>t</span><span>t-spots</span></a>
           <button ref={startRef} className={styles.start} onClick={() => setStarted(true)}>Get started</button>
         </div>
       </header>
 
-      <div className={styles.art}><AsciiCity /><span className={styles.artCaption}>A CITY IN THE MAKING</span></div>
+      <div className={styles.art}><AsciiCity /></div>
 
       <main className={styles.hero}>
-        <p className={styles.eyebrow}><span className={styles.spark}>✳</span> A little more out of your everyday.</p>
         <h1>t-spots<span className={styles.period}>.</span></h1>
-        <p className={styles.pitch}>Your commute builds the city.<br />Delays become quests.</p>
+        <p className={styles.pitch}>A Community of Commuters</p>
         <button className={styles.heroStart} onClick={() => setStarted(true)}>Let’s make moves</button>
       </main>
 
       <footer className={styles.footer}>
-        <div className={styles.lines} aria-label="Built for the Red, Orange, Blue, Green and Silver lines">
-          {["#da291c", "#ed8b00", "#003da5", "#00843d", "#7c878e"].map(color => <span key={color} style={{ background: color }} />)}
-          <span className={styles.lineLabel}>YOUR LINE. YOUR PEOPLE. YOUR CITY.</span>
+        <div className={styles.lines} aria-label="Built for the Red, Orange, Blue and Green lines">
+          {["#da291c", "#ed8b00", "#003da5", "#00843d"].map(color => <span key={color} style={{ background: color }} />)}
         </div>
-        <p>Made for the way Boston moves.<span className={styles.demo}>Demo experience</span></p>
       </footer>
     </div>
   );

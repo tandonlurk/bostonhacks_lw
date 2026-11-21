@@ -6,12 +6,12 @@ import { TEAM_ROUTE_IDS, TEAMS, type TeamRouteId } from "@/contracts/routes";
 import styles from "./onboarding.module.css";
 
 const interests = ["Coffee stops", "Art & culture", "Food adventures", "Live music", "Hidden gems", "Outdoors", "Sports", "Campus life"];
-const steps = ["Your line", "Your interests", "Your photo", "Your location"];
+const steps = ["Your line", "Your location", "Your interests", "Your photo"];
 const artworks = [
   "      .----------.\n      |  T-SPOTS  |\n      | [ ]  [ ]  |\n      | [ ]  [ ]  |\n      |____  ____|\n       (o)----(o)\n  ==================",
+  "       .-----.\n      /   +   \\\n     |    |    |\n      \\   |   /\n       \\  |  /\n        \\ | /\n         \\|/\n     .----+----.",
   "       *     +\n    +     .     *\n       .-----.\n      /  . .  \\\n      |   v   |\n       '-----'\n    *    |    +\n       __|__",
   "       .-----.\n      /       \\\n     |  o   o  |\n     |    u    |\n      \\  ___  /\n       '-----'\n     .-'     '-.\n    /  HELLO!   \\",
-  "       .-----.\n      /   +   \\\n     |    |    |\n      \\   |   /\n       \\  |  /\n        \\ | /\n         \\|/\n     .----+----.",
 ];
 
 export function OnboardingFlow({ onClose }: { onClose: () => void }) {
@@ -36,6 +36,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
   function next(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     if (step === 0 && (!name.trim() || !team)) return;
+    if (step === 1 && location !== "granted" && location !== "demo") return;
     if (step < 3) setStep(step + 1);
   }
 
@@ -123,7 +124,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
             {selected.map((interest) => <span className={styles.summaryChip} key={interest}>{interest}</span>)}
             <span className={styles.summaryChip}>{location === "demo" ? "Simulated location" : "Location enabled"}</span>
           </div>
-          <p className={styles.storageNote}>{storageNote} The app has its own rider sign-up.</p>
+          <p className={styles.storageNote}>{storageNote}</p>
           <Link className={styles.primaryButton} href="/">Explore the app</Link>
           <button type="button" className={styles.textButton} onClick={onClose}>Back to the landing page</button>
         </div>
@@ -133,13 +134,13 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
             <div className={styles.ticket} style={{ "--line-color": team ? TEAMS[team].color : "#003DA5" } as CSSProperties}>
               <span className={styles.ticketLabel}>T-SPOTS / ALL ABOARD</span>
               <pre>{artworks[step]}</pre>
-              <span className={styles.ticketLine}>{step === 0 ? (team ? `${team.toUpperCase()} LINE` : "FIND YOUR LINE") : step === 1 ? "TAKE THE SCENIC ROUTE" : step === 2 ? "A FACE IN THE CITY" : "YOU ARE HERE"}</span>
+              <span className={styles.ticketLine}>{step === 0 ? (team ? `${team.toUpperCase()} LINE` : "FIND YOUR LINE") : step === 1 ? "YOU ARE HERE" : step === 2 ? "TAKE THE SCENIC ROUTE" : "A FACE IN THE CITY"}</span>
               <span className={styles.ticketCode}>BOSTON, MA · ONE CITY. EVERY LINE.</span>
             </div>
           </aside>
           <form className={styles.stepBody} onSubmit={next}>
-            <p className={styles.eyebrow}>{["MEET YOUR CREW", "MORE THAN YOUR COMMUTE", "MAKE IT YOURS", "A LITTLE CONTEXT GOES A LONG WAY"][step]}</p>
-            <h2 className={styles.stepTitle} ref={heading} tabIndex={-1}>{["Every line starts\nwith you.", "What’s your\nkind of detour?", "Put a face\nto your name.", "Find your place\nin the city."][step].split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}</h2>
+            <p className={styles.eyebrow}>{["MEET YOUR CREW", "A LITTLE CONTEXT GOES A LONG WAY", "MORE THAN YOUR COMMUTE", "MAKE IT YOURS"][step]}</p>
+            <h2 className={styles.stepTitle} ref={heading} tabIndex={-1}>{["Every line starts\nwith you.", "Find your place\nin the city.", "What’s your\nkind of detour?", "Put a face\nto your name."][step].split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}</h2>
             {step === 0 && <>
               <p className={styles.stepIntro}>First, a name. Then, a color to call home.</p>
               <label htmlFor="tspots-name" className={styles.fieldLabel}>What should we call you?</label>
@@ -150,12 +151,12 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
               </fieldset>
               <div className={styles.pointsNote}><strong>Your commute builds the city.</strong><p>Verified rides earn points. First daily ride: +5. Hunts: +10. Streaks: up to +10. Every 10 points earns a token.</p><p>Everyone’s points pool together to grow a district. Points go to the line you actually ride, even when it’s away from your home color.</p></div>
             </>}
-            {step === 1 && <>
+            {step === 2 && <>
               <p className={styles.stepIntro}>The best part might be a stop you haven’t tried yet. Pick a few things you love, or keep an open mind.</p>
               <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className={styles.fieldLabel}>Your interests · pick as many as you like</legend><div className={styles.interestGrid}>{interests.map((interest) => <button key={interest} type="button" aria-pressed={selected.includes(interest)} className={`${styles.interestButton} ${selected.includes(interest) ? styles.interestSelected : ""}`} onClick={() => setSelected((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest])}><span aria-hidden="true">{selected.includes(interest) ? "✓" : "+"}</span>{interest}</button>)}</div></fieldset>
               <p className={styles.storageNote}>A little inspiration for your demo profile.</p>
             </>}
-            {step === 2 && <>
+            {step === 3 && <>
               <p className={styles.stepIntro}>A photo for your rider card. Camera shy? Your initial looks pretty good, too.</p>
               <div className={styles.avatarStage}>
                 <div className={styles.avatarPreview}>{photo ? <>
@@ -170,7 +171,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
               {photoLoading && <p role="status" className={styles.locationStatus}>Opening your photo…</p>}
               {photoError && <p role="alert" className={styles.error}>{photoError}</p>}
             </>}
-            {step === 3 && <>
+            {step === 1 && <>
               <p className={styles.stepIntro}>Location is needed to verify real rides and award ride points. It also helps find nearby stops and quests.</p>
               <div className={styles.locationArt} aria-hidden="true"><span>YOU</span><span>◉</span><span>BOSTON</span></div>
               <p className={styles.storageNote}>Your browser will ask for permission when you tap below. This onboarding checks access once; your coordinates aren’t saved in the demo profile.</p>
@@ -187,7 +188,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
             </>}
             <div className={styles.flowActions}>
               <button className={styles.textButton} type="button" onClick={() => step === 0 ? onClose() : setStep(step - 1)}>Back</button>
-              {step < 3 ? <button className={styles.primaryButton} type="submit" disabled={step === 0 ? !name.trim() || !team : step === 2 && photoLoading}>{step === 2 && !photo ? "Skip for now" : "Continue"}</button> : <button className={styles.primaryButton} type="button" disabled={location !== "granted" && location !== "demo"} onClick={finish}>Let’s go</button>}
+              {step < 3 ? <button className={styles.primaryButton} type="submit" disabled={step === 0 ? !name.trim() || !team : step === 1 && location !== "granted" && location !== "demo"}>Continue</button> : <button className={styles.primaryButton} type="button" disabled={photoLoading} onClick={finish}>{photo ? "Let’s go" : "Skip and go"}</button>}
             </div>
           </form>
         </div>
