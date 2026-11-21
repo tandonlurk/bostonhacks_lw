@@ -1,7 +1,8 @@
 import type { Stop } from "@/contracts";
 import { MBTA_ROUTES, isTeamRouteId } from "@/contracts";
 import { cached } from "./cache";
-import { mbtaGet, relId } from "./client";
+import { mbtaGet } from "./client";
+import staticStops from "./static-stops.json";
 
 type StopAttrs = { name: string; latitude: number; longitude: number; location_type: number };
 
@@ -17,6 +18,25 @@ export function expandRouteIds(routeId: string): string[] {
 export async function getStops(routeId: string): Promise<Stop[]> {
   const ids = expandRouteIds(routeId);
   if (ids.length === 0) return [];
+  return liveStops(ids).catch((err) => {
+    console.warn("[mbta] stops from snapshot:", String(err));
+    const seen = new Set<string>();
+    const out: Stop[] = [];
+    for (const id of ids) {
+      for (const sid of STATIC.orders[`${id}:1`] ?? []) {
+        const st = STATIC.stations[sid];
+        if (st && !seen.has(sid)) {
+          seen.add(sid);
+          out.push({ id: sid, ...st });
+        }
+      }
+    }
+    if (!out.length) throw err;
+    return out;
+  });
+}
+
+function liveStops(ids: string[]): Promise<Stop[]> {
   return cached(`stops:${ids.join(",")}`, 6 * HOUR, async () => {
     const doc = await mbtaGet<StopAttrs>("/stops", {
       "filter[route]": ids.join(","),
@@ -40,43 +60,50 @@ export interface StopIndex {
   byId: Map<string, Stop>;
 }
 
-/** Index of all rapid-transit platforms plus Silver Line stops, for mapping vehicle stop ids. */
+// Static snapshot (scripts/snapshot-stops.mjs): used when the MBTA API is rate-limited or offline.
+const STATIC = staticStops as {
+  stations: Record<string, { name: string; lat: number; lng: number }>;
+  parentOf: Record<string, string>;
+  orders: Record<string, string[]>;
+};
+
+function staticIndex(): StopIndex {
+  const byId = new Map<string, Stop>();
+  for (const [id, s] of Object.entries(STATIC.stations)) byId.set(id, { id, ...s });
+  return { parentOf: new Map(Object.entries(STATIC.parentOf)), byId };
+}
+
+/**
+ * Index of stations, platforms and Silver Line stops for mapping vehicle stop ids. Live data,
+ * refreshed twice a day; falls back to the bundled snapshot when MBTA can't be reached.
+ */
 export async function getStopIndex(): Promise<StopIndex> {
-  return cached("stops:index", 12 * HOUR, async () => {
-    const [platforms, stations, silver, silverPlatforms] = await Promise.all([
-      mbtaGet<StopAttrs>("/stops", {
-        "filter[route_type]": "0,1",
-        "filter[location_type]": "0",
-        "fields[stop]": "name,latitude,longitude",
-      }),
-      mbtaGet<StopAttrs>("/stops", {
-        "filter[route_type]": "0,1",
-        "filter[location_type]": "1",
-        "fields[stop]": "name,latitude,longitude",
-      }),
-      mbtaGet<StopAttrs>("/stops", {
-        "filter[route]": expandRouteIds("Silver").join(","),
-        "fields[stop]": "name,latitude,longitude",
-      }),
-      mbtaGet<StopAttrs>("/stops", {
-        "filter[route]": expandRouteIds("Silver").join(","),
-        "filter[location_type]": "0",
-        "fields[stop]": "name,latitude,longitude",
-      }),
-    ]);
-    const parentOf = new Map<string, string>();
-    const byId = new Map<string, Stop>();
-    const add = (id: string, a: StopAttrs) =>
-      byId.set(id, { id, name: a.name, lat: a.latitude, lng: a.longitude });
-    for (const s of stations.data) add(s.id, s.attributes);
-    for (const s of silver.data) if (!byId.has(s.id)) add(s.id, s.attributes);
-    for (const p of [...platforms.data, ...silverPlatforms.data]) {
-      const parent = relId(p, "parent_station");
-      if (parent) parentOf.set(p.id, parent);
-      if (!byId.has(p.id)) add(p.id, p.attributes);
-    }
-    return { parentOf, byId };
-  }, 7 * 24 * HOUR);
+  try {
+    return await cached("stops:index", 12 * HOUR, async () => {
+      // filter[route] returns parent stations (filter[route_type] would only match platforms);
+      // child_stops maps every platform, including ones a route filter misses.
+      const doc = await mbtaGet<StopAttrs>("/stops", {
+        "filter[route]": MBTA_ROUTES.map((r) => r.id).join(","),
+        "fields[stop]": "name,latitude,longitude,location_type",
+        include: "child_stops",
+      });
+      const childType = new Map((doc.included ?? []).map((c) => [c.id, (c.attributes as StopAttrs).location_type]));
+      const index = staticIndex();
+      for (const s of doc.data) {
+        const a = s.attributes;
+        index.byId.set(s.id, { id: s.id, name: a.name, lat: a.latitude, lng: a.longitude });
+        const kids = s.relationships?.child_stops?.data;
+        for (const c of Array.isArray(kids) ? kids : []) {
+          const t = childType.get(c.id);
+          if (t === 0 || t === 4) index.parentOf.set(c.id, s.id);
+        }
+      }
+      return index;
+    }, 7 * 24 * HOUR);
+  } catch (err) {
+    console.warn("[mbta] stop index from snapshot:", String(err));
+    return staticIndex();
+  }
 }
 
 /** Map a vehicle's platform stop id to its parent station id when known. */
@@ -85,8 +112,10 @@ export function toStationId(index: StopIndex | null, stopId: string | null): str
   return index?.parentOf.get(stopId) ?? stopId;
 }
 
-/** Ordered station ids for one MBTA route + direction (vehicle travel order). */
+/** Ordered station ids for one MBTA route + direction (vehicle travel order). Snapshot first. */
 export async function getStopOrder(routeId: string, directionId: 0 | 1): Promise<string[]> {
+  const snap = STATIC.orders[`${routeId}:${directionId}`];
+  if (snap?.length) return snap;
   return cached(`stops:order:${routeId}:${directionId}`, 6 * HOUR, async () => {
     const doc = await mbtaGet<StopAttrs>("/stops", {
       "filter[route]": routeId,
