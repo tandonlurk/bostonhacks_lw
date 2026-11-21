@@ -1,0 +1,200 @@
+[
+  {
+    "id": "boston-common",
+    "name": "Boston Common",
+    "lat": 42.355,
+    "lng": -71.0656,
+    "stopId": "place-pktrm",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "public-garden",
+    "name": "Boston Public Garden",
+    "lat": 42.3541,
+    "lng": -71.0699,
+    "stopId": "place-armnl",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "boston-public-library",
+    "name": "Boston Public Library",
+    "lat": 42.3496,
+    "lng": -71.0776,
+    "stopId": "place-coecl",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "trinity-church",
+    "name": "Trinity Church",
+    "lat": 42.3501,
+    "lng": -71.0746,
+    "stopId": "place-coecl",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "old-south-church",
+    "name": "Old South Church",
+    "lat": 42.35,
+    "lng": -71.0777,
+    "stopId": "place-coecl",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "massachusetts-state-house",
+    "name": "Massachusetts State House",
+    "lat": 42.3584,
+    "lng": -71.064,
+    "stopId": "place-pktrm",
+    "teamRouteId": "Red",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "faneuil-hall",
+    "name": "Faneuil Hall",
+    "lat": 42.36,
+    "lng": -71.05611,
+    "stopId": "place-state",
+    "teamRouteId": "Orange",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/Faneuil_Hall"
+  },
+  {
+    "id": "quincy-market",
+    "name": "Quincy Market",
+    "lat": 42.3602,
+    "lng": -71.055,
+    "stopId": "place-state",
+    "teamRouteId": "Blue",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "old-state-house",
+    "name": "Old State House",
+    "lat": 42.3587,
+    "lng": -71.0574,
+    "stopId": "place-state",
+    "teamRouteId": "Orange",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "old-south-meeting-house",
+    "name": "Old South Meeting House",
+    "lat": 42.35694,
+    "lng": -71.05861,
+    "stopId": "place-dwnxg",
+    "teamRouteId": "Red",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/Old_South_Meeting_House"
+  },
+  {
+    "id": "kings-chapel",
+    "name": "King's Chapel",
+    "lat": 42.358,
+    "lng": -71.0604,
+    "stopId": "place-gover",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "old-city-hall",
+    "name": "Old City Hall",
+    "lat": 42.358,
+    "lng": -71.0593,
+    "stopId": "place-gover",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "paul-revere-house",
+    "name": "Paul Revere House",
+    "lat": 42.3638,
+    "lng": -71.0536,
+    "stopId": "place-haecl",
+    "teamRouteId": "Orange",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "old-north-church",
+    "name": "Old North Church",
+    "lat": 42.3665,
+    "lng": -71.0546,
+    "stopId": "place-haecl",
+    "teamRouteId": "Orange",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "long-wharf",
+    "name": "Long Wharf",
+    "lat": 42.3603,
+    "lng": -71.0487,
+    "stopId": "place-aqucl",
+    "teamRouteId": "Blue",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "african-meeting-house",
+    "name": "African Meeting House",
+    "lat": 42.3599,
+    "lng": -71.0655,
+    "stopId": "place-bomnl",
+    "teamRouteId": "Red",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/List_of_National_Historic_Landmarks_in_Boston"
+  },
+  {
+    "id": "symphony-hall",
+    "name": "Symphony Hall",
+    "lat": 42.342833,
+    "lng": -71.085694,
+    "stopId": "place-symcl",
+    "teamRouteId": "Green",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/Symphony_Hall_(Boston)"
+  },
+  {
+    "id": "new-england-aquarium",
+    "name": "New England Aquarium",
+    "lat": 42.35917,
+    "lng": -71.04944,
+    "stopId": "place-aqucl",
+    "teamRouteId": "Blue",
+    "bonusPoints": 15,
+    "claimRadiusM": 150,
+    "sourceUrl": "https://en.wikipedia.org/wiki/New_England_Aquarium"
+  }
+]

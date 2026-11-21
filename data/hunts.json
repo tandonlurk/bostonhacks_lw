@@ -1,0 +1,154 @@
+[
+  {
+    "huntId": "hunt-bucen",
+    "stopId": "place-bucen",
+    "teamRouteId": "Green",
+    "stationName": "Boston University Central",
+    "clues": [
+      {
+        "id": "bucen-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "bucen-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  },
+  {
+    "huntId": "hunt-bland",
+    "stopId": "place-bland",
+    "teamRouteId": "Green",
+    "stationName": "Blandford Street",
+    "clues": [
+      {
+        "id": "bland-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "bland-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  },
+  {
+    "huntId": "hunt-kencl",
+    "stopId": "place-kencl",
+    "teamRouteId": "Green",
+    "stationName": "Kenmore",
+    "clues": [
+      {
+        "id": "kencl-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "kencl-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  },
+  {
+    "huntId": "hunt-coecl",
+    "stopId": "place-coecl",
+    "teamRouteId": "Green",
+    "stationName": "Copley",
+    "clues": [
+      {
+        "id": "coecl-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "coecl-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  },
+  {
+    "huntId": "hunt-pktrm",
+    "stopId": "place-pktrm",
+    "teamRouteId": "Green",
+    "stationName": "Park Street",
+    "clues": [
+      {
+        "id": "pktrm-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "pktrm-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  },
+  {
+    "huntId": "hunt-harsq",
+    "stopId": "place-harsq",
+    "teamRouteId": "Red",
+    "stationName": "Harvard",
+    "clues": [
+      {
+        "id": "harsq-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "harsq-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  },
+  {
+    "huntId": "hunt-state",
+    "stopId": "place-state",
+    "teamRouteId": "Orange",
+    "stationName": "State",
+    "clues": [
+      {
+        "id": "state-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "state-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  },
+  {
+    "huntId": "hunt-aqucl",
+    "stopId": "place-aqucl",
+    "teamRouteId": "Blue",
+    "stationName": "Aquarium",
+    "clues": [
+      {
+        "id": "aqucl-name",
+        "text": "From a safe public waiting area, find the station name and read it to yourself.",
+        "verified": false
+      },
+      {
+        "id": "aqucl-direction",
+        "text": "From where you are waiting, look for passenger information about your direction of travel. Read one destination if it is available.",
+        "verified": false
+      }
+    ],
+    "verificationNote": "Draft observation prompts only. Human must confirm the exact wording and safe public location in person before enabling. Do not enter tracks, restricted areas, or cross traffic for this hunt."
+  }
+]
