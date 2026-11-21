@@ -73,6 +73,10 @@ POST /api/demo/sim { action: "start"|"stop"|"reset" } -> { running, riders }
 - `POST /api/hunts/complete` accepts `demo:` clues only while the simulator is running. The response shape is unchanged: `{ pointsAwarded, tokensAwarded, alreadyDone }`.
 - Demo path: start the sim, simulate a delay, and the hunt card shows the virtual clues. UI should label `demo:` clues as demo content.
 
+### 4b. Landmark query semantics
+
+`GET /api/landmarks` accepts optional `riderId`: when supplied, `claimed` reflects that rider's prior claims; omitted means anonymous browsing with `claimed:false`. Omitting both `lat` and `lng` returns the catalog. Supplying both filters by `radiusM` (default 800, positive and at most 10000 meters). Invalid or incomplete coordinates return 400 `invalid_location`; invalid radius returns 400 `invalid_radius`. Claims require a location within the landmark's configured geofence (150 meters in the seed catalog); otherwise return 403 `outside_geofence`. Claiming again at a valid location returns zero points and `alreadyClaimed:true`.
+
 ## 5. Mock mode
 `src/contracts/fixtures.ts` exports one realistic fixture per response above. With `NEXT_PUBLIC_USE_MOCKS=1`, C's data hooks return fixtures instead of fetching, so the UI never waits on a backend.
 
