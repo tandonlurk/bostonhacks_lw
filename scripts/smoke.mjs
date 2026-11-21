@@ -1,5 +1,5 @@
 // End-to-end smoke test of every API in docs/CONTRACTS.md. Usage: scripts/smoke.sh [baseUrl]
-// Creates one throwaway rider and briefly toggles a simulated delay on Silver (restored after).
+// Creates one throwaway rider and briefly toggles a simulated delay on Blue (restored after).
 const base = (process.argv[2] ?? "http://localhost:3001").replace(/\/$/, "");
 let failures = 0;
 const ok = (name, cond, detail = "") => {
@@ -45,15 +45,15 @@ ok("error shape (400 bad_team)", r.status === 400 && typeof r.json?.error?.code 
 r = await call("/api/delay");
 ok("GET /api/delay", typeof r.json?.active === "boolean" && isArr(r.json?.teamRouteIds), `source=${r.json?.source}`);
 
-const before = await call("/api/delay?teamRouteId=Silver");
+const before = await call("/api/delay?teamRouteId=Blue");
 if (before.json?.source !== "simulated") {
-  r = await call("/api/delay/simulate", { teamRouteId: "Silver", active: true });
+  r = await call("/api/delay/simulate", { teamRouteId: "Blue", active: true });
   ok("POST /api/delay/simulate on", r.json?.active === true && r.json?.source === "simulated");
-  r = await call("/api/delay?teamRouteId=Silver");
+  r = await call("/api/delay?teamRouteId=Blue");
   ok("GET /api/delay reflects simulate", r.json?.source === "simulated", r.json?.source === "simulated" ? "" : "different instance without a DB?");
-  r = await call("/api/delay/simulate", { teamRouteId: "Silver", active: false });
+  r = await call("/api/delay/simulate", { teamRouteId: "Blue", active: false });
   ok("POST /api/delay/simulate off", r.json?.source !== "simulated");
-} else warn("simulate", "Silver already simulated; skipped toggle");
+} else warn("simulate", "Blue already simulated; skipped toggle");
 
 r = await call("/api/riders", { displayName: "Smoke Test", homeTeamRouteId: "Green" });
 const riderId = r.json?.riderId;
@@ -61,6 +61,11 @@ ok("POST /api/riders", r.status === 201 && typeof riderId === "string");
 if (riderId) {
   r = await call(`/api/riders/${riderId}`);
   ok("GET /api/riders/:id", r.json?.displayName === "Smoke Test" && typeof r.json?.points === "number", r.status === 404 ? "404: different instance without a DB?" : "");
+  // #96: rides begin from the Start button, near a station (BU Central here).
+  r = await call("/api/rides/sample", { riderId, lat: 42.350082, lng: -71.106865, accuracy: 20, speed: 0, ts: new Date().toISOString() });
+  ok("POST /api/rides/sample before Start -> 409", r.status === 409 && r.json?.error?.code === "ride_not_started");
+  r = await call("/api/rides/start", { riderId, lat: 42.350082, lng: -71.106865, accuracy: 20 });
+  ok("POST /api/rides/start", r.json?.station?.id === "place-bucen" && r.json?.state === "searching", JSON.stringify(r.json));
   r = await call("/api/rides/sample", { riderId, lat: 42.350082, lng: -71.106865, accuracy: 20, speed: 0, ts: new Date().toISOString() });
   ok("POST /api/rides/sample", ["searching", "on_vehicle", "in_tunnel", "left"].includes(r.json?.state), r.json?.message ?? JSON.stringify(r.json));
   r = await call("/api/rides/end", { riderId });
@@ -70,9 +75,9 @@ if (riderId) {
 }
 
 r = await call("/api/leaderboard");
-ok("GET /api/leaderboard", isArr(r.json?.teams) && r.json.teams.length === 5, `${r.json?.teams?.length} teams`);
+ok("GET /api/leaderboard", isArr(r.json?.teams) && r.json.teams.length === 4, `${r.json?.teams?.length} teams`);
 r = await call("/api/districts");
-ok("GET /api/districts", isArr(r.json) && r.json.length === 5 && r.json.every((d) => isArr(d.lots)));
+ok("GET /api/districts", isArr(r.json) && r.json.length === 4 && r.json.every((d) => isArr(d.lots)));
 r = await call("/api/hunts?stopId=place-bucen");
 ok("GET /api/hunts", r.status === 200 && isArr(r.json?.clues), `status ${r.status}`);
 r = await call("/api/landmarks?lat=42.35&lng=-71.1&radiusM=800");
