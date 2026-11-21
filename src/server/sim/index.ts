@@ -89,3 +89,5 @@ export async function simulationControl(action: DemoSimAction): Promise<DemoSimR
     : [...memoryGame().riders.values()].filter(r => r.isSimulated).length;
   return { running: state.running, riders };
 }
+
+export async function isSimulationRunning(): Promise<boolean> { return (await readState()).running; }

@@ -15,6 +15,13 @@ export async function pointEvents(): Promise<PointEvent[]> {
     to_char(created_at at time zone 'UTC', 'YYYY-MM-DD"T"HH24:MI:SS.MS"Z"') as "createdAt" from point_events order by id`;
 }
 export async function awardPoints(input: AwardPointsInput): Promise<AwardPointsResult> {
+  return commitAward(input);
+}
+/** Record the domain completion in the same transaction as points and tokens. */
+export async function awardCompletion(input: AwardPointsInput, kind: "hunt" | "landmark", id: string): Promise<AwardPointsResult> {
+  return commitAward(input, { kind, id });
+}
+async function commitAward(input: AwardPointsInput, completion?: { kind: "hunt" | "landmark"; id: string }): Promise<AwardPointsResult> {
   validateAward(input);
   if (!hasDb()) {
     const state = memoryGame();
@@ -49,6 +56,10 @@ export async function awardPoints(input: AwardPointsInput): Promise<AwardPointsR
         values (${input.teamRouteId},${lot.id},${lot.tier},${lot.points},${lot.x},${lot.y},${lot.kind})
         on conflict (team_route_id,lot_id) do update set tier=excluded.tier, points=excluded.points`;
     }
+    if (completion?.kind === "hunt") await sql`insert into hunt_completions (rider_id,clue_id)
+      values (${input.riderId},${completion.id}) on conflict do nothing`;
+    if (completion?.kind === "landmark") await sql`insert into landmark_claims (rider_id,landmark_id)
+      values (${input.riderId},${completion.id}) on conflict do nothing`;
     return result;
   });
 }

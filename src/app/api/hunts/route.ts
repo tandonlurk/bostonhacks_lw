@@ -1,6 +1,8 @@
-// STUB (T01): returns fixtures until the owner replaces it.
-// Owner: B (T09). Contract: docs/CONTRACTS.md.
-import { huntFixture } from "@/contracts/fixtures";
-import { handle, json } from "@/server/http";
-
-export const GET = handle(async () => json(huntFixture));
+import { apiError, handle, json } from "@/server/http";
+import { huntFor } from "@/server/hunts";
+import { ScoringError } from "@/server/points/rules";
+export const dynamic = "force-dynamic";
+export const GET = handle(async (req: Request) => {
+  try { return json(await huntFor(new URL(req.url).searchParams.get("stopId") ?? ""), { headers: { "Cache-Control": "no-store" } }); }
+  catch (error) { if (error instanceof ScoringError) return apiError(error.status,error.code,error.message); throw error; }
+});
