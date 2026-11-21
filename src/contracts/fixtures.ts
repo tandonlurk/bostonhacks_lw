@@ -108,7 +108,7 @@ export const rideSampleFixture: RideSampleResponse = {
   teamRouteId: "Green",
   stopsCredited: 2,
   nextStopId: "place-kencl",
-  message: "On Green Line B toward Government Center. 2 stops credited.",
+  message: "On Green Line toward Government Center. 6 min, 6 pts.",
 };
 
 export const rideSampleCrewFixture: RideSampleResponse = {
@@ -118,8 +118,9 @@ export const rideSampleCrewFixture: RideSampleResponse = {
   teamRouteId: "Green",
   stopsCredited: 3,
   nextStopId: "place-hymnl",
-  message: "On Green Line B. 3 stops credited.",
-  pointsAwarded: 9,
+  message: "On Green Line. 8 min, 12 pts.",
+  minutesRidden: 8,
+  pointsAwarded: 12,
   originStationId: "place-bucen",
   crew: {
     teammates: [{ riderId: "rdr_demo_sam", displayName: "Sam" }],
@@ -274,7 +275,7 @@ export const hotspotsFixture: HotspotsResponse = {
       fromStationId: "place-bucen",
       toStationId: "place-dwnxg",
       path: ["place-bucen", "place-kencl", "place-hymnl", "place-coecl", "place-armnl", "place-boyls", "place-pktrm", "place-dwnxg"],
-      viaRouteIds: ["Green-B", "Orange"],
+      viaRouteIds: ["Green", "Orange"],
       reason: "Switch to the Orange Line at Back Bay instead of riding Green all the way to Park Street.",
       sharedInterests: ["coffee", "music"],
       sharedWith: 3,

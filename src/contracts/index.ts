@@ -153,6 +153,8 @@ export interface RideSampleRequest {
 
 export interface RideSampleResponse {
   state: RideState;
+  /** Additive (#96): whole minutes bound to a train this ride (ride points are 1 per minute). */
+  minutesRidden?: number;
   sessionId: string;
   vehicleId?: string;
   teamRouteId?: TeamRouteId;
@@ -209,7 +211,7 @@ export interface CrewMate {
 /** Teammates riding the same vehicle. The multiplier decays toward 1 the longer the crew rides. */
 export interface CrewBonus {
   teammates: CrewMate[];
-  /** current multiplier on ride_stop points, e.g. 3 -> 1 */
+  /** current multiplier on per-minute ride points, e.g. 3 -> 1 */
   multiplier: number;
   /** when the bonus reaches 1x */
   endsAt: string;
@@ -369,8 +371,8 @@ export interface Hotspot {
   toStationId: string;
   /** alternate path, station ids from origin to destination, passing through the hotspot */
   path: string[];
-  /** MBTA route ids used along the alternate path, in order */
-  viaRouteIds: string[];
+  /** lines used along the alternate path, in order (Green branches collapsed to "Green") */
+  viaRouteIds: TeamRouteId[];
   /** user-ready one-liner, e.g. "Take the Orange Line via Back Bay instead of the Green Line" */
   reason: string;
   /** interests the rider shares with others holding this hotspot */

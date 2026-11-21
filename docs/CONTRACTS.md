@@ -10,10 +10,10 @@ Ids are MBTA route ids. Each has a district.
 | Red | Red Line | #DA291C | Kendall / Harvard (innovation) |
 | Orange | Orange Line | #ED8B00 | Neighborhoods (JP, South End, Back Bay) |
 | Blue | Blue Line | #003DA5 | Harbor and Airport |
-| Green | Green Line (B/C/D/E branches mapped to `Green`) | #00843D | Fenway and Campuses |
+| Green | Green Line (B/C/D/E branches mapped to `Green`; never shown split to riders) | #00843D | Fenway and Campuses |
 | Silver | Silver Line (SL1-SL5 mapped to `Silver`) | #7C878E | Seaport |
 
-`teamRouteId` is one of `Red|Orange|Blue|Green|Silver`. Branch ids (`Green-B`) appear only inside vehicle data as `routeId`; always also provide `teamRouteId`.
+`teamRouteId` is one of `Red|Orange|Blue|Green|Silver`. Branch ids (`Green-B`, `742`) appear only inside vehicle/route data as `routeId`; always also provide `teamRouteId`. Rider-facing text and game data use line names only ("Green Line", not "Green Line B").
 
 ## 2. Read endpoints (A)
 ```
@@ -46,7 +46,7 @@ POST /api/rides/sample
 
 POST /api/rides/end { riderId } -> { sessionId, stopsCredited, pointsAwarded }
 ```
-Ride flow calls B's internal `awardPoints()` (section 6) when stops are credited. A does not implement scoring.
+Ride flow calls B's internal `awardPoints()` (section 6) for each full minute ridden. A does not implement scoring.
 
 ## 4. Game endpoints (B)
 ```
@@ -103,8 +103,8 @@ POST /api/challenges/submit { riderId, challengeId, imageBase64, mimeType } -> C
      409 no_delay when no delay is active
 ```
 - **Ride start gate.** Rides start only from the Start button, and only within `radiusM` (about 300 m plus a little for GPS error) of a station. After that, GPS decides: the ride binds to the train automatically and ends automatically when the rider gets off (`left`). A started ride that never boards expires after 20 minutes.
-- **Crew bonus.** Two or more riders on the **same team** bound to the **same vehicle** form a crew. Each gets `crew` in the sample response and a bonus on every stop credited while the crew lasts. The multiplier starts at 3x and decays linearly to 1x over 10 minutes from when the crew formed.
-- **Hotspots.** After `tripsNeeded` completed rides with an origin and a destination, the server finds the rider's most frequent trip and picks a station on a different MBTA route to the same destination. Any team can get the same hotspot. Riders with overlapping interests are steered to the same station. Two riders who bump phones (both call `/meet` within about 10 s, within about 150 m of the hotspot) or pair by code each get `meetPoints` (base 10 x 5 = 50). Once per pair per hotspot.
+- **Crew bonus.** Two or more riders on the **same team** bound to the **same vehicle** form a crew. Each gets `crew` in the sample response and a bonus on every minute ridden while the crew lasts (type `co_ride`). The multiplier starts at 3x and decays linearly to 1x over 10 minutes from when the crew formed.
+- **Hotspots.** After `tripsNeeded` completed rides with an origin and a destination, the server finds the rider's most frequent trip and picks a station on a different line to the same destination (Green branches count as one line; `viaRouteIds` are line ids like `Green`, `Orange`). Any team can get the same hotspot. Riders with overlapping interests are steered to the same station. Two riders who bump phones (both call `/meet` within about 10 s, within about 150 m of the hotspot) or pair by code each get `meetPoints` (base 10 x 5 = 50). Once per pair per hotspot.
 - **Delay photo challenges.** Solo. Open only while `GET /api/delay` is active. Prompts are generic objects, never claims about a specific station. Gemini grades each photo 0-1; a pass awards `round(points x score)`, once per challenge per delay round. Without `GEMINI_API_KEY` grading is off (`enabled:false`) unless the demo simulator is running, which uses a labeled demo grader.
 - New `PointEventType`s: `co_ride`, `hotspot_meet`, `challenge`. They are not ride types (no hourly cap) and use the caller's amount.
 
@@ -114,14 +114,14 @@ POST /api/challenges/submit { riderId, challengeId, imageBase64, mimeType } -> C
 ## 6. Scoring rules (B implements in `src/server/points/rules.ts`; tweak by issue only)
 | Event | Points |
 |---|---|
-| Each stop credited on a verified ride | 1 |
+| Each full minute on a verified ride (bound to a train, incl. underground) | 1 (type `ride_stop`, ref `<sessionId>:min:<n>`) |
 | First verified ride of the day | +5 |
 | Daily streak | +2 per day, capped at +10 |
 | Hunt clue completed | +10 |
 | Landmark claimed (once per rider) | bonus from data (default 15) |
 | CitiTokens | 1 token per 10 points earned |
 
-Points go to the district of the line ridden (`teamRouteId` of the vehicle). Lot tier thresholds (points per lot): 20 / 60 / 140 / 300 / 600. Cap: 60 ride-points per rider per hour (anti-abuse).
+Ride points are time-based (#96) so long, stop-dense lines like Green don't out-earn others; stops are still counted (`stopsCredited`) for display only. Points go to the district of the line ridden (`teamRouteId` of the vehicle). Lot tier thresholds (points per lot): 20 / 60 / 140 / 300 / 600. Cap: 60 ride-points per rider per hour (anti-abuse).
 
 Internal function (B exports, A calls): `awardPoints({ riderId, teamRouteId, type, amount, ref })` -> `{ pointsAwarded, tokensAwarded }`. Idempotent per `ref`.
 
