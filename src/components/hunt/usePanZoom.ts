@@ -3,7 +3,7 @@
 // Dependency-free pan / pinch / wheel / double-tap zoom for an SVG map.
 // The transform is written straight to a <g> each frame (no React render while dragging); React only re-renders when the
 // zoom crosses a bucket, which drives marker sizes and label level-of-detail.
-import { useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 
 export interface View {
   x: number;
@@ -40,6 +40,7 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
   const [ready, setReady] = useState(false);
   const bucket = useRef(1);
   const anim = useRef<number | null>(null);
+  const zoomCommit = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onTapRef = useRef(onTap);
 
   useEffect(() => {
@@ -68,7 +69,13 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
       const b = zoomBucket(v.k);
       if (b !== bucket.current) {
         bucket.current = b;
-        setZoom(b);
+        // Re-laying out markers/labels re-renders the whole map, so don't do it mid-gesture: commit
+        // the new zoom level once input settles. The SVG transform above stays live every frame.
+        if (zoomCommit.current) clearTimeout(zoomCommit.current);
+        zoomCommit.current = setTimeout(() => {
+          zoomCommit.current = null;
+          startTransition(() => setZoom(bucket.current));
+        }, 140);
       }
     },
     [clamp],
@@ -241,12 +248,23 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
       onTapRef.current(p.x, p.y, view.current);
     };
 
+    // Coalesce wheel/trackpad events into one transform per frame (they can fire several times a frame).
+    let wheelFactor = 1;
+    let wheelAt = { x: 0, y: 0 };
+    let wheelFrame: number | null = null;
     const wheel = (e: WheelEvent) => {
       e.preventDefault();
       stopAnim();
-      const p = local(e);
-      const scale = e.deltaMode === 1 ? 0.05 : 0.0022;
-      zoomAt(Math.exp(-e.deltaY * scale), p.x, p.y);
+      wheelAt = local(e);
+      const scale = e.deltaMode === 1 ? 0.06 : 0.0035;
+      wheelFactor *= Math.exp(-e.deltaY * scale);
+      if (wheelFrame == null)
+        wheelFrame = requestAnimationFrame(() => {
+          wheelFrame = null;
+          const f = wheelFactor;
+          wheelFactor = 1;
+          zoomAt(f, wheelAt.x, wheelAt.y);
+        });
     };
 
     svg.addEventListener("pointerdown", down);
@@ -260,6 +278,7 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
       svg.removeEventListener("pointerup", up);
       svg.removeEventListener("pointercancel", up);
       svg.removeEventListener("wheel", wheel);
+      if (wheelFrame != null) cancelAnimationFrame(wheelFrame);
       stopAnim();
     };
   }, [apply, maxK, minK, zoomAt]);

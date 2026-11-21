@@ -8,8 +8,9 @@ import { ScoringError } from "@/server/points/rules";
 import { projectDistricts } from "@/server/districts";
 
 export const TICK_MS = 5000;
+const SIM_NAMES = ["Ava", "Noah", "Mia", "Liam", "Zoe", "Eli", "Nora", "Theo", "Ivy", "Owen", "Leah", "Sam", "Ruby", "Max", "Lena", "Jack", "Iris", "Ben", "Cleo", "Finn"];
 export const SIM_RIDERS = TEAM_ROUTE_IDS.flatMap(team => Array.from({ length: 5 }, (_, i) => ({
-  riderId: `rdr_sim_${team.toLowerCase()}_${i}`, displayName: `Demo ${team} ${i + 1}`, homeTeamRouteId: team, isSimulated: true,
+  riderId: `rdr_sim_${team.toLowerCase()}_${i}`, displayName: SIM_NAMES[(TEAM_ROUTE_IDS.indexOf(team) * 5 + i) % SIM_NAMES.length], homeTeamRouteId: team, isSimulated: true,
 })));
 interface SimState { running: boolean; runId: string; startedAt: number; processedTick: number }
 const shared = globalThis as unknown as { __tcitySim?: SimState; __tcitySimAdvance?: Promise<void> };

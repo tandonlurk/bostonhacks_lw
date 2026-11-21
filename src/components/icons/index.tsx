@@ -98,6 +98,19 @@ export function MeIcon(p: IconProps) {
   );
 }
 
+/** Two people, one slightly behind: Friends. */
+export function FriendsIcon(p: IconProps) {
+  return Svg(
+    p,
+    <>
+      <path d="M9.4 4.6c2-.1 3.4 1.4 3.4 3.4-.1 1.9-1.5 3.4-3.4 3.4-1.9 0-3.4-1.5-3.3-3.4 0-1.9 1.5-3.3 3.3-3.4Z" />
+      <path d="M3.2 19.6c.3-3.3 3-5.5 6.3-5.5 3.3.1 5.8 2.3 6.1 5.6" />
+      <path d="M15.6 5.3c1.6.2 2.7 1.6 2.6 3.2-.1 1.4-1.1 2.6-2.4 2.9" />
+      <path d="M17.4 14.6c2 .6 3.3 2.4 3.5 4.9" />
+    </>,
+  );
+}
+
 /** Coin with a T stamped in it: CitiTokens. */
 export function CoinIcon(p: IconProps) {
   return Svg(

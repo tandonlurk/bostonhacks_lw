@@ -62,7 +62,7 @@ export function TriviaGame({stopId,game,onExit,riderId,onEarned}: {stopId:string
         <StarIcon size={40} style={{color:"var(--accent)"}}/>
         <h3 ref={title} tabIndex={-1} style={{fontSize:46}}>{result.correct}/{result.total}</h3>
         <p style={{fontSize:22,fontWeight:750}}>{result.correct===3?"Conductor energy.":"Another stop, a little wiser."}</p>
-        <p role="status" style={{fontSize:18,color:"var(--accent)",fontWeight:700}}>{result.pointsAwarded>0?`+${result.pointsAwarded} points · +${result.tokensAwarded} tokens`:USE_MOCKS?"Demo round · no wallet changes":result.alreadyDone?"Reward already banked today":"Practice round · no points awarded"}</p>
+        <p role="status" style={{fontSize:18,color:"var(--accent)",fontWeight:700}}>{result.pointsAwarded>0?`+${result.pointsAwarded} points · +${result.tokensAwarded} tokens`:USE_MOCKS?"Practice round":result.alreadyDone?"Reward already banked today":"Practice round · no points awarded"}</p>
       </div>
       <div style={{display:"grid",gap:10}}>{round.questions.map((question,i)=><div key={question.id} style={{padding:14,borderRadius:14,background:"var(--surface-2)",fontSize:16,lineHeight:1.4}}><p>{question.prompt}</p><p style={{color:answers[i]===result.correctAnswers[i]?"var(--glow-green)":"var(--muted)",marginTop:7}}>{answers[i]===result.correctAnswers[i]?"✓ ":"Answer: "}{result.correctAnswers[i]}</p></div>)}</div>
       <div style={{display:"flex",gap:10}}><button style={{...secondaryButton,flex:1}} type="button" onClick={onExit}>Other games</button><button style={{...primaryButton,flex:1}} type="button" disabled={busy} onClick={start}>{busy?"Preparing…":"Play again"}</button></div>

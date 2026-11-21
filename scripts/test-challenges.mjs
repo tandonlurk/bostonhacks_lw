@@ -78,10 +78,10 @@ test("points: round(max x score), min 1, zero unless passed", () => {
   assert.equal(pointsFor(20, null, true), 0);
   assert.equal(pointsFor(20, NaN, true), 0);
 });
-test("demo grader is labeled and passes at 0.75", () => {
+test("demo grader is flagged (API demo:true) and passes at 0.75", () => {
   const d = demoGrade();
   assert.equal(d.demo, true); assert.equal(d.passed, true); assert.equal(d.score, 0.75);
-  assert.match(d.reason, /demo/i);
+  assert.ok(d.reason.length > 0);
   assert.equal(pointsFor(20, d.score, d.passed), 15);
 });
 

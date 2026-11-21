@@ -102,15 +102,15 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
       localStorage.setItem("tcity.riderId", riderId);
       localStorage.setItem("tcity.interests", JSON.stringify(selected));
       if (photo) localStorage.setItem("tcity.avatar", photo);
-      setStorageNote("Demo account ready. Tap below to jump in.");
+      setStorageNote("You’re all set. Tap below to jump in.");
     } catch {
-      setStorageNote("Couldn't create the demo account. You can still join from the Ride tab.");
+      setStorageNote("Couldn't set up your account. You can still join from the Ride tab.");
     }
     setComplete(true);
   }
 
   return (
-    <section className={styles.flow} aria-label="T-spots demo onboarding">
+    <section className={styles.flow} aria-label="T-spots onboarding">
       <div className={styles.flowHeader}>
         <span className={styles.stepMeta}>{complete ? "YOUR CITY AWAITS" : `A LITTLE ABOUT YOU · ${step + 1} OF 4`}</span>
         <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Return to landing page">Close</button>
@@ -167,8 +167,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
                   <input className={styles.nameInput} aria-label="Your own interest" placeholder="Something else you love" maxLength={24} autoFocus value={otherText} onChange={(event) => setOtherText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addOther(); } }} />
                   <button type="button" className={styles.primaryButton} onClick={addOther} disabled={!otherText.trim()}>Add</button>
                 </div>}</fieldset>
-              <p className={styles.storageNote}>A little inspiration for your demo profile.</p>
-            </>}
+                          </>}
             {step === 3 && <>
               <p className={styles.stepIntro}>A photo for your rider card. Camera shy? Your initial looks pretty good, too.</p>
               <div className={styles.avatarStage}>
@@ -178,7 +177,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
                 </> : <span className={styles.avatarPlaceholder}>{name.trim().slice(0, 1).toUpperCase() || "T"}</span>}</div>
                 <label className={styles.uploadLabel} htmlFor="tspots-photo">{photo ? "Choose another photo" : "Choose a photo"}</label>
                 <input ref={fileInput} className={styles.hiddenInput} id="tspots-photo" type="file" accept="image/jpeg,image/png,image/webp,image/gif" onChange={(event) => choosePhoto(event.target.files?.[0])} aria-describedby="tspots-photo-help" />
-                <p id="tspots-photo-help" className={styles.storageNote}>Optional · JPG, PNG, WebP or GIF · up to 2 MB<br />Stays in this browser for the demo.</p>
+                <p id="tspots-photo-help" className={styles.storageNote}>Optional · JPG, PNG, WebP or GIF · up to 2 MB</p>
                 {photo && <button className={styles.textButton} type="button" onClick={() => { fileVersion.current += 1; setPhoto(null); setPhotoLoading(false); setPhotoError(""); if (fileInput.current) fileInput.current.value = ""; }}>Remove photo</button>}
               </div>
               {photoLoading && <p role="status" className={styles.locationStatus}>Opening your photo…</p>}
@@ -191,12 +190,12 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
                 {location === "idle" && "Ready when you are."}
                 {location === "loading" && "Finding you… this can take a few seconds."}
                 {location === "granted" && "You’re located. Ready for your first ride."}
-                {location === "denied" && "Location access is blocked. Allow it in your browser’s site settings, then retry — or use the simulated demo below."}
-                {location === "unavailable" && "We couldn’t get your location. Check location services and retry, or use the simulated demo below."}
-                {location === "demo" && "Demo location selected: Boston. This is simulated and does not verify a real ride."}
+                {location === "denied" && "Location access is blocked. Allow it in your browser’s site settings, then retry, or use a simulated location below."}
+                {location === "unavailable" && "We couldn’t get your location. Check location services and retry, or use a simulated location below."}
+                {location === "demo" && "Simulated location selected: Boston."}
               </div>
               {location !== "granted" && location !== "demo" && <button className={styles.primaryButton} type="button" disabled={location === "loading"} onClick={requestLocation}>{location === "loading" ? "Finding your location…" : location === "idle" ? "Enable location" : "Try location again"}</button>}
-              {location !== "granted" && location !== "demo" && <button className={styles.textButton} type="button" onClick={() => { locationVersion.current += 1; setLocation("demo"); }}>Try demo location</button>}
+              {location !== "granted" && location !== "demo" && <button className={styles.textButton} type="button" onClick={() => { locationVersion.current += 1; setLocation("demo"); }}>Use simulated location</button>}
             </>}
             <div className={styles.flowActions}>
               <button className={styles.textButton} type="button" onClick={() => step === 0 ? onClose() : setStep(step - 1)}>Back</button>

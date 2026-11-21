@@ -89,7 +89,7 @@ export function HotspotPanel({ riderId, onSelect, onHotspots, onEarned }: Props)
               <div className={s.actions}><button className={s.secondary} type="button" onClick={() => { onSelect?.(hotspot); close(); }}>Show on map</button><button className={s.primary} type="button" onClick={() => setSelected(hotspot)}>Meet here</button></div>
             </article>)}</div>
             <button className={s.refresh} type="button" disabled={generating || loading} onClick={generate}>{generating ? "Looking for routes…" : "Find a fresh route"}</button>
-            <p className={s.note}>Hotspots follow your completed trips and interests. In the running demo simulator, sample trips unlock them right away.</p>
+            <p className={s.note}>Hotspots follow your completed trips and interests.</p>
             {generateError && <p role="alert" className={s.error}>{generateError}</p>}
           </>}
         </>}
@@ -188,8 +188,8 @@ function HotspotMeet({ hotspot, riderId, onBack, onEarned }: { hotspot: Hotspot;
       {!waiting && <button type="button" className={s.primary} disabled={busy} onClick={() => void begin()}>{busy ? "Finding you…" : expired ? "Bump again" : "Bump phones"}</button>}
       <form className={s.codeForm} onSubmit={submit}><label htmlFor="hotspot-partner-code">Have their code?</label><div><input id="hotspot-partner-code" type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={4} pattern="[0-9]{4}" placeholder="0000" value={code} onChange={(event) => setCode(event.target.value.replace(/\D/g, "").slice(0, 4))} disabled={busy} /><button className={s.secondary} type="submit" disabled={busy || code.length !== 4}>Pair by code</button></div></form>
       {waiting && <button type="button" className={s.refresh} onClick={cancel}>Stop looking</button>}
-      {demoAvailable && !waiting && !busy && <label className={s.demoToggle}><input type="checkbox" checked={demo} disabled={USE_MOCKS} onChange={(event) => { setDemo(event.target.checked); fix.current = null; }} />Use simulated location for the running demo</label>}
-      {demo && demoAvailable && <p className={s.preview}>Simulated location at {hotspot.name}. The demo simulator is running; this meeting uses its simulated location.</p>}
+      {demoAvailable && !waiting && !busy && <label className={s.demoToggle}><input type="checkbox" checked={demo} disabled={USE_MOCKS} onChange={(event) => { setDemo(event.target.checked); fix.current = null; }} />Use simulated location</label>}
+      {demo && demoAvailable && <p className={s.preview}>Simulated location at {hotspot.name}.</p>}
       <p className={s.note}>Real meetings need location within 150 m of the station.</p>
       {error && <p className={s.error} role="alert">{error}</p>}
     </>}

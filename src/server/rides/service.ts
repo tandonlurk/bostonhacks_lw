@@ -253,7 +253,7 @@ export async function nearby(loc: { lat: number; lng: number; accuracy: number }
   let message: string;
   if (!station) message = "Can't find any stations right now. Try again in a moment.";
   else if (near) message = `You're at ${station.name}. Ready to ride.`;
-  else if (demo) message = `Demo mode: start anywhere. Nearest station is ${station.name}, ${formatDistance(station.distanceM)} away.`;
+  else if (demo) message = `Ready to ride. Nearest station is ${station.name}.`;
   else message = `Nearest station is ${station.name}, ${formatDistance(station.distanceM)} away. Get within ${formatDistance(radiusM)} of a station to start a ride.`;
   return { canStart: near || demo, radiusM, station, message };
 }

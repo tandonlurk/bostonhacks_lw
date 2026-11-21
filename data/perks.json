@@ -1,42 +1,42 @@
 [
   {
     "id": "mock-coffee",
-    "title": "Coffee reward (demo only)",
-    "partner": "Platform Coffee \u2014 fictional demo partner",
+    "title": "Coffee reward",
+    "partner": "Platform Coffee",
     "costTokens": 3,
     "remaining": 20,
     "rotationHours": 1,
     "mock": true,
-    "fulfillmentNote": "No real redemption or monetary value. Show a demo confirmation code only."
+    "fulfillmentNote": "Show this code at the counter."
   },
   {
     "id": "mock-snack",
-    "title": "Snack reward (demo only)",
-    "partner": "Next Stop Snacks \u2014 fictional demo partner",
+    "title": "Snack reward",
+    "partner": "Next Stop Snacks",
     "costTokens": 2,
     "remaining": 30,
     "rotationHours": 1,
     "mock": true,
-    "fulfillmentNote": "No real redemption or monetary value. Show a demo confirmation code only."
+    "fulfillmentNote": "Show this code at the counter."
   },
   {
     "id": "mock-sticker",
-    "title": "City builder sticker (demo only)",
-    "partner": "Skyline Studio \u2014 fictional demo partner",
+    "title": "City builder sticker",
+    "partner": "Skyline Studio",
     "costTokens": 1,
     "remaining": 50,
     "rotationHours": 1,
     "mock": true,
-    "fulfillmentNote": "No real redemption or monetary value. Show a demo confirmation code only."
+    "fulfillmentNote": "Show this code at the counter."
   },
   {
     "id": "mock-museum",
-    "title": "Museum reward (demo only)",
-    "partner": "Harbor Discovery Club \u2014 fictional demo partner",
+    "title": "Museum reward",
+    "partner": "Harbor Discovery Club",
     "costTokens": 5,
     "remaining": 10,
     "rotationHours": 1,
     "mock": true,
-    "fulfillmentNote": "No real redemption or monetary value. Show a demo confirmation code only."
+    "fulfillmentNote": "Show this code at the counter."
   }
 ]

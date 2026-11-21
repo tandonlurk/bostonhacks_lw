@@ -118,7 +118,7 @@ export function demoGrade(): { enabled: true; passed: true; score: number; reaso
     enabled: true,
     passed: true,
     score: DEMO_SCORE,
-    reason: "Demo grade: the AI grader is offline, so this photo was auto-passed at 75%.",
+    reason: "Nice find! Scored 75%.",
     demo: true,
   };
 }

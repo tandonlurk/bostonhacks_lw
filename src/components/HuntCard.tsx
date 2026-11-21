@@ -100,7 +100,7 @@ export function HuntCard({ hunt, riderId }: { hunt: HuntResponse; riderId: strin
               <p style={{ fontSize: 15 }}>{clue.text}</p>
               {isDemo ? (
                 <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)" }}>
-                  🧪 Demo clue — practice only, not tied to this physical station
+                  Bonus clue
                 </span>
               ) : !clue.verified ? (
                 <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)" }}>

@@ -10,7 +10,7 @@ import { ScoringError } from "@/server/points/rules";
 type StoredPost = BountyPost & { requestId: string };
 interface Identity { id: string; displayName: string; team: PlayableTeamId }
 interface Transfer { riderId: string; delta: number; ref: string; reason: string }
-const shared = globalThis as unknown as { __tcityBounties?: Map<string, StoredPost> };
+const shared = globalThis as unknown as { __tcityBounties?: Map<string, StoredPost>; __tcityBountiesSeeded?: boolean };
 function postsMemory() { return shared.__tcityBounties ??= new Map(); }
 function publicPost({ requestId: _requestId, ...post }: StoredPost): BountyPost { void _requestId; return post; }
 function invalid(code: string, message: string, status = 400): never { throw new ScoringError(code, message, status); }
@@ -103,7 +103,28 @@ async function postDb(sql: TransactionSql, id: string): Promise<StoredPost | und
   const [row] = await sql`select p.*,a.display_name as author_name,a.home_team_route_id as team,c.display_name as claimant_name from bounty_posts p join riders a on a.id=p.author_id left join riders c on c.id=p.claimant_id where p.id=${id}`;
   return row ? rowPost(row) : undefined;
 }
+// Starter posts so the board has life on a fresh server (memory mode). Authors are community riders.
+const SEED_POSTS: Omit<StoredPost, "id" | "createdAt" | "requestId">[] = [
+  { authorId: "rdr_seed_maya", authorName: "Maya", teamRouteId: "Orange", kind: "bounty", title: "Grab me an iced coffee at Back Bay?", body: "Running late from a lecture. Meet at the Dartmouth St exit, I'll pay you back + tokens.", rewardTokens: 3, station: "Back Bay", status: "open", claimantId: null, claimantName: null },
+  { authorId: "rdr_seed_jordan", authorName: "Jordan", teamRouteId: "Red", kind: "trade", title: "Trading a coffee perk for a snack perk", body: "Got a spare coffee reward, would rather have the snack one.", rewardTokens: 0, have: "Coffee reward", want: "Snack reward", station: "Kendall/MIT", status: "open", claimantId: null, claimantName: null },
+  { authorId: "rdr_seed_priya", authorName: "Priya", teamRouteId: "Blue", kind: "offer", title: "Free harbor walk tips", body: "Riding Blue to Aquarium most mornings. Happy to show newcomers the best waterfront spots.", rewardTokens: 0, station: "Aquarium", status: "open", claimantId: null, claimantName: null },
+  { authorId: "rdr_seed_leo", authorName: "Leo", teamRouteId: "Green", kind: "bounty", title: "Need someone to snap the Kenmore sign for a hunt", body: "Delay on the B branch, I'm stuck at BU. Photo of the Kenmore sign please!", rewardTokens: 2, station: "Kenmore", status: "open", claimantId: null, claimantName: null },
+  { authorId: "rdr_seed_ana", authorName: "Ana", teamRouteId: "Green", kind: "offer", title: "Study buddy on the E line", body: "Riding Northeastern to Park St around 5pm. Down to quiz each other on the ride.", rewardTokens: 0, station: "Northeastern University", status: "open", claimantId: null, claimantName: null },
+  { authorId: "rdr_seed_sam", authorName: "Sam", teamRouteId: "Orange", kind: "trade", title: "Swap sticker for museum reward", body: "Collecting stickers for the team wall. Have a museum reward to trade.", rewardTokens: 0, have: "Museum reward", want: "City builder sticker", station: "Downtown Crossing", status: "open", claimantId: null, claimantName: null },
+  { authorId: "rdr_seed_kai", authorName: "Kai", teamRouteId: "Red", kind: "bounty", title: "Help Red win the week", body: "First 3 people who ride Red past Harvard tonight get tokens from me. Let's climb the board!", rewardTokens: 5, station: "Harvard", status: "reserved", claimantId: "rdr_seed_jordan", claimantName: "Jordan" },
+];
+function seedMemoryBoard() {
+  const posts = postsMemory();
+  if (posts.size || shared.__tcityBountiesSeeded) return;
+  shared.__tcityBountiesSeeded = true;
+  const now = Date.now();
+  SEED_POSTS.forEach((p, i) => {
+    const id = `bty_seed_${i}`;
+    posts.set(id, { ...p, id, requestId: id, createdAt: new Date(now - (i * 23 + 7) * 60_000).toISOString() });
+  });
+}
 export async function listBounties(): Promise<BountiesResponse> {
+  if (!hasDb()) seedMemoryBoard();
   if (!hasDb()) return { posts: [...postsMemory().values()].filter(p => p.status !== "cancelled").sort((a, b) => b.createdAt.localeCompare(a.createdAt)).slice(0, 100).map(publicPost) };
   const rows = await getSql()`select p.*,a.display_name as author_name,a.home_team_route_id as team,c.display_name as claimant_name from bounty_posts p join riders a on a.id=p.author_id left join riders c on c.id=p.claimant_id where p.status!='cancelled' order by p.created_at desc limit 100`;
   return { posts: rows.map(row => publicPost(rowPost(row))) };

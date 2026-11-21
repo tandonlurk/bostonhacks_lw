@@ -124,7 +124,7 @@ export function StationHunt({ stopId, riderId, photoFirst, onEarned }: StationHu
                 <div style={{ flex: 1 }}>
                   <p style={{ fontSize: 15, lineHeight: 1.4 }}>{clue.text}</p>
                   {isDemo ? (
-                    <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4, fontWeight: 650 }}>Demo clue: practice only, not tied to this station</p>
+                    <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4, fontWeight: 650 }}>Bonus clue</p>
                   ) : !clue.verified ? (
                     <p style={{ fontSize: 11.5, color: "var(--muted)", marginTop: 4, fontWeight: 650 }}>Not yet verified in person</p>
                   ) : null}

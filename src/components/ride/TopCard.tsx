@@ -153,7 +153,7 @@ export function TopCard(p: TopCardProps) {
           </button>
         ) : (
           <span style={{ fontSize: 12, fontWeight: 600, color: "var(--muted)", flexShrink: 0 }}>
-            {p.gpsState === "denied" ? "Location off · demo spot" : "Demo spot"}
+            {p.gpsState === "denied" ? "Location off · simulated spot" : "Simulated spot"}
           </span>
         )}
       </div>

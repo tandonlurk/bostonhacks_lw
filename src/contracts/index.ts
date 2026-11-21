@@ -4,7 +4,7 @@
 
 export * from "./routes";
 
-import type { TeamRouteId } from "./routes";
+import type { PlayableTeamId, TeamRouteId } from "./routes";
 
 // ---------- Errors ----------
 export interface ApiError {
@@ -504,3 +504,26 @@ export type AwardPoints = (input: AwardPointsInput) => Promise<AwardPointsResult
 
 // Shared bounty board and station games (#118).
 export * from "./games";
+
+// ---------- Friends (A, additive) ----------
+/** GET /api/riders/:id/friends : people the rider follows, with live whereabouts. */
+export interface Friend {
+  id: string;
+  name: string;
+  initials: string;
+  teamRouteId: PlayableTeamId;
+  status: "riding" | "at_station";
+  /** user-ready, e.g. "Riding the Orange Line toward Forest Hills" */
+  headline: string;
+  /** user-ready, e.g. "Next stop Back Bay" */
+  detail: string;
+  lat: number;
+  lng: number;
+  vehicleId: string | null;
+  points: number;
+  streakDays: number;
+}
+export interface FriendsResponse {
+  updatedAt: string;
+  friends: Friend[];
+}

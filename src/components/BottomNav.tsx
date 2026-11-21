@@ -2,10 +2,10 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { CityIcon, HuntIcon, MeIcon, PerkIcon, RideIcon } from "./icons";
+import { CityIcon, FriendsIcon, HuntIcon, MeIcon, PerkIcon, RideIcon } from "./icons";
 import { useRideLive } from "./ui/liveRide";
 
-// Icon-only floating capsule. Order is fixed by the U00 brief: City, Hunt, Ride (center), Perks, Me.
+// Icon-only floating capsule: City, Hunt, Ride (center), Perks, Friends, Me.
 // Labels live in aria-label so screen readers still announce each tab.
 const SIDE_TABS = {
   left: [
@@ -14,6 +14,7 @@ const SIDE_TABS = {
   ],
   right: [
     { href: "/perks", label: "Perks and forum", Icon: PerkIcon },
+    { href: "/friends", label: "Friends", Icon: FriendsIcon },
     { href: "/me", label: "Me", Icon: MeIcon },
   ],
 } as const;

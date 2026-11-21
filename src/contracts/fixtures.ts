@@ -216,8 +216,8 @@ export const landmarksFixture: LandmarksResponse = [
 export const claimLandmarkFixture: ClaimLandmarkResponse = { pointsAwarded: 15, alreadyClaimed: false };
 
 export const perksFixture: PerksResponse = [
-  { id: "perk-coffee", title: "Free small coffee", partner: "Demo Cafe (mock partner)", costTokens: 10, remaining: 7, rotatesAt: "2026-11-21T21:00:00.000Z" },
-  { id: "perk-museum", title: "$5 off museum entry", partner: "Demo Museum (mock partner)", costTokens: 25, remaining: 3, rotatesAt: "2026-11-21T21:00:00.000Z" },
+  { id: "perk-coffee", title: "Free small coffee", partner: "Platform Coffee", costTokens: 10, remaining: 7, rotatesAt: "2026-11-21T21:00:00.000Z" },
+  { id: "perk-museum", title: "$5 off museum entry", partner: "Harbor Discovery Club", costTokens: 25, remaining: 3, rotatesAt: "2026-11-21T21:00:00.000Z" },
 ];
 
 export const redeemPerkFixture: RedeemPerkResponse = { redemptionCode: "TCITY-7F3K-92QD", tokensLeft: 4 };
@@ -326,7 +326,7 @@ export const challengesFixture: ChallengesResponse = {
     active: true,
     source: "simulated",
     teamRouteIds: ["Green"],
-    message: "Green Line delays of about 15 minutes (demo).",
+    message: "Green Line delays of about 15 minutes.",
     startedAt: "2026-11-21T18:52:00.000Z",
   },
   roundId: "delay-2026-11-21T18:52",

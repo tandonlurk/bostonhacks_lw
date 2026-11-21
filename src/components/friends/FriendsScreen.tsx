@@ -1,0 +1,95 @@
+"use client";
+
+// Friends tab: where the people you ride with are right now, on a live map and in a list.
+import { useEffect, useState } from "react";
+import type { Friend, FriendsResponse } from "@/contracts";
+import { TEAMS } from "@/contracts/routes";
+import { RIDER_ID_KEY } from "@/hooks/useRider";
+import { FriendsMap } from "./FriendsMap";
+
+function useFriends(): { friends: Friend[]; error: boolean } {
+  const [state, setState] = useState<{ friends: Friend[]; error: boolean }>({ friends: [], error: false });
+  useEffect(() => {
+    let cancelled = false;
+    const riderId = window.localStorage.getItem(RIDER_ID_KEY) ?? "guest";
+    const load = () =>
+      fetch(`/api/riders/${encodeURIComponent(riderId)}/friends`, { cache: "no-store" })
+        .then((r) => (r.ok ? (r.json() as Promise<FriendsResponse>) : Promise.reject(new Error(String(r.status)))))
+        .then((b) => !cancelled && setState({ friends: b.friends, error: false }))
+        .catch(() => !cancelled && setState((s) => ({ ...s, error: s.friends.length === 0 })));
+    void load();
+    const id = setInterval(load, 5000);
+    return () => {
+      cancelled = true;
+      clearInterval(id);
+    };
+  }, []);
+  return state;
+}
+
+export function FriendsScreen() {
+  const { friends, error } = useFriends();
+  const [selectedId, setSelectedId] = useState<string | null>(null);
+  const riding = friends.filter((f) => f.status === "riding").length;
+
+  return (
+    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", paddingBottom: "var(--nav-clearance)" }}>
+      <header className="screen-header" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+        <h1 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1 }}>Friends</h1>
+        <p style={{ fontSize: 13, color: "var(--muted)" }}>
+          {friends.length ? `${riding} of ${friends.length} riding right now` : error ? "Couldn't load your friends." : "Finding your friends…"}
+        </p>
+      </header>
+
+      <section
+        aria-label="Friends map"
+        style={{ margin: "12px 16px 0", borderRadius: "var(--radius-card)", background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", aspectRatio: "1 / 1", maxHeight: "52vh" }}
+      >
+        <FriendsMap friends={friends} selectedId={selectedId} onSelect={setSelectedId} />
+      </section>
+
+      <ul style={{ listStyle: "none", margin: "16px 16px 0", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+        {friends.map((f) => {
+          const team = TEAMS[f.teamRouteId];
+          const selected = f.id === selectedId;
+          return (
+            <li key={f.id}>
+              <button
+                type="button"
+                onClick={() => setSelectedId(selected ? null : f.id)}
+                aria-pressed={selected}
+                style={{
+                  width: "100%", display: "flex", alignItems: "center", gap: 14, textAlign: "left", padding: 14, minHeight: 72,
+                  borderRadius: "var(--radius-card)", background: selected ? "var(--surface-2)" : "var(--surface)",
+                  border: `1px solid ${selected ? team.color : "var(--border)"}`, color: "var(--ink)",
+                }}
+              >
+                <span
+                  aria-hidden="true"
+                  style={{ flex: "none", width: 46, height: 46, borderRadius: 999, display: "grid", placeItems: "center", fontWeight: 800, background: "var(--surface-3)", border: `3px solid ${team.color}` }}
+                >
+                  {f.initials}
+                </span>
+                <span style={{ flex: 1, minWidth: 0 }}>
+                  <span style={{ display: "flex", alignItems: "center", gap: 8 }}>
+                    <strong style={{ fontSize: 16 }}>{f.name}</strong>
+                    <span style={{ fontSize: 11, fontWeight: 700, padding: "2px 8px", borderRadius: 999, background: team.color, color: f.teamRouteId === "Orange" ? "#14181c" : "#fff" }}>{team.name}</span>
+                  </span>
+                  <span style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 13, marginTop: 4 }}>
+                    {f.status === "riding" ? <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: 999, background: "var(--hot)", flex: "none" }} /> : null}
+                    <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{f.headline}</span>
+                  </span>
+                  <span style={{ display: "block", fontSize: 12, color: "var(--muted)", marginTop: 2 }}>{f.detail}</span>
+                </span>
+                <span style={{ flex: "none", textAlign: "right" }}>
+                  <span className="num" style={{ display: "block", fontWeight: 800, color: "var(--accent)" }}>{f.points}</span>
+                  <span style={{ display: "block", fontSize: 11, color: "var(--muted)" }}>{f.streakDays}-day streak</span>
+                </span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}

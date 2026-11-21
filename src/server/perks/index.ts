@@ -46,13 +46,13 @@ export async function perkCatalog():Promise<Perk[]> {
 }
 export async function redeemPerk(riderId:string,perkId:string):Promise<RedeemPerkResponse> {
   if(typeof riderId!=="string" || !riderId.trim() || typeof perkId!=="string") throw new ScoringError("invalid_redemption","riderId and perkId are required.");
-  const redemptionCode=`TCITY-DEMO-${randomBytes(8).toString("hex").toUpperCase()}`;
+  const redemptionCode=`TCITY-${randomBytes(8).toString("hex").toUpperCase()}`;
   if(!hasDb()) {
     const state=memoryGame();const catalog=catalogMemory();
     if(!state.riders.has(riderId)) throw new ScoringError("rider_not_found","Unknown rider.",404);
     const perk=catalog.perks.get(perkId);
-    if(!perk || !rotation().active.some(p=>p.id===perkId)) throw new ScoringError("perk_unavailable","This perk is not in the current demo rotation.",404);
-    if(perk.remaining<=0) throw new ScoringError("perk_sold_out","This demo perk is sold out.",409);
+    if(!perk || !rotation().active.some(p=>p.id===perkId)) throw new ScoringError("perk_unavailable","This perk is not in the current rotation.",404);
+    if(perk.remaining<=0) throw new ScoringError("perk_sold_out","This perk is sold out.",409);
     const balance=state.tokens.filter(t=>t.riderId===riderId).reduce((sum,t)=>sum+t.delta,0);
     if(balance<perk.costTokens) throw new ScoringError("insufficient_tokens","Earn more CitiTokens to redeem this perk.",409);
     // Validation and mutations run synchronously: concurrent requests cannot overspend.
@@ -64,9 +64,9 @@ export async function redeemPerk(riderId:string,perkId:string):Promise<RedeemPer
     await sql`select pg_advisory_xact_lock(${GAME_LOCK})`;
     if(!(await sql`select id from riders where id=${riderId}`).length) throw new ScoringError("rider_not_found","Unknown rider.",404);
     const current=await syncCatalog(sql);
-    if(!current.active.some(p=>p.id===perkId)) throw new ScoringError("perk_unavailable","This perk is not in the current demo rotation.",404);
+    if(!current.active.some(p=>p.id===perkId)) throw new ScoringError("perk_unavailable","This perk is not in the current rotation.",404);
     const [perk]=await sql`select cost_tokens,quantity_remaining from perks where id=${perkId} for update`;
-    if(!perk || perk.quantity_remaining<=0) throw new ScoringError("perk_sold_out","This demo perk is sold out.",409);
+    if(!perk || perk.quantity_remaining<=0) throw new ScoringError("perk_sold_out","This perk is sold out.",409);
     const [wallet]=await sql`select coalesce(sum(delta),0)::int as balance from token_ledger where rider_id=${riderId}`;
     if(wallet.balance<perk.cost_tokens) throw new ScoringError("insufficient_tokens","Earn more CitiTokens to redeem this perk.",409);
     await sql`update perks set quantity_remaining=quantity_remaining-1 where id=${perkId}`;
