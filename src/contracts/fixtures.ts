@@ -6,6 +6,7 @@ import type {
   ClaimLandmarkResponse,
   HotspotsResponse,
   MeetResponse,
+  SideQuest,
   NearbyStationResponse,
   StartRideResponse,
   CompleteHuntResponse,
@@ -306,6 +307,19 @@ export const meetMatchedFixture: MeetResponse = {
   message: "You met Jo (Orange) at Back Bay! 5x: +50 points.",
 };
 
+function silverQuestFixture(): SideQuest {
+  return {
+    id: "silver-line",
+    title: "Silver Line side quest",
+    prompt: "Work the Silver Line into a trip: ride it for 3+ minutes. Points go to your own team.",
+    points: 25,
+    done: false,
+    pointsAwarded: 0,
+    progressMinutes: 0,
+    targetMinutes: 3,
+  };
+}
+
 export const challengesFixture: ChallengesResponse = {
   active: true,
   delay: {
@@ -321,6 +335,7 @@ export const challengesFixture: ChallengesResponse = {
     { id: "ch_color", prompt: "Snap something the color of your team's line.", points: 10, done: false, pointsAwarded: 0 },
     { id: "ch_art", prompt: "Photograph a mural, sculpture or other public art.", points: 20, done: false, pointsAwarded: 0 },
   ],
+  sideQuests: [silverQuestFixture()],
 };
 
 export const challengeSubmitFixture: ChallengeSubmitResponse = {

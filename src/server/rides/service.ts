@@ -5,8 +5,10 @@ import type {
   ManualRideHint,
   NearbyStationResponse,
   NearStation,
+  PlayableTeamId,
   RideSampleRequest,
   RideSampleResponse,
+  SideQuest,
   StartRideRequest,
   StartRideResponse,
   TeamRouteId,
@@ -18,6 +20,7 @@ import { getVehicleSnapshot, type LiveVehicle } from "@/server/mbta/vehicles";
 import { isSimulationRunning } from "@/server/sim";
 import { CFG, distanceM, nearestCandidate, step, type Sample, type SessionData } from "./engine";
 import { awardBonus, awardPoints } from "./points-bridge";
+import { progressSilverQuest } from "@/server/challenges/sidequest";
 import {
   SOCIAL,
   crewEndsAt,
@@ -92,12 +95,18 @@ export function parseRider(body: unknown): { displayName: string; homeTeamRouteI
   if (name.length < 1 || name.length > 24)
     throw new HttpError(400, "bad_name", "displayName must be 1-24 characters.");
   if (!isTeamRouteId(b.homeTeamRouteId))
-    throw new HttpError(400, "bad_team", "homeTeamRouteId must be one of Red, Orange, Blue, Green, Silver.");
+    throw new HttpError(400, "bad_team", "homeTeamRouteId must be one of Red, Orange, Blue, Green.");
   return { displayName: name, homeTeamRouteId: b.homeTeamRouteId };
 }
 
 // ---------- flow ----------
-function toResponse(s: SessionData, message: string, nextStopId?: string, crew: CrewBonus | null = null): RideSampleResponse {
+function toResponse(
+  s: SessionData,
+  message: string,
+  nextStopId?: string,
+  crew: CrewBonus | null = null,
+  sideQuest: SideQuest | null = null,
+): RideSampleResponse {
   const state = s.status === "ended" ? "left" : s.status;
   return {
     state,
@@ -111,6 +120,7 @@ function toResponse(s: SessionData, message: string, nextStopId?: string, crew: 
     pointsAwarded: s.pointsAwarded,
     ...(s.state.originStationId ? { originStationId: s.state.originStationId } : {}),
     crew,
+    sideQuest,
   };
 }
 
@@ -131,6 +141,8 @@ function withSummary(s: SessionData, message: string): string {
  */
 async function creditMinutes(s: SessionData, end: number, multiplier = 1): Promise<SessionData> {
   if (s.state.boundAt == null || !s.teamRouteId) return s;
+  const team = await pointsTeam(s);
+  if (!team) return s;
   const until = creditableUntil(
     { ...s.state, manual: s.manual, startedAt: Date.parse(s.startedAt) },
     end,
@@ -142,7 +154,7 @@ async function creditMinutes(s: SessionData, end: number, multiplier = 1): Promi
     try {
       const res = await awardPoints({
         riderId: next.riderId,
-        teamRouteId: s.teamRouteId,
+        teamRouteId: team,
         type: "ride_stop",
         amount: 1,
         ref: `${next.id}:min:${n}`,
@@ -165,7 +177,7 @@ async function creditMinutes(s: SessionData, end: number, multiplier = 1): Promi
     try {
       const res = await awardBonus({
         riderId: next.riderId,
-        teamRouteId: s.teamRouteId,
+        teamRouteId: team,
         type: "co_ride",
         amount: bonus.points,
         ref: `${next.id}:crew:${n}`,
@@ -182,6 +194,28 @@ async function creditMinutes(s: SessionData, end: number, multiplier = 1): Promi
   return next;
 }
 
+/**
+ * Team that earns this ride's points: the line ridden when it is a team, else (Silver, #115) the
+ * rider's home team.
+ */
+async function pointsTeam(s: SessionData): Promise<PlayableTeamId | null> {
+  if (isTeamRouteId(s.teamRouteId)) return s.teamRouteId;
+  const rider = await store.getRider(s.riderId);
+  return rider && isTeamRouteId(rider.homeTeamRouteId) ? rider.homeTeamRouteId : null;
+}
+
+/** Silver Line side quest (#115): progress while on a Silver vehicle, completing at the target. */
+async function silverQuest(s: SessionData): Promise<{ session: SessionData; quest: SideQuest | null; awarded: number }> {
+  if (s.teamRouteId !== "Silver" || s.state.boundAt == null) return { session: s, quest: null, awarded: 0 };
+  const team = await pointsTeam(s);
+  if (!team) return { session: s, quest: null, awarded: 0 };
+  const { quest, awarded } = await progressSilverQuest(s.riderId, team, s.state.minutesCredited).catch((err) => {
+    console.warn("[rides] silver quest failed", String(err));
+    return { quest: null, awarded: 0 };
+  });
+  return { session: awarded ? { ...s, pointsAwarded: s.pointsAwarded + awarded } : s, quest, awarded };
+}
+
 /** A session that should be closed before anything else happens (quiet for too long). */
 function isStale(s: SessionData, now: number): boolean {
   if (s.state.lastSampleT) return now - s.state.lastSampleT > CFG.staleSessionMs;
@@ -190,7 +224,7 @@ function isStale(s: SessionData, now: number): boolean {
 
 /** End a session: credit the completed minutes up to now and fill in where the rider got off. */
 async function closeSession(s: SessionData, now: number): Promise<SessionData> {
-  const credited = await creditMinutes(s, now);
+  const credited = (await silverQuest(await creditMinutes(s, now))).session;
   const ended: SessionData = {
     ...credited,
     status: "ended",
@@ -351,6 +385,8 @@ export async function handleSample(req: RideSampleRequest): Promise<RideSampleRe
   // Stops are still tracked (display, hotspots), but ride points are per full minute on the train.
   // On an automatic "left" this credits the completed minutes up to the end of the ride.
   next = await creditMinutes(next, now, multiplier);
+  const silver = await silverQuest(next);
+  next = silver.session;
 
   const crew: CrewBonus | null =
     crewMates.length && isBound(next) && formedAt != null
@@ -369,7 +405,14 @@ export async function handleSample(req: RideSampleRequest): Promise<RideSampleRe
     .recordSample(next.id, sample, next.vehicleId ?? next.state.candidateVehicleId, bound ? distanceM(sample, bound) : null)
     .catch((err) => console.warn("[rides] recordSample failed", String(err)));
 
-  return toResponse(next, withSummary(next, result.message), result.nextStopId, crew);
+  const message = withSummary(next, result.message);
+  return toResponse(
+    next,
+    silver.awarded ? `Silver Line side quest complete! +${silver.awarded} for your team. ${message}` : message,
+    result.nextStopId,
+    crew,
+    silver.quest,
+  );
 }
 
 export async function endRide(riderId: string): Promise<EndRideResponse> {

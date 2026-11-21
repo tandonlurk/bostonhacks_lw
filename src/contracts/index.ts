@@ -167,6 +167,22 @@ export interface RideSampleResponse {
   originStationId?: string;
   /** Additive (#96): set while teammates (same team) are bound to the same train. */
   crew?: CrewBonus | null;
+  /** Additive (#115): Silver Line side quest progress while riding Silver; null otherwise. */
+  sideQuest?: SideQuest | null;
+}
+
+/** #115: standing side quests (not delay-gated). First one: work the Silver Line into a trip. */
+export interface SideQuest {
+  id: string;
+  title: string;
+  prompt: string;
+  points: number;
+  /** completed today (UTC) */
+  done: boolean;
+  pointsAwarded: number;
+  /** ride-based quests: minutes ridden toward the target on the current ride */
+  progressMinutes?: number;
+  targetMinutes?: number;
 }
 
 // ---------- Section 3b: ride start gate and crew bonus (A, #96) ----------
@@ -434,6 +450,8 @@ export interface ChallengesResponse {
   /** stable id for this delay window; null when no delay */
   roundId: string | null;
   challenges: PhotoChallenge[];
+  /** Additive (#115): standing side quests, available with or without a delay. */
+  sideQuests?: SideQuest[];
 }
 /** POST /api/challenges/submit */
 export interface ChallengeSubmitRequest {

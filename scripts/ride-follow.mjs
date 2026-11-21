@@ -4,7 +4,9 @@
 // expect `crew` with a decaying multiplier and co_ride bonus points.
 // Usage: node scripts/ride-follow.mjs [baseUrl=http://localhost:3001] [routeId=Green-B] [minutes=4] [riders=1]
 const [base = "http://localhost:3001", routeId = "Green-B", minutes = "4", riderCount = "1"] = process.argv.slice(2);
-const team = routeId.startsWith("Green") ? "Green" : /^7\d\d$/.test(routeId) ? "Silver" : routeId;
+// Silver is a line, not a team (#115): Silver riders join Red (override with HOME_TEAM) and earn the side quest.
+const line = routeId.startsWith("Green") ? "Green" : /^7\d\d$/.test(routeId) ? "Silver" : routeId;
+const team = process.env.HOME_TEAM || (routeId.startsWith("Green") ? "Green" : /^7\d\d$/.test(routeId) ? "Red" : routeId);
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const call = async (path, body) => {
   const res = await fetch(base + path, body ? { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) } : {});
@@ -19,7 +21,7 @@ for (let i = 0; i < n; i++) {
   const { riderId } = await call("/api/riders", { displayName: n === 1 ? "E2E bot" : `E2E bot ${i + 1}`, homeTeamRouteId: team });
   riders.push(riderId);
 }
-const { vehicles } = await call(`/api/vehicles?teams=${team}`);
+const { vehicles } = await call(`/api/vehicles?teams=${line}`);
 const pick = vehicles.filter((v) => v.routeId === routeId).sort((a, b) => (b.speed ?? 0) - (a.speed ?? 0))[0];
 if (!pick) throw new Error(`no ${routeId} vehicles in service`);
 console.log(`riders ${riders.join(", ")} following ${pick.id} (${pick.routeId} dir ${pick.directionId}) ${pick.currentStatus} ${pick.stopId}`);
@@ -35,7 +37,7 @@ for (const riderId of riders) {
 const until = Date.now() + Number(minutes) * 60_000;
 const last = new Map();
 while (Date.now() < until) {
-  const { vehicles: vs } = await call(`/api/vehicles?teams=${team}`);
+  const { vehicles: vs } = await call(`/api/vehicles?teams=${line}`);
   const v = vs.find((x) => x.id === pick.id);
   if (!v) { console.log("vehicle left the feed"); break; }
   for (const [i, riderId] of riders.entries()) {
@@ -45,7 +47,7 @@ while (Date.now() < until) {
     });
     last.set(riderId, r);
     const crew = r.crew ? ` crew=${r.crew.multiplier}x bonus=${r.crew.bonusPoints}` : "";
-    console.log(new Date().toISOString().slice(11, 19), `#${i + 1}`, r.state.padEnd(10), `min=${r.minutesRidden ?? "-"} pts=${r.pointsAwarded ?? "-"} stops=${r.stopsCredited}${crew}`, `veh=${v.currentStatus} ${v.stopId}`, "|", r.message, r.crew ? `| ${r.crew.message}` : "");
+    console.log(new Date().toISOString().slice(11, 19), `#${i + 1}`, r.state.padEnd(10), `min=${r.minutesRidden ?? "-"} pts=${r.pointsAwarded ?? "-"} stops=${r.stopsCredited}${crew}`, `veh=${v.currentStatus} ${v.stopId}`, "|", r.message, r.crew ? `| ${r.crew.message}` : "", r.sideQuest ? `| quest ${r.sideQuest.progressMinutes}/${r.sideQuest.targetMinutes} done=${r.sideQuest.done}` : "");
   }
   if ([...last.values()].every((r) => r.state === "left")) break;
   await sleep(10_000);

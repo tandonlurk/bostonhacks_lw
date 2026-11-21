@@ -8,6 +8,7 @@ import { getRider, type RiderRow } from "@/server/rides/store";
 import { isSimulationRunning } from "@/server/sim";
 import { gradeChallenge, type ChallengeGrade } from "@/server/vision/gemini";
 import { demoGrade, gradingTaskFor, pickChallenges, pointsFor, promptFor, roundIdFor } from "./catalog";
+import { silverQuestStatus } from "./sidequest";
 import { getCompletions, recordPass, removePass } from "./store";
 
 async function requireRider(riderId: string): Promise<RiderRow> {
@@ -20,7 +21,8 @@ export async function getChallenges(riderId?: string): Promise<ChallengesRespons
   const rider = riderId ? await requireRider(riderId) : null;
   const delay = await getDelay();
   const roundId = roundIdFor(delay);
-  if (!roundId) return { active: false, delay, roundId: null, challenges: [] };
+  const sideQuests = [await silverQuestStatus(rider?.id)];
+  if (!roundId) return { active: false, delay, roundId: null, challenges: [], sideQuests };
   const done = rider ? await getCompletions(rider.id, roundId) : new Map();
   return {
     active: true,
@@ -33,6 +35,7 @@ export async function getChallenges(riderId?: string): Promise<ChallengesRespons
       done: done.has(c.id),
       pointsAwarded: done.get(c.id)?.points ?? 0,
     })),
+    sideQuests,
   };
 }
 

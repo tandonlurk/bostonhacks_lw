@@ -1,7 +1,7 @@
 // GET /api/vehicles?teams=Red,Green  (owner: A, T02)
 import type { NextRequest } from "next/server";
 import type { TeamRouteId } from "@/contracts";
-import { isTeamRouteId } from "@/contracts";
+import { isLineId } from "@/contracts";
 import { HttpError, handle, json } from "@/server/http";
 import { getVehicles } from "@/server/mbta/vehicles";
 
@@ -10,8 +10,8 @@ export const GET = handle(async (req: NextRequest) => {
   let teams: TeamRouteId[] | undefined;
   if (raw) {
     const parts = raw.split(",").map((s) => s.trim()).filter(Boolean);
-    const bad = parts.filter((p) => !isTeamRouteId(p));
-    if (bad.length) throw new HttpError(400, "bad_team", `Unknown team(s): ${bad.join(", ")}`);
+    const bad = parts.filter((p) => !isLineId(p));
+    if (bad.length) throw new HttpError(400, "bad_team", `Unknown line(s): ${bad.join(", ")}`);
     teams = parts as TeamRouteId[];
   }
   const body = await getVehicles(teams).catch((err) => {

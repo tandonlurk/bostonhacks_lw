@@ -11,9 +11,9 @@ Ids are MBTA route ids. Each has a district.
 | Orange | Orange Line | #ED8B00 | Neighborhoods (JP, South End, Back Bay) |
 | Blue | Blue Line | #003DA5 | Harbor and Airport |
 | Green | Green Line (B/C/D/E branches mapped to `Green`; never shown split to riders) | #00843D | Fenway and Campuses |
-| Silver | Silver Line (SL1-SL5 mapped to `Silver`) | #7C878E | Seaport |
+| Silver | Silver Line (SL1-SL5 mapped to `Silver`). **Not a team since #115**: still tracked, drawn and rideable; riding it is a side quest | #7C878E | none |
 
-`teamRouteId` is one of `Red|Orange|Blue|Green|Silver`. Branch ids (`Green-B`, `742`) appear only inside vehicle/route data as `routeId`; always also provide `teamRouteId`. Rider-facing text and game data use line names only ("Green Line", not "Green Line B").
+**Teams** (`TEAM_ROUTE_IDS`, `isTeamRouteId`, rider `homeTeamRouteId`, districts, leaderboard, points) are `Red|Orange|Blue|Green`. **Lines** (`LINE_IDS`, `LineId`) add `Silver`; vehicle, route, stop, delay and hotspot data may carry `Silver` in `teamRouteId` (the type `TeamRouteId` is an alias of `LineId` for compatibility). Branch ids (`Green-B`, `742`) appear only inside vehicle/route data as `routeId`; always also provide `teamRouteId`. Rider-facing text and game data use line names only ("Green Line", not "Green Line B").
 
 ## 2. Read endpoints (A)
 ```
@@ -107,6 +107,9 @@ POST /api/challenges/submit { riderId, challengeId, imageBase64, mimeType } -> C
 - **Hotspots.** After `tripsNeeded` completed rides with an origin and a destination, the server finds the rider's most frequent trip and picks a station on a different line to the same destination (Green branches count as one line; `viaRouteIds` are line ids like `Green`, `Orange`). Any team can get the same hotspot. Riders with overlapping interests are steered to the same station. Two riders who bump phones (both call `/meet` within about 10 s, within about 150 m of the hotspot) or pair by code each get `meetPoints` (base 10 x 5 = 50). Once per pair per hotspot.
 - **Delay photo challenges.** Solo. Open only while `GET /api/delay` is active. Prompts are generic objects, never claims about a specific station. Gemini grades each photo 0-1; a pass awards `round(points x score)`, once per challenge per delay round. Without `GEMINI_API_KEY` grading is off (`enabled:false`) unless the demo simulator is running, which uses a labeled demo grader.
 - New `PointEventType`s: `co_ride`, `hotspot_meet`, `challenge`. They are not ride types (no hourly cap) and use the caller's amount.
+
+## 4f. Silver Line side quest (A, #115)
+Silver is no longer a team (it is mostly airport travel). Riding it is a daily side quest: ride a Silver Line vehicle for 3+ verified minutes in one ride for **+25** points (type `challenge`, ref `silver:<riderId>:<UTC day>`, once per day). Minute points on Silver go to the rider's **home team**. Progress shows in `RideSampleResponse.sideQuest` while riding Silver and in `ChallengesResponse.sideQuests` (always present, delay or not).
 
 ## 5. Mock mode
 `src/contracts/fixtures.ts` exports one realistic fixture per response above. With `NEXT_PUBLIC_USE_MOCKS=1`, C's data hooks return fixtures instead of fetching, so the UI never waits on a backend.
