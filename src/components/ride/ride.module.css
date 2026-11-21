@@ -357,3 +357,20 @@
   outline: 2px solid var(--accent);
   outline-offset: 1px;
 }
+
+.shutter:disabled {
+  cursor: not-allowed;
+}
+
+.shutter:disabled .shutterCore {
+  filter: grayscale(0.85) brightness(0.6);
+}
+
+.shutter:disabled .shutterRing {
+  border-color: var(--surface-3);
+  box-shadow: none;
+}
+
+.shutter:disabled .shutterHalo {
+  display: none;
+}

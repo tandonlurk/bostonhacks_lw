@@ -1,12 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import type { ManualRideHint, RideSampleResponse, RideState } from "@/contracts";
+import type { CrewBonus, ManualRideHint, NearStation, RideSampleResponse, RideState, StartRideResponse } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import {
+  rideSampleCrewFixture,
   rideSampleFixture,
   rideSampleSearchingFixture,
   rideSampleTunnelFixture,
+  startRideFixture,
   endRideFixture,
 } from "@/contracts/fixtures";
 import { USE_MOCKS } from "./useMocks";
@@ -15,7 +17,40 @@ import { RIDER_ID_KEY } from "./useRider";
 const SAMPLE_INTERVAL_MS = 10_000;
 /** Cross-tab hint for which station to show a hunt for; read by useHunt's default stopId. */
 export const LAST_STOP_KEY = "tcity.lastStopId";
-const MOCK_SEQUENCE = [rideSampleSearchingFixture, rideSampleSearchingFixture, rideSampleFixture, rideSampleTunnelFixture];
+const MOCK_SEQUENCE = [
+  rideSampleSearchingFixture,
+  rideSampleSearchingFixture,
+  rideSampleFixture,
+  rideSampleCrewFixture,
+  rideSampleTunnelFixture,
+];
+
+type ApiError = { error?: { code?: string; message?: string } } | null;
+
+const EXPIRED = "Your session expired. Refresh and rejoin from the Ride tab.";
+
+/**
+ * POST /api/rides/start (start gate, #96). Resolves with the response, or null when the endpoint isn't
+ * deployed yet (404) or the ride is already active (409 ride_active). Throws a friendly Error otherwise
+ * (e.g. 403 not_near_station, whose message names the nearest station).
+ */
+async function callStart(riderId: string, lat: number, lng: number, accuracy: number): Promise<StartRideResponse | null> {
+  if (USE_MOCKS) return startRideFixture;
+  const res = await fetch("/api/rides/start", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ riderId, lat, lng, accuracy }),
+  });
+  if (res.ok) return res.json();
+  const body: ApiError = await res.json().catch(() => null);
+  if (body?.error?.code === "rider_not_found") {
+    window.localStorage.removeItem(RIDER_ID_KEY);
+    throw new Error(EXPIRED);
+  }
+  if (res.status === 404 || res.status === 405) return null;
+  if (res.status === 409 && body?.error?.code === "ride_active") return null;
+  throw new Error(body?.error?.message ?? `Couldn't start the ride (${res.status}).`);
+}
 
 interface RideSessionState {
   active: boolean;
@@ -28,6 +63,15 @@ interface RideSessionState {
   error: string | null;
   /** Epoch ms when the current ride started (client clock), null when idle. */
   startedAt: number | null;
+  /** #96: whole minutes bound to a train, when the server reports it. */
+  minutesRidden: number | null;
+  /** #96: points earned so far this ride (bonuses included), when reported. */
+  pointsAwarded: number | null;
+  /** #96: teammates on the same train, null when riding solo. */
+  crew: CrewBonus | null;
+  originStationId: string | null;
+  /** Station the start gate matched, when /api/rides/start is available. */
+  startStation: NearStation | null;
   lastResult: { stopsCredited: number; pointsAwarded: number; durationMs?: number } | null;
 }
 
@@ -41,6 +85,11 @@ const IDLE: RideSessionState = {
   message: null,
   error: null,
   startedAt: null,
+  minutesRidden: null,
+  pointsAwarded: null,
+  crew: null,
+  originStationId: null,
+  startStation: null,
   lastResult: null,
 };
 
@@ -71,6 +120,10 @@ export function useRideSession(riderId: string | null) {
       stopsCredited: res.stopsCredited,
       nextStopId: res.nextStopId ?? null,
       message: res.message,
+      minutesRidden: res.minutesRidden ?? prev.minutesRidden,
+      pointsAwarded: res.pointsAwarded ?? prev.pointsAwarded,
+      crew: res.crew === undefined ? prev.crew : res.crew,
+      originStationId: res.originStationId ?? prev.originStationId,
       error: null,
     }));
   }, []);
@@ -126,10 +179,15 @@ export function useRideSession(riderId: string | null) {
           }),
         });
         if (!res.ok) {
-          const body: { error?: { code?: string; message?: string } } | null = await res.json().catch(() => null);
+          const body: ApiError = await res.json().catch(() => null);
+          if (body?.error?.code === "ride_not_started") {
+            // The server has no open ride (e.g. it expired); re-open it from this fix and keep sampling.
+            await callStart(riderId, lat, lng, accuracy);
+            return;
+          }
           if (body?.error?.code === "rider_not_found") {
             window.localStorage.removeItem(RIDER_ID_KEY);
-            throw new Error("Your session expired. Refresh and rejoin from the Ride tab.");
+            throw new Error(EXPIRED);
           }
           throw new Error(body?.error?.message ?? `rides/sample ${res.status}`);
         }
@@ -144,6 +202,33 @@ export function useRideSession(riderId: string | null) {
     [riderId, applySample, stop],
   );
 
+  /** Opens the ride through the start gate, then runs `tick` now and every SAMPLE_INTERVAL_MS. */
+  const begin = useCallback(
+    async (lat: number, lng: number, accuracy: number, tick: () => void) => {
+      if (!riderId) return;
+      try {
+        const started = await callStart(riderId, lat, lng, accuracy);
+        if (startedAtRef.current === null) return; // ended while we were starting
+        if (started) {
+          setSession((prev) => ({
+            ...prev,
+            sessionId: started.sessionId,
+            state: started.state,
+            message: started.message,
+            startStation: started.station,
+          }));
+        }
+        if (timerRef.current) clearInterval(timerRef.current);
+        tick();
+        timerRef.current = setInterval(tick, SAMPLE_INTERVAL_MS);
+      } catch (err) {
+        startedAtRef.current = null;
+        setSession({ ...IDLE, error: err instanceof Error ? err.message : "Couldn't start the ride." });
+      }
+    },
+    [riderId],
+  );
+
   const startGeo = useCallback(() => {
     if (!riderId) return;
     if (!("geolocation" in navigator)) {
@@ -152,7 +237,7 @@ export function useRideSession(riderId: string | null) {
     }
     sampleCountRef.current = 0;
     startedAtRef.current = Date.now();
-    setSession({ ...IDLE, active: true, state: "searching", message: "Looking for your train…", startedAt: startedAtRef.current });
+    setSession({ ...IDLE, active: true, state: "searching", message: "Checking you're at a station…", startedAt: startedAtRef.current });
 
     const tick = () => {
       navigator.geolocation.getCurrentPosition(
@@ -167,10 +252,20 @@ export function useRideSession(riderId: string | null) {
       );
     };
 
-    if (timerRef.current) clearInterval(timerRef.current);
-    tick();
-    timerRef.current = setInterval(tick, SAMPLE_INTERVAL_MS);
-  }, [riderId, sendSample]);
+    if (USE_MOCKS) {
+      // Mock mode replays fixtures, so don't make sampling depend on a real GPS fix.
+      void begin(0, 0, 0, () => sendSample(0, 0, 0, null));
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => void begin(pos.coords.latitude, pos.coords.longitude, pos.coords.accuracy, tick),
+      (err) => {
+        startedAtRef.current = null;
+        setSession({ ...IDLE, error: `Location unavailable (${err.message}). Try picking your stop instead.` });
+      },
+      { enableHighAccuracy: true, timeout: 10_000 },
+    );
+  }, [riderId, sendSample, begin]);
 
   const startManual = useCallback(
     (hint: ManualRideHint, lat: number, lng: number) => {
@@ -178,13 +273,9 @@ export function useRideSession(riderId: string | null) {
       sampleCountRef.current = 0;
       startedAtRef.current = Date.now();
       setSession({ ...IDLE, active: true, state: "searching", message: "Checking your manual pick…", startedAt: startedAtRef.current });
-
-      const tick = () => sendSample(lat, lng, 50, null, hint);
-      if (timerRef.current) clearInterval(timerRef.current);
-      tick();
-      timerRef.current = setInterval(tick, SAMPLE_INTERVAL_MS);
+      void begin(lat, lng, 50, () => sendSample(lat, lng, 50, null, hint));
     },
-    [riderId, sendSample],
+    [riderId, sendSample, begin],
   );
 
   return { session, startGeo, startManual, stop };

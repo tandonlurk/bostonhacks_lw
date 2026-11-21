@@ -1,9 +1,9 @@
 "use client";
 
-import type { LeaderboardTeam, RideState } from "@/contracts";
-import type { TeamRouteId } from "@/contracts/routes";
+import type { CrewBonus, LeaderboardTeam, RideState } from "@/contracts";
+import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { LineChip } from "@/components/LineChip";
-import { ClockIcon, TrophyIcon } from "@/components/icons";
+import { ClockIcon, TeamIcon, TrophyIcon } from "@/components/icons";
 import { HoldToEnd } from "./HoldToEnd";
 import { StateBadge } from "./TopCard";
 import { formatClock, formatPoints, useCountUp, useNow } from "./util";
@@ -14,10 +14,11 @@ interface LivePanelProps {
   state: RideState | null;
   startedAt: number | null;
   stopsCredited: number;
+  minutesRidden: number | null;
+  pointsAwarded: number | null;
+  crew: CrewBonus | null;
   message: string | null;
   teamStats: LeaderboardTeam | null;
-  /** Team points gained since this ride started (from the live leaderboard). */
-  teamGain: number;
   onEnd: () => void;
   ending: boolean;
 }
@@ -33,10 +34,69 @@ function Stat({ label, children, accent }: { label: string; children: React.Reac
         minWidth: 0,
       }}
     >
-      <div className="num" style={{ fontSize: 26, fontWeight: 800, lineHeight: 1.05, color: accent ? "var(--accent)" : "var(--ink)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <div
+        className="num"
+        style={{
+          fontSize: 25,
+          fontWeight: 800,
+          lineHeight: 1.05,
+          color: accent ? "var(--accent)" : "var(--ink)",
+          whiteSpace: "nowrap",
+          overflow: "hidden",
+          textOverflow: "ellipsis",
+        }}
+      >
         {children}
       </div>
-      <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap" }}>{label}</div>
+      <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+        {label}
+      </div>
+    </div>
+  );
+}
+
+function CrewChip({ crew }: { crew: CrewBonus }) {
+  const names = crew.teammates.map((t) => t.displayName);
+  const who = names.length > 2 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(", ");
+  return (
+    <div
+      className={styles.pop}
+      title={crew.message}
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: 8,
+        marginTop: 10,
+        padding: "7px 10px 7px 7px",
+        borderRadius: "var(--radius-pill)",
+        background: "rgba(255,61,127,0.12)",
+        border: "1px solid rgba(255,61,127,0.35)",
+        fontSize: 13,
+        fontWeight: 700,
+      }}
+    >
+      <span
+        className="num"
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: 3,
+          padding: "2px 8px",
+          borderRadius: "var(--radius-pill)",
+          background: "var(--hot)",
+          color: "#fff",
+          fontWeight: 800,
+          flexShrink: 0,
+        }}
+      >
+        <TeamIcon size={15} weight={2.4} />x{crew.multiplier.toFixed(1).replace(/\.0$/, "")}
+      </span>
+      <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Crew with {who}</span>
+      {crew.bonusPoints > 0 ? (
+        <span className="num" style={{ marginLeft: "auto", color: "var(--accent)", flexShrink: 0 }}>
+          +{formatPoints(crew.bonusPoints)}
+        </span>
+      ) : null}
     </div>
   );
 }
@@ -45,6 +105,9 @@ export function LivePanel(p: LivePanelProps) {
   const now = useNow(true, 1000);
   const elapsed = p.startedAt ? now - p.startedAt : 0;
   const teamPoints = useCountUp(p.teamStats?.points ?? 0);
+  const ridePoints = useCountUp(p.pointsAwarded ?? 0, 600);
+  const onTrain = p.minutesRidden != null ? `${p.minutesRidden} min on train` : null;
+  const stops = `${p.stopsCredited} ${p.stopsCredited === 1 ? "stop" : "stops"}`;
 
   return (
     <section
@@ -74,8 +137,8 @@ export function LivePanel(p: LivePanelProps) {
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginTop: 6 }}>
-        <div>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginTop: 4 }}>
+        <div style={{ minWidth: 0 }}>
           <div
             className="num"
             role="timer"
@@ -84,9 +147,9 @@ export function LivePanel(p: LivePanelProps) {
           >
             {formatClock(elapsed)}
           </div>
-          <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "var(--muted)", marginTop: 4 }}>
+          <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "var(--muted)", marginTop: 5 }}>
             <ClockIcon size={15} weight={2.2} />
-            ride time
+            ride time · {onTrain ? `${onTrain} · ${stops}` : stops}
           </p>
         </div>
       </div>
@@ -97,13 +160,13 @@ export function LivePanel(p: LivePanelProps) {
         </p>
       ) : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "0.8fr 1.4fr 0.8fr", gap: 8, marginTop: 12 }}>
-        <Stat label="stops credited">
-          <span key={p.stopsCredited} className={styles.tick} style={{ display: "inline-block" }}>
-            {p.stopsCredited}
-          </span>
+      {p.crew && p.crew.teammates.length > 0 ? <CrewChip crew={p.crew} /> : null}
+
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr 0.75fr", gap: 8, marginTop: 12 }}>
+        <Stat label="pts this ride" accent>
+          {p.pointsAwarded != null ? `+${formatPoints(ridePoints)}` : "+0"}
         </Stat>
-        <Stat label={p.teamGain > 0 ? `team pts · +${formatPoints(p.teamGain)} this ride` : "team points"} accent>
+        <Stat label={p.team ? `${TEAMS[p.team].name} pts` : "team points"}>
           {p.teamStats ? formatPoints(teamPoints) : "—"}
         </Stat>
         <Stat label="team rank">

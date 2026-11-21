@@ -1,5 +1,5 @@
 // Small geo helpers for the ride screen: local meter offsets, densified polylines, demo drift path.
-import { STATIONS } from "@/components/map/mbta-geo";
+import { STATIONS, type GeoStation } from "@/components/map/mbta-geo";
 
 export interface LatLng {
   lat: number;
@@ -37,6 +37,22 @@ export function densify(points: LatLng[], stepM: number): LatLng[] {
     }
   }
   return out;
+}
+
+const PLACES = Object.values(STATIONS).filter((s) => s.id.startsWith("place-"));
+
+/** Nearest rapid-transit station (parent "place-" ids only, so no bus-stop names like "Tremont St @ ..."). */
+export function nearestPlace(p: LatLng): GeoStation | null {
+  let best: GeoStation | null = null;
+  let bestD = Infinity;
+  for (const s of PLACES) {
+    const d = distanceM(p, s);
+    if (d < bestD) {
+      bestD = d;
+      best = s;
+    }
+  }
+  return best;
 }
 
 export function formatDistance(m: number): string {

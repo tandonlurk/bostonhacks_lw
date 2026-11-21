@@ -27,6 +27,10 @@ export interface DrawOptions {
   /** Heading relative to the camera's "up" in degrees, null hides the cone. */
   coneAngle: number | null;
   nearestId: string | null;
+  /** Station labels above this y (CSS px) would hide under the floating top card. */
+  labelMinY: number;
+  /** Station labels below this y (CSS px) are skipped so they don't fight the floating controls. */
+  labelMaxY: number;
   /** 0..1 pulse phase for subtle ambient motion (vehicle glow). */
   phase: number;
 }
@@ -101,7 +105,11 @@ function strokeGround(
   alpha: number,
   minPx: number,
   maxPx = Infinity,
+  cap: CanvasLineCap = "round",
 ) {
+  // Translucent passes use butt caps and coarse buckets: overlapping round caps at every batch break
+  // would otherwise show up as beads of doubled alpha along the line.
+  ctx.lineCap = cap;
   let open = false;
   let bucket = -1;
   let last: Projected | null = null;
@@ -134,7 +142,7 @@ function strokeGround(
     const k = (pa.k + pb.k) / 2;
     const w = Math.min(maxPx, Math.max(minPx, widthM * k));
     const al = alpha * view.fade(k);
-    const nb = Math.round(w * 2) + 1000 * Math.round(al * 24);
+    const nb = cap === "round" ? Math.round(w * 2) + 1000 * Math.round(al * 24) : Math.round(Math.log(w) / Math.log(1.1)) + 1000 * Math.round(al * 8);
     const contiguous = last !== null && seg[0] === a;
     if (nb !== bucket) {
       flush();
@@ -176,7 +184,7 @@ function drawGrid(ctx: CanvasRenderingContext2D, view: View, colors: MapColors) 
   for (const major of [false, true]) {
     ctx.beginPath();
     ctx.lineWidth = major ? 1.4 : 1;
-    ctx.globalAlpha = major ? 0.13 : 0.07;
+    ctx.globalAlpha = major ? 0.16 : 0.08;
     for (let i = -Math.ceil(R / S); i <= Math.ceil(R / S); i++) {
       const idx = (((i + Math.floor(eCam / S)) % 4) + 4) % 4;
       const idy = (((i + Math.floor(nCam / S)) % 4) + 4) % 4;
@@ -209,8 +217,8 @@ function drawLines(ctx: CanvasRenderingContext2D, view: View, colors: MapColors,
     ctx.strokeStyle = colors.team[t];
     for (const branch of LINE_GEOM[t]) {
       const g = toGround(view, branch);
-      strokeGround(ctx, view, g, mine ? 90 : 70, 0.14 * dim, 4);
-      strokeGround(ctx, view, g, mine ? 36 : 28, 0.35 * dim, 2.5);
+      strokeGround(ctx, view, g, mine ? 90 : 70, 0.14 * dim, 4, Infinity, "butt");
+      strokeGround(ctx, view, g, mine ? 36 : 28, 0.35 * dim, 2.5, Infinity, "butt");
       strokeGround(ctx, view, g, mine ? 15 : 11, 0.95 * dim, 1.2, 9);
     }
   }
@@ -348,7 +356,7 @@ function drawLabels(ctx: CanvasRenderingContext2D, view: View, o: DrawOptions) {
   for (const c of candidates) {
     if (count >= 7) break;
     const p = view.project(c.x, c.f);
-    if (!p || p.x < 8 || p.x > o.width - 8 || p.y < 70 || p.y > o.height - 20) continue;
+    if (!p || p.x < 8 || p.x > o.width - 8 || p.y < o.labelMinY || p.y > o.labelMaxY) continue;
     const rel = p.k / zoom;
     if (rel < 0.3) continue;
     const isNearest = c.s.id === o.nearestId;
@@ -360,10 +368,12 @@ function drawLabels(ctx: CanvasRenderingContext2D, view: View, o: DrawOptions) {
       const tw = ctx.measureText(c.s.name).width;
       const w = tw + 24;
       const h = 30;
+      // Standing at the station: hover the pill above the rider's dot instead of on top of it.
+      const onRider = Math.hypot(p.x - view.cam.cx, p.y - view.cam.cy) < 40;
       const bx = p.x - w / 2;
-      const by = p.y - h - 16;
+      const by = (onRider ? Math.min(p.y, view.cam.cy) - 28 : p.y) - h - 16;
       const box = { x: bx, y: by, w, h: h + 16 };
-      if (overlaps(box)) continue;
+      if (by < o.labelMinY - 12 || (!onRider && overlaps(box))) continue;
       placed.push(box);
       ctx.globalAlpha = 0.92;
       ctx.fillStyle = colors.bg;
@@ -421,7 +431,7 @@ export function drawNavMap(ctx: CanvasRenderingContext2D, view: View, o: DrawOpt
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   ctx.strokeStyle = colors.water;
-  for (const water of WATER) strokeGround(ctx, view, toGround(view, water.pts), water.widthM, 1, 2);
+  for (const water of WATER) strokeGround(ctx, view, toGround(view, water.pts), water.widthM, 1, 2, Infinity, "butt");
   ctx.globalAlpha = 1;
 
   drawLines(ctx, view, colors, o.team);

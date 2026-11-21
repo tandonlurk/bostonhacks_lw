@@ -25,9 +25,9 @@ interface NavMapProps {
 }
 
 const MODE_CAMERA: Record<MapMode, { tilt: number; dist: number; zoom: number }> = {
-  idle: { tilt: 0.95, dist: 2100, zoom: 0.36 },
-  riding: { tilt: 1.03, dist: 2500, zoom: 0.31 },
-  onboarding: { tilt: 0.85, dist: 3400, zoom: 0.2 },
+  idle: { tilt: 1.06, dist: 900, zoom: 0.4 },
+  riding: { tilt: 1.12, dist: 800, zoom: 0.34 },
+  onboarding: { tilt: 0.9, dist: 1600, zoom: 0.22 },
 };
 
 function readColors(el: Element): MapColors {
@@ -122,6 +122,8 @@ export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reduc
         accuracy: fix.accuracy,
         coneAngle: fix.heading == null ? null : angleDelta(cam.bearing, fix.heading),
         nearestId: p.nearestId,
+        labelMinY: p.mode === "onboarding" ? 60 : 190,
+        labelMaxY: size.h * Math.min(0.9, cyFrac + 0.2),
         phase: p.reducedMotion ? 0 : (now / 1800) % 1,
       });
       if (dotRef.current) dotRef.current.style.transform = `translate3d(${cam.cx}px, ${cam.cy}px, 0)`;

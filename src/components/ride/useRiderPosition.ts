@@ -19,14 +19,15 @@ export type GpsState = "off" | "locating" | "on" | "denied" | "unsupported";
 
 const DEMO_SPEED_IDLE = 4; // m/s, a slow stroll
 const DEMO_SPEED_RIDING = 13; // m/s, roughly a Green Line train between stops
+const INITIAL_FIX: Fix = { ...demoAt(0), accuracy: 25 };
 
 export function useRiderPosition({ riding, reducedMotion }: { riding: boolean; reducedMotion: boolean }) {
   const [gpsWanted, setGpsWanted] = useState(false);
   const [gpsState, setGpsState] = useState<GpsState>("off");
   const gpsFixRef = useRef<Fix | null>(null);
   const headingAnchorRef = useRef<LatLng | null>(null);
-  const currentRef = useRef<Fix>({ ...demoAt(0), accuracy: 25 });
-  const [snapshot, setSnapshot] = useState<Fix>(currentRef.current);
+  const [snapshot, setSnapshot] = useState<Fix>(INITIAL_FIX);
+  const currentRef = useRef<Fix>(INITIAL_FIX);
   const demoRef = useRef({ travelled: 0, last: 0 });
   const optsRef = useRef({ riding, reducedMotion });
   useEffect(() => {
