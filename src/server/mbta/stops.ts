@@ -43,7 +43,7 @@ export interface StopIndex {
 /** Index of all rapid-transit platforms plus Silver Line stops, for mapping vehicle stop ids. */
 export async function getStopIndex(): Promise<StopIndex> {
   return cached("stops:index", 12 * HOUR, async () => {
-    const [platforms, stations, silver] = await Promise.all([
+    const [platforms, stations, silver, silverPlatforms] = await Promise.all([
       mbtaGet<StopAttrs>("/stops", {
         "filter[route_type]": "0,1",
         "filter[location_type]": "0",
@@ -58,6 +58,11 @@ export async function getStopIndex(): Promise<StopIndex> {
         "filter[route]": expandRouteIds("Silver").join(","),
         "fields[stop]": "name,latitude,longitude",
       }),
+      mbtaGet<StopAttrs>("/stops", {
+        "filter[route]": expandRouteIds("Silver").join(","),
+        "filter[location_type]": "0",
+        "fields[stop]": "name,latitude,longitude",
+      }),
     ]);
     const parentOf = new Map<string, string>();
     const byId = new Map<string, Stop>();
@@ -65,7 +70,7 @@ export async function getStopIndex(): Promise<StopIndex> {
       byId.set(id, { id, name: a.name, lat: a.latitude, lng: a.longitude });
     for (const s of stations.data) add(s.id, s.attributes);
     for (const s of silver.data) if (!byId.has(s.id)) add(s.id, s.attributes);
-    for (const p of platforms.data) {
+    for (const p of [...platforms.data, ...silverPlatforms.data]) {
       const parent = relId(p, "parent_station");
       if (parent) parentOf.set(p.id, parent);
       if (!byId.has(p.id)) add(p.id, p.attributes);
@@ -78,4 +83,16 @@ export async function getStopIndex(): Promise<StopIndex> {
 export function toStationId(index: StopIndex | null, stopId: string | null): string | null {
   if (!stopId) return null;
   return index?.parentOf.get(stopId) ?? stopId;
+}
+
+/** Ordered station ids for one MBTA route + direction (vehicle travel order). */
+export async function getStopOrder(routeId: string, directionId: 0 | 1): Promise<string[]> {
+  return cached(`stops:order:${routeId}:${directionId}`, 6 * HOUR, async () => {
+    const doc = await mbtaGet<StopAttrs>("/stops", {
+      "filter[route]": routeId,
+      "filter[direction_id]": String(directionId),
+      "fields[stop]": "name",
+    });
+    return doc.data.map((s) => s.id);
+  }, 7 * 24 * HOUR);
 }

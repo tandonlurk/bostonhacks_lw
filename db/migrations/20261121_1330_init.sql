@@ -17,16 +17,12 @@ create table if not exists ride_sessions (
   route_id          text,           -- MBTA route id, e.g. Green-B
   team_route_id     text,
   direction_id      smallint,
-  candidate_vehicle_id text,
-  candidate_count   int not null default 0,
-  last_stop_id      text,
-  last_stop_sequence int,
   stops_credited    int not null default 0,
-  manual            jsonb,
+  points_awarded    int not null default 0,
+  manual            boolean not null default false,
+  state             jsonb not null default '{}'::jsonb,  -- engine state (src/server/rides/engine.ts)
   started_at        timestamptz not null default now(),
-  bound_at          timestamptz,
-  last_sample_at    timestamptz,
-  last_seen_on_vehicle_at timestamptz,
+  updated_at        timestamptz not null default now(),
   ended_at          timestamptz
 );
 -- one active session per rider

@@ -1,9 +1,11 @@
-// STUB (T01): returns fixtures until the owner replaces it.
-// Owner: A (T04). Contract: docs/CONTRACTS.md.
-import { createRiderFixture } from "@/contracts/fixtures";
+// POST /api/riders  { displayName, homeTeamRouteId } -> { riderId }  (owner: A, T04)
+import type { CreateRiderResponse } from "@/contracts";
 import { handle, json, readJson } from "@/server/http";
+import { parseRider } from "@/server/rides/service";
+import { createRider } from "@/server/rides/store";
 
 export const POST = handle(async (req: Request) => {
-  await readJson(req);
-  return json(createRiderFixture);
+  const { displayName, homeTeamRouteId } = parseRider(await readJson(req));
+  const rider = await createRider(displayName, homeTeamRouteId);
+  return json<CreateRiderResponse>({ riderId: rider.id }, { status: 201 });
 });

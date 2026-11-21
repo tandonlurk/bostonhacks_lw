@@ -1,9 +1,5 @@
-// STUB (T01): returns fixtures until the owner replaces it.
-// Owner: A (T04). Contract: docs/CONTRACTS.md.
-import { rideSampleFixture } from "@/contracts/fixtures";
+// POST /api/rides/sample  (owner: A, T04). Spec: docs/KICKOFF.md section 5.
 import { handle, json, readJson } from "@/server/http";
+import { handleSample, parseSample } from "@/server/rides/service";
 
-export const POST = handle(async (req: Request) => {
-  await readJson(req);
-  return json(rideSampleFixture);
-});
+export const POST = handle(async (req: Request) => json(await handleSample(parseSample(await readJson(req)))));
