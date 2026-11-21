@@ -1,9 +1,9 @@
-// STUB (T01): returns fixtures until the owner replaces it.
-// Owner: B (T11). Contract: docs/CONTRACTS.md.
-import { claimLandmarkFixture } from "@/contracts/fixtures";
-import { handle, json, readJson } from "@/server/http";
-
+import type { ClaimLandmarkRequest } from "@/contracts";
+import { apiError, handle, json, readJson } from "@/server/http";
+import { claimLandmark } from "@/server/landmarks";
+import { ScoringError } from "@/server/points/rules";
 export const POST = handle(async (req: Request) => {
-  await readJson(req);
-  return json(claimLandmarkFixture);
+  const body = await readJson<ClaimLandmarkRequest>(req);
+  try { return json(await claimLandmark(body?.riderId,body?.landmarkId,body?.lat,body?.lng)); }
+  catch (error) { if (error instanceof ScoringError) return apiError(error.status,error.code,error.message); throw error; }
 });
