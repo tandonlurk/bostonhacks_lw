@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { ManualRideHint, RideSampleResponse, RideState } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import {
@@ -26,7 +26,9 @@ interface RideSessionState {
   nextStopId: string | null;
   message: string | null;
   error: string | null;
-  lastResult: { stopsCredited: number; pointsAwarded: number } | null;
+  /** Epoch ms when the current ride started (client clock), null when idle. */
+  startedAt: number | null;
+  lastResult: { stopsCredited: number; pointsAwarded: number; durationMs?: number } | null;
 }
 
 const IDLE: RideSessionState = {
@@ -38,6 +40,7 @@ const IDLE: RideSessionState = {
   nextStopId: null,
   message: null,
   error: null,
+  startedAt: null,
   lastResult: null,
 };
 
@@ -45,6 +48,15 @@ export function useRideSession(riderId: string | null) {
   const [session, setSession] = useState<RideSessionState>(IDLE);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const sampleCountRef = useRef(0);
+  const startedAtRef = useRef<number | null>(null);
+
+  // Stop sampling if the owner unmounts (otherwise the interval leaks and keeps posting samples).
+  useEffect(
+    () => () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    },
+    [],
+  );
 
   const applySample = useCallback((res: RideSampleResponse) => {
     if (typeof window !== "undefined" && res.nextStopId) {
@@ -66,6 +78,8 @@ export function useRideSession(riderId: string | null) {
   const stop = useCallback(async () => {
     if (timerRef.current) clearInterval(timerRef.current);
     timerRef.current = null;
+    const durationMs = startedAtRef.current ? Date.now() - startedAtRef.current : undefined;
+    startedAtRef.current = null;
     if (!riderId) {
       setSession(IDLE);
       return;
@@ -81,7 +95,7 @@ export function useRideSession(riderId: string | null) {
             if (!res.ok) throw new Error(`rides/end ${res.status}`);
             return res.json();
           });
-      setSession({ ...IDLE, lastResult: { stopsCredited: result.stopsCredited, pointsAwarded: result.pointsAwarded } });
+      setSession({ ...IDLE, lastResult: { stopsCredited: result.stopsCredited, pointsAwarded: result.pointsAwarded, durationMs } });
     } catch (err) {
       setSession({ ...IDLE, error: err instanceof Error ? err.message : "failed to end ride" });
     }
@@ -137,7 +151,8 @@ export function useRideSession(riderId: string | null) {
       return;
     }
     sampleCountRef.current = 0;
-    setSession({ ...IDLE, active: true, state: "searching", message: "Looking for your train…" });
+    startedAtRef.current = Date.now();
+    setSession({ ...IDLE, active: true, state: "searching", message: "Looking for your train…", startedAt: startedAtRef.current });
 
     const tick = () => {
       navigator.geolocation.getCurrentPosition(
@@ -152,6 +167,7 @@ export function useRideSession(riderId: string | null) {
       );
     };
 
+    if (timerRef.current) clearInterval(timerRef.current);
     tick();
     timerRef.current = setInterval(tick, SAMPLE_INTERVAL_MS);
   }, [riderId, sendSample]);
@@ -160,9 +176,11 @@ export function useRideSession(riderId: string | null) {
     (hint: ManualRideHint, lat: number, lng: number) => {
       if (!riderId) return;
       sampleCountRef.current = 0;
-      setSession({ ...IDLE, active: true, state: "searching", message: "Checking your manual pick…" });
+      startedAtRef.current = Date.now();
+      setSession({ ...IDLE, active: true, state: "searching", message: "Checking your manual pick…", startedAt: startedAtRef.current });
 
       const tick = () => sendSample(lat, lng, 50, null, hint);
+      if (timerRef.current) clearInterval(timerRef.current);
       tick();
       timerRef.current = setInterval(tick, SAMPLE_INTERVAL_MS);
     },
