@@ -7,21 +7,27 @@ import { USE_MOCKS } from "./useMocks";
 
 const POLL_MS = 10000;
 
-export function useLandmarks() {
+/**
+ * riderId is passed through once available so `claimed` reflects this rider's
+ * own claims (see issue #54: GET /api/landmarks?riderId=.. scopes the flag;
+ * omitted means anonymous browsing with claimed always false).
+ */
+export function useLandmarks(riderId?: string | null) {
   const [data, setData] = useState<LandmarksResponse>(USE_MOCKS ? landmarksFixture : []);
   const [loading, setLoading] = useState(!USE_MOCKS);
 
   const refresh = useCallback(async () => {
     if (USE_MOCKS) return;
     try {
-      const res = await fetch("/api/landmarks", { cache: "no-store" });
+      const qs = riderId ? `?riderId=${encodeURIComponent(riderId)}` : "";
+      const res = await fetch(`/api/landmarks${qs}`, { cache: "no-store" });
       if (res.ok) setData(await res.json());
     } catch {
       // keep last known list on transient failure
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [riderId]);
 
   useEffect(() => {
     if (USE_MOCKS) return;

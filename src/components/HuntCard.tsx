@@ -38,12 +38,17 @@ export function HuntCard({ hunt, riderId }: { hunt: HuntResponse; riderId: strin
       <ul style={{ display: "flex", flexDirection: "column", gap: "var(--space-3)", listStyle: "none" }}>
         {hunt.clues.map((clue) => {
           const result = done[clue.id];
+          const isDemo = clue.id.startsWith("demo:");
           return (
             <li key={clue.id} style={{ display: "flex", flexDirection: "column", gap: 6 }}>
               <p style={{ fontSize: 15 }}>{clue.text}</p>
-              {!clue.verified ? (
+              {isDemo ? (
                 <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)" }}>
-                  ⚠ not yet verified in person — demo content
+                  🧪 Demo clue — practice only, not tied to this physical station
+                </span>
+              ) : !clue.verified ? (
+                <span style={{ fontSize: 11, fontWeight: 700, color: "var(--muted)" }}>
+                  ⚠ not yet verified in person
                 </span>
               ) : null}
               {result ? (

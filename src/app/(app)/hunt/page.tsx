@@ -19,10 +19,13 @@ export default function HuntPage() {
       </p>
 
       {loading && !data ? <EmptyState title="Looking for a hunt…" /> : null}
-      {!loading && !data ? (
-        <EmptyState title="No active hunt right now" body="Hunts show up here when there's a delay near your station." />
+      {!loading && !data?.clues.length ? (
+        <EmptyState
+          title="No active hunt right now"
+          body="Verified clues show up here when there's a delay near your station. Start the demo simulator from the admin tools for a practice run."
+        />
       ) : null}
-      {data ? <HuntCard hunt={data} riderId={rider?.riderId ?? null} /> : null}
+      {data?.clues.length ? <HuntCard hunt={data} riderId={rider?.riderId ?? null} /> : null}
     </div>
   );
 }

@@ -91,7 +91,7 @@ export function LiveMap({ riderId = null }: { riderId?: string | null }) {
   const [activeTeams, setActiveTeams] = useState<Set<TeamRouteId>>(new Set(TEAM_ROUTE_IDS));
   const [selected, setSelected] = useState<Vehicle | Landmark | null>(null);
   const { data, loading, error } = useVehicles();
-  const { data: landmarks, refresh: refreshLandmarks } = useLandmarks();
+  const { data: landmarks, refresh: refreshLandmarks } = useLandmarks(riderId);
 
   const vehicles = useMemo(
     () => (data?.vehicles ?? []).filter((v) => activeTeams.has(v.teamRouteId)),
