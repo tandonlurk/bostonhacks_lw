@@ -2,6 +2,7 @@ import type { TeamRouteId, Vehicle, VehicleStatus } from "@/contracts";
 import { MBTA_ROUTES, toTeamRouteId } from "@/contracts";
 import { cached, cachedAt } from "./cache";
 import { mbtaGet, relId, ttl } from "./client";
+import { recordVehicles } from "@/server/delay/history";
 import { getStopIndex, toStationId, type StopIndex } from "./stops";
 
 type VehicleAttrs = {
@@ -73,6 +74,7 @@ export async function getVehicleSnapshot(): Promise<VehicleSnapshot> {
         reportedAt: a.updated_at,
       });
     }
+    recordVehicles(vehicles); // T18 history; throttled, fire-and-forget, no-op without a DB
     return { updatedAt: new Date().toISOString(), vehicles };
   });
 }
