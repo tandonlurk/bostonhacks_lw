@@ -4,8 +4,15 @@ import { BottomNav } from "./BottomNav";
 import { DelayBanner } from "./DelayBanner";
 import { useRider } from "@/hooks/useRider";
 import { useDelay } from "@/hooks/useDelay";
+import { usePathname } from "next/navigation";
 
 export function AppShell({ children }: { children: React.ReactNode }) {
+  const pathname = usePathname();
+  if (pathname === "/welcome") return <>{children}</>;
+  return <GameShell>{children}</GameShell>;
+}
+
+function GameShell({ children }: { children: React.ReactNode }) {
   const { rider } = useRider();
   const delay = useDelay(rider?.homeTeamRouteId);
 

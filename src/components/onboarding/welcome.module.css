@@ -1,0 +1,62 @@
+.welcome {
+  --navy: #12344a;
+  position: relative;
+  isolation: isolate;
+  min-height: 100svh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  color: var(--navy);
+  background: #a9d4ee;
+  padding: 30px clamp(24px, 4.3vw, 80px) 25px;
+  font-family: var(--font-geist-sans), sans-serif;
+}
+
+.header { display: flex; align-items: center; justify-content: space-between; position: relative; z-index: 2; gap: 20px; }
+.edition, .artCaption, .lineLabel { font-family: var(--font-geist-mono), monospace; font-size: 11px; font-weight: 500; letter-spacing: .09em; }
+.headerActions { display: flex; align-items: center; gap: 34px; margin-left: auto; }
+.logo { display: flex; align-items: center; gap: 9px; font-size: 20px; font-weight: 750; letter-spacing: -.07em; }
+.tMark { display: grid; place-items: center; width: 31px; height: 31px; border: 1.8px solid currentColor; border-radius: 50%; font-size: 30px; font-weight: 700; line-height: 1; padding-bottom: 5px; }
+.start { border: 1px solid var(--navy); background: transparent; border-radius: 99px; padding: 12px 24px; min-height: 46px; font-size: 14px; font-weight: 600; transition: background .2s, color .2s; }
+.start:hover { background: var(--navy); color: white; }
+.art { position: absolute; top: 9%; right: -1%; width: min(76vw, 1200px); aspect-ratio: 1.62; z-index: -1; pointer-events: none; }
+.city { display: block; width: 100%; height: 100%; }
+.artCaption { position: absolute; right: 11%; bottom: 12%; color: #426b83; font-size: 10px; letter-spacing: .14em; }
+.hero { margin-top: auto; padding-top: clamp(130px, 19vh, 280px); padding-bottom: clamp(40px, 7vh, 100px); position: relative; width: max-content; max-width: 100%; }
+.eyebrow { display: flex; align-items: center; gap: 9px; font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.spark { font-size: 23px; line-height: 1; }
+.hero h1 { font-family: var(--font-bricolage), var(--font-geist-sans), sans-serif; font-weight: 800; font-size: clamp(100px, 13.6vw, 220px); letter-spacing: -.085em; line-height: .98; margin-left: -.05em; }
+.period { color: #fff; }
+.pitch { margin-top: 24px; font-size: clamp(21px, 2.2vw, 32px); line-height: 1.28; letter-spacing: -.04em; font-weight: 500; }
+.heroStart { display: inline-flex; margin-top: 26px; min-height: 48px; padding: 14px 25px; border: none; border-radius: 99px; color: white; background: var(--navy); font-size: 14px; font-weight: 600; transition: transform .2s, background .2s; }
+.heroStart:hover { transform: translateY(-2px); background: #204e69; }
+.footer { display: flex; align-items: flex-end; justify-content: space-between; gap: 20px; border-top: 1px solid #12344a30; padding-top: 20px; }
+.lines { display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
+.lines > span:not(.lineLabel) { width: 10px; height: 10px; border-radius: 50%; }
+.lineLabel { margin-left: 9px; font-size: 10px; }
+.footer > p { font-size: 12px; text-align: right; line-height: 1.7; }
+.demo { display: block; color: #42647a; font-size: 11px; }
+.welcome button:focus-visible, .welcome a:focus-visible { outline: 3px solid var(--navy); outline-offset: 5px; }
+
+@media (min-width: 1600px) { .hero { padding-top: 240px; } }
+@media (max-width: 700px) {
+  .welcome { padding: max(22px, env(safe-area-inset-top)) 24px 22px; }
+  .edition { display: none; }
+  .headerActions { justify-content: space-between; width: 100%; gap: 18px; }
+  .logo { font-size: 18px; }
+  .start { padding: 10px 19px; }
+  .art { width: 155vw; right: -43%; top: 12%; opacity: .85; }
+  .artCaption { display: none; }
+  .hero { padding-top: clamp(180px, 29vh, 270px); padding-bottom: 52px; }
+  .hero h1 { font-size: clamp(88px, 23vw, 152px); }
+  .eyebrow { font-size: 12px; gap: 6px; }
+  .pitch { margin-top: 20px; font-size: 24px; }
+  .heroStart { margin-top: 24px; }
+  .footer { align-items: flex-start; flex-direction: column; gap: 14px; }
+  .lineLabel { font-size: 9px; letter-spacing: .055em; margin-left: 5px; }
+  .footer > p { display: flex; justify-content: space-between; gap: 12px; width: 100%; text-align: left; font-size: 10px; }
+  .demo { font-size: 10px; }
+}
+@media (prefers-reduced-motion: reduce) { .start, .heroStart { transition: none; } .heroStart:hover { transform: none; } }
+.edition,.lineLabel,.artCaption,.demo,.footer > p { font-size:12px; }
+@media(max-width:700px) { .lineLabel { flex-basis:100%; margin:8px 0 0; } .footer > p,.demo { font-size:12px; } }
