@@ -1,0 +1,190 @@
+// One realistic fixture per response in docs/CONTRACTS.md.
+// Used by route stubs and by the UI in mock mode (NEXT_PUBLIC_USE_MOCKS=1).
+import type {
+  ClaimLandmarkResponse,
+  CompleteHuntResponse,
+  CreateRiderResponse,
+  DelayResponse,
+  DemoSimResponse,
+  DistrictsResponse,
+  EndRideResponse,
+  HealthResponse,
+  HuntResponse,
+  LandmarksResponse,
+  LeaderboardResponse,
+  Lot,
+  LotTier,
+  PerksResponse,
+  RedeemPerkResponse,
+  RideSampleResponse,
+  Rider,
+  RoutesResponse,
+  StopsResponse,
+  TeamRouteId,
+  TokensResponse,
+  VehiclesResponse,
+} from "./index";
+import { MBTA_ROUTES, TEAMS, TEAM_ROUTE_IDS } from "./routes";
+
+const NOW = "2026-11-21T19:00:00.000Z";
+
+export const healthFixture: HealthResponse = { ok: true, time: NOW };
+
+export const routesFixture: RoutesResponse = MBTA_ROUTES.map((r) => ({
+  id: r.id,
+  teamRouteId: r.teamRouteId,
+  name: r.name,
+  color: TEAMS[r.teamRouteId].color,
+  districtName: TEAMS[r.teamRouteId].districtName,
+}));
+
+export const stopsFixture: StopsResponse = [
+  { id: "place-bland", name: "Blandford Street", lat: 42.349293, lng: -71.100258 },
+  { id: "place-bucen", name: "Boston University Central", lat: 42.350082, lng: -71.106865 },
+  { id: "place-kencl", name: "Kenmore", lat: 42.348949, lng: -71.095169 },
+  { id: "place-hymnl", name: "Hynes Convention Center", lat: 42.347888, lng: -71.087903 },
+  { id: "place-coecl", name: "Copley", lat: 42.349974, lng: -71.077447 },
+  { id: "place-pktrm", name: "Park Street", lat: 42.356395, lng: -71.062424 },
+];
+
+export const vehiclesFixture: VehiclesResponse = {
+  updatedAt: NOW,
+  vehicles: [
+    { id: "G-10224", routeId: "Green-B", teamRouteId: "Green", directionId: 1, lat: 42.34985, lng: -71.1035, bearing: 80, speed: 6.2, currentStatus: "IN_TRANSIT_TO", stopId: "70149", stopSequence: 590, label: "3667-3851" },
+    { id: "G-10095", routeId: "Green-B", teamRouteId: "Green", directionId: 0, lat: 42.35018, lng: -71.1082, bearing: 260, speed: null, currentStatus: "STOPPED_AT", stopId: "170141", stopSequence: 560, label: "3902-3712" },
+    { id: "R-547A1E2B", routeId: "Red", teamRouteId: "Red", directionId: 1, lat: 42.36249, lng: -71.08618, bearing: 120, speed: 11.4, currentStatus: "IN_TRANSIT_TO", stopId: "70072", stopSequence: 90, label: "1812" },
+    { id: "O-548A2B11", routeId: "Orange", teamRouteId: "Orange", directionId: 0, lat: 42.34735, lng: -71.07505, bearing: 200, speed: 8.0, currentStatus: "INCOMING_AT", stopId: "70014", stopSequence: 100, label: "1442" },
+    { id: "B-547A3C09", routeId: "Blue", teamRouteId: "Blue", directionId: 0, lat: 42.37426, lng: -71.0304, bearing: 30, speed: 13.1, currentStatus: "IN_TRANSIT_TO", stopId: "70047", stopSequence: 60, label: "0718" },
+    { id: "y1307", routeId: "742", teamRouteId: "Silver", directionId: 0, lat: 42.35226, lng: -71.04682, bearing: 95, speed: 5.5, currentStatus: "IN_TRANSIT_TO", stopId: "247", stopSequence: 3, label: "1307" },
+  ],
+};
+
+export const delayFixture: DelayResponse = {
+  active: true,
+  source: "simulated",
+  teamRouteIds: ["Green"],
+  message: "Green Line B branch: delays of about 15 minutes due to a disabled train.",
+  startedAt: "2026-11-21T18:52:00.000Z",
+};
+
+export const noDelayFixture: DelayResponse = {
+  active: false,
+  source: "none",
+  teamRouteIds: [],
+  message: null,
+  startedAt: null,
+};
+
+export const createRiderFixture: CreateRiderResponse = { riderId: "rdr_demo_alex" };
+
+export const riderFixture: Rider = {
+  riderId: "rdr_demo_alex",
+  displayName: "Alex",
+  homeTeamRouteId: "Green",
+  points: 142,
+  tokens: 14,
+  streakDays: 3,
+};
+
+export const rideSampleSearchingFixture: RideSampleResponse = {
+  state: "searching",
+  sessionId: "ses_demo_1",
+  stopsCredited: 0,
+  message: "Looking for your train... (1/3 matches)",
+};
+
+export const rideSampleFixture: RideSampleResponse = {
+  state: "on_vehicle",
+  sessionId: "ses_demo_1",
+  vehicleId: "G-10224",
+  teamRouteId: "Green",
+  stopsCredited: 2,
+  nextStopId: "place-kencl",
+  message: "On Green Line B toward Government Center. 2 stops credited.",
+};
+
+export const rideSampleTunnelFixture: RideSampleResponse = {
+  state: "in_tunnel",
+  sessionId: "ses_demo_1",
+  vehicleId: "G-10224",
+  teamRouteId: "Green",
+  stopsCredited: 3,
+  nextStopId: "place-hymnl",
+  message: "Underground. Still tracking your train.",
+};
+
+export const endRideFixture: EndRideResponse = {
+  sessionId: "ses_demo_1",
+  stopsCredited: 5,
+  pointsAwarded: 10,
+};
+
+const TIER_THRESHOLDS = [20, 60, 140, 300, 600];
+const KINDS = ["tower", "lab", "house", "park", "shop", "dock"];
+function lotsFor(team: TeamRouteId, seed: number): Lot[] {
+  return Array.from({ length: 12 }, (_, i) => {
+    const points = ((seed * 37 + i * 53) % 650) * (i < 6 ? 1 : 0.3);
+    const tier = TIER_THRESHOLDS.filter((t) => points >= t).length as LotTier;
+    return {
+      id: `${team}-${i}`,
+      tier,
+      points: Math.round(points),
+      x: i % 4,
+      y: Math.floor(i / 4),
+      kind: KINDS[(seed + i) % KINDS.length],
+    };
+  });
+}
+
+export const districtsFixture: DistrictsResponse = TEAM_ROUTE_IDS.map((team, idx) => {
+  const lots = lotsFor(team, idx + 1);
+  return {
+    teamRouteId: team,
+    name: TEAMS[team].districtName,
+    totalPoints: lots.reduce((s, l) => s + l.points, 0),
+    lots,
+  };
+});
+
+export const leaderboardFixture: LeaderboardResponse = {
+  updatedAt: NOW,
+  teams: [...districtsFixture]
+    .sort((a, b) => b.totalPoints - a.totalPoints)
+    .map((d, i) => ({ teamRouteId: d.teamRouteId, points: d.totalPoints, rank: i + 1, riders: 4 + ((i * 3) % 7) })),
+};
+
+export const huntFixture: HuntResponse = {
+  huntId: "hunt-place-bucen",
+  stopId: "place-bucen",
+  clues: [
+    { id: "bucen-1", text: "Find the station name sign and count the letters in the first word.", verified: false },
+    { id: "bucen-2", text: "Spot the nearest bus stop sign outside the platform. Which route number is listed first?", verified: false },
+  ],
+};
+
+export const completeHuntFixture: CompleteHuntResponse = { pointsAwarded: 10, tokensAwarded: 1, alreadyDone: false };
+
+export const landmarksFixture: LandmarksResponse = [
+  { id: "fenway-park", name: "Fenway Park", lat: 42.346676, lng: -71.097218, stopId: "place-kencl", bonusPoints: 15, claimed: false },
+  { id: "public-garden", name: "Public Garden", lat: 42.354029, lng: -71.069591, stopId: "place-armnl", bonusPoints: 15, claimed: true },
+];
+
+export const claimLandmarkFixture: ClaimLandmarkResponse = { pointsAwarded: 15, alreadyClaimed: false };
+
+export const perksFixture: PerksResponse = [
+  { id: "perk-coffee", title: "Free small coffee", partner: "Demo Cafe (mock partner)", costTokens: 10, remaining: 7, rotatesAt: "2026-11-21T21:00:00.000Z" },
+  { id: "perk-museum", title: "$5 off museum entry", partner: "Demo Museum (mock partner)", costTokens: 25, remaining: 3, rotatesAt: "2026-11-21T21:00:00.000Z" },
+];
+
+export const redeemPerkFixture: RedeemPerkResponse = { redemptionCode: "TCITY-7F3K-92QD", tokensLeft: 4 };
+
+export const tokensFixture: TokensResponse = {
+  balance: 14,
+  ledger: [
+    { delta: 1, reason: "hunt:bucen-1", createdAt: "2026-11-21T18:55:00.000Z" },
+    { delta: 10, reason: "points:ride", createdAt: "2026-11-21T18:30:00.000Z" },
+    { delta: 3, reason: "points:ride", createdAt: "2026-11-20T14:10:00.000Z" },
+  ],
+};
+
+export const demoSimFixture: DemoSimResponse = { running: true, riders: 24 };
