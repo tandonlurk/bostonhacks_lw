@@ -3,6 +3,7 @@
 import { useState } from "react";
 import type { Perk } from "@/contracts";
 import { redeemPerk } from "@/hooks/usePerks";
+import { QrCode } from "./QrCode";
 
 interface RedeemSheetProps {
   perk: Perk;
@@ -82,21 +83,27 @@ export function RedeemSheet({ perk, riderId, onClose, onRedeemed }: RedeemSheetP
             <p style={{ fontSize: 14, color: "var(--line-green)", fontWeight: 600 }}>Redeemed! Show this at the partner:</p>
             <div
               style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: "var(--space-2)",
                 border: "2px dashed var(--border)",
                 borderRadius: "var(--radius-card)",
-                padding: "var(--space-5)",
-                textAlign: "center",
-                fontFamily: "var(--font-geist-mono, monospace)",
-                fontSize: 20,
-                fontWeight: 700,
-                letterSpacing: 2,
+                padding: "var(--space-4)",
               }}
             >
-              {code}
+              <QrCode value={code} />
+              <p
+                style={{
+                  fontFamily: "var(--font-geist-mono, monospace)",
+                  fontSize: 18,
+                  fontWeight: 700,
+                  letterSpacing: 2,
+                }}
+              >
+                {code}
+              </p>
             </div>
-            <p style={{ fontSize: 11, color: "var(--muted)" }}>
-              QR code coming soon (pending a tiny dependency, see issue #43) — the code above works for now.
-            </p>
           </>
         ) : null}
 
