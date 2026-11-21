@@ -2,9 +2,10 @@
 // If ADMIN_TOKEN is set, requires header `x-admin-token`.
 import { isTeamRouteId } from "@/contracts";
 import { getDelay, setSimulatedDelay } from "@/server/delay";
-import { HttpError, handle, json, readJson } from "@/server/http";
+import { HttpError, clientIp, handle, json, rateLimit, readJson } from "@/server/http";
 
 export const POST = handle(async (req: Request) => {
+  rateLimit(`simulate:${clientIp(req)}`, 30, 60_000);
   const token = process.env.ADMIN_TOKEN;
   if (token && req.headers.get("x-admin-token") !== token)
     throw new HttpError(401, "unauthorized", "Admin token required.");
