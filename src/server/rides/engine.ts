@@ -32,6 +32,8 @@ export const CFG = {
   manualGraceMs: 30 * 60_000,
   /** a jump of more than this many stations between samples credits only the arrival station */
   maxStationJump: 3,
+  /** #96: a ride started with the Start button that never binds to a train ends after this */
+  startBindTimeoutMs: 20 * 60_000,
 };
 
 // ---------- types ----------
@@ -71,6 +73,8 @@ export interface EngineState {
   /** #96: crew bonus bookkeeping (epoch ms the crew formed; bonus points earned) */
   crewFormedAt: number | null;
   crewBonusPoints: number;
+  /** #96: fractional crew bonus not yet paid out (paid in whole points) */
+  crewBonusCarry: number;
 }
 
 export type SessionStatus = RideState | "ended";
@@ -134,6 +138,7 @@ export function emptyState(): EngineState {
     destStationId: null,
     crewFormedAt: null,
     crewBonusPoints: 0,
+    crewBonusCarry: 0,
   };
 }
 
@@ -215,6 +220,7 @@ function bind(session: SessionData, v: LiveVehicle, ctx: StepContext, manual: bo
       lastAwayPos: null,
       lastReachedIdx: reachedIndex(v, order),
       lastStationId: v.currentStatus === "STOPPED_AT" ? v.stopId : null,
+      destStationId: (v.currentStatus === "STOPPED_AT" ? v.stopId : null) ?? session.state.destStationId,
     },
   };
 }
@@ -246,6 +252,9 @@ function creditProgress(session: SessionData, v: LiveVehicle, ctx: StepContext):
     if (st.lastStationId !== null) credit(v.stopId);
   }
   if (v.currentStatus === "STOPPED_AT" && v.stopId) st.lastStationId = v.stopId;
+  // Where the rider gets off: the last station the bound train reached (or was credited).
+  if (credits.length) st.destStationId = credits[credits.length - 1].stationId;
+  else if (v.currentStatus === "STOPPED_AT" && v.stopId) st.destStationId = v.stopId;
 
   return {
     session: { ...session, state: st, stopsCredited: session.stopsCredited + credits.length },
@@ -332,6 +341,13 @@ export function step(
   }
 
   // ----- searching -----
+  if (now - Date.parse(session.startedAt) > CFG.startBindTimeoutMs) {
+    return {
+      session: end(session, "left", now),
+      credits: [],
+      message: `We couldn't find your train within ${Math.round(CFG.startBindTimeoutMs / 60_000)} minutes, so this ride ended. Press Start again when you board.`,
+    };
+  }
   if (manual) {
     const stop = ctx.stationCoords(manual.stopId);
     if (!stop) {
