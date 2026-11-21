@@ -83,3 +83,20 @@ POST /api/demo/sim { action: "start"|"stop"|"reset" } -> { running, riders }
 Points go to the district of the line ridden (`teamRouteId` of the vehicle). Lot tier thresholds (points per lot): 20 / 60 / 140 / 300 / 600. Cap: 60 ride-points per rider per hour (anti-abuse).
 
 Internal function (B exports, A calls): `awardPoints({ riderId, teamRouteId, type, amount, ref })` -> `{ pointsAwarded, tokensAwarded }`. Idempotent per `ref`.
+
+## 7. A endpoint semantics and error codes (docs only; no shape changes)
+Errors always use `{ "error": { "code", "message" } }`. `message` is safe to show users.
+
+| Endpoint | Notes | Error codes |
+|---|---|---|
+| `GET /api/health` | Adds optional `db: "ok"\|"unconfigured"\|"error"` | none |
+| `GET /api/vehicles` | `stopId` is the **parent station** (`place-bucen`), matching hunts/landmarks. `speed` m/s or null. CDN-cached about 4 s; poll every 5 s. | 400 `bad_team`, 502 `mbta_unavailable` |
+| `GET /api/stops` | `routeId` may be a team (`Green`) or MBTA route (`Green-B`, `742`). Single MBTA route returns travel order. | 400 `missing_route`, `bad_route`, 502 `mbta_unavailable` |
+| `POST /api/riders` | 201. `displayName` trimmed, 1-24 chars. | 400 `bad_json`, `bad_name`, `bad_team`, 429 `rate_limited` |
+| `GET /api/riders/:id` | `points`, `tokens`, `streakDays` come from B's ledger. | 404 `rider_not_found` |
+| `POST /api/rides/sample` | Send about every 10 s. About 3 moving samples (30 s) to bind. `searching` -> `on_vehicle` <-> `in_tunnel` -> `left`. On `left` the server has already ended the session: stop sampling. `message` is user-ready copy. Samples under 3 s apart are ignored (state echoed back). Missing `accuracy` is treated as 1000 m. `manual` binds to the train at or approaching that station; keep sending the hint while the rider has no GPS. | 400 `bad_json`, `bad_rider`, `bad_location`, `bad_manual`; 404 `rider_not_found` (re-join); 429 `rate_limited`; 503 `mbta_unavailable` (retry) |
+| `POST /api/rides/end` | Idempotent: after an automatic `left`, returns the last session's totals. `pointsAwarded` includes daily bonuses. | 400 `bad_rider`, 404 `rider_not_found`, `no_ride` |
+| `GET /api/delay` | Omit `teamRouteId` to aggregate all lines. Real delays = active MBTA alerts with effect DELAY/SUSPENSION and severity >= 3. Simulated wins over real and auto-expires after 45 min. Not cached. | 400 `bad_team` |
+| `POST /api/delay/simulate` | If `ADMIN_TOKEN` is set, requires header `x-admin-token`. | 400 `bad_team`, `bad_active`; 401 `unauthorized`; 429 `rate_limited` |
+
+Any endpoint: 500 `internal` on unexpected errors.
