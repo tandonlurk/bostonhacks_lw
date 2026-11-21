@@ -1,0 +1,17 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none" role="img" aria-label="Tier 4 building">
+  <rect x="6" y="72" width="52" height="4" fill="currentColor" opacity="0.25"/>
+  <rect x="20" y="18" width="24" height="54" rx="1" fill="currentColor"/>
+  <!-- motif anchor: top of tower, y 6-18, x 26-38 -->
+  <g opacity="0.35" fill="#ffffff">
+    <rect x="24" y="24" width="4" height="4"/>
+    <rect x="32" y="24" width="4" height="4"/>
+    <rect x="24" y="32" width="4" height="4"/>
+    <rect x="32" y="32" width="4" height="4"/>
+    <rect x="24" y="40" width="4" height="4"/>
+    <rect x="32" y="40" width="4" height="4"/>
+    <rect x="24" y="48" width="4" height="4"/>
+    <rect x="32" y="48" width="4" height="4"/>
+    <rect x="24" y="56" width="4" height="4"/>
+    <rect x="32" y="56" width="4" height="4"/>
+  </g>
+</svg>

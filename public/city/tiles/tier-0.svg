@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none" role="img" aria-label="Empty lot">
+  <rect x="6" y="72" width="52" height="4" fill="currentColor" opacity="0.25"/>
+  <rect x="10" y="60" width="44" height="12" fill="none" stroke="currentColor" stroke-width="2" stroke-dasharray="4 4" opacity="0.5"/>
+  <circle cx="32" cy="66" r="2" fill="currentColor" opacity="0.5"/>
+</svg>

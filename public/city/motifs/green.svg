@@ -1,0 +1,5 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 80" fill="none" role="img" aria-label="Campus clock tower motif">
+  <rect x="27" y="12" width="10" height="8" fill="currentColor"/>
+  <circle cx="32" cy="16" r="2.5" fill="none" stroke="#ffffff" stroke-width="1" opacity="0.6"/>
+  <path d="M27 12 L32 3 L37 12 Z" fill="currentColor"/>
+</svg>
