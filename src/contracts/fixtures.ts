@@ -4,6 +4,7 @@ import type {
   ClaimLandmarkResponse,
   CompleteHuntResponse,
   CreateRiderResponse,
+  DelayHeatmapResponse,
   DelayResponse,
   DemoSimResponse,
   DistrictsResponse,
@@ -188,3 +189,17 @@ export const tokensFixture: TokensResponse = {
 };
 
 export const demoSimFixture: DemoSimResponse = { running: true, riders: 24 };
+
+export const heatmapFixture: DelayHeatmapResponse = {
+  available: true,
+  updatedAt: NOW,
+  windowMinutes: 120,
+  stations: [
+    { stopId: "place-kencl", name: "Kenmore", lat: 42.348949, lng: -71.095169, teamRouteId: "Green", observations: 64, slowShare: 0.41, avgSpeedMps: 3.2 },
+    { stopId: "place-bucen", name: "Boston University Central", lat: 42.350082, lng: -71.106865, teamRouteId: "Green", observations: 38, slowShare: 0.18, avgSpeedMps: 5.9 },
+    { stopId: "place-pktrm", name: "Park Street", lat: 42.356395, lng: -71.062424, teamRouteId: "Red", observations: 52, slowShare: 0.33, avgSpeedMps: 4.1 },
+    { stopId: "place-dwnxg", name: "Downtown Crossing", lat: 42.355518, lng: -71.060225, teamRouteId: "Orange", observations: 47, slowShare: 0.12, avgSpeedMps: 7.4 },
+    { stopId: "place-aport", name: "Airport", lat: 42.374262, lng: -71.030395, teamRouteId: "Blue", observations: 30, slowShare: 0.07, avgSpeedMps: 9.8 },
+    { stopId: "place-wtcst", name: "World Trade Center", lat: 42.34863, lng: -71.04246, teamRouteId: "Silver", observations: 21, slowShare: 0.29, avgSpeedMps: 4.6 },
+  ],
+};

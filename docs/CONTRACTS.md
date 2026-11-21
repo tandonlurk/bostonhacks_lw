@@ -26,6 +26,11 @@ GET /api/vehicles?teams=Red,Green
 GET /api/delay?teamRouteId=Red
  -> { active, source: "alert"|"simulated"|"none", teamRouteIds, message, startedAt }
 POST /api/delay/simulate      { teamRouteId, active }  -> same shape as GET /api/delay
+GET /api/delay/heatmap?minutes=120          (T18, additive)
+ -> { available, updatedAt, windowMinutes,
+      stations: [{ stopId, name, lat, lng, teamRouteId, observations, slowShare, avgSpeedMps }] }
+   slowShare 0-1 = share of observations of trains heading to that station that were crawling
+   (< 1.5 m/s) between stations. available:false + empty stations when there is no DB.
 ```
 
 ## 3. Riders and rides (A)

@@ -74,6 +74,25 @@ export interface DelayResponse {
   startedAt: string | null;
 }
 
+/** GET /api/delay/heatmap?minutes=120 (T18). slowShare 0-1: trains crawling (< 1.5 m/s) toward the station. */
+export interface HeatmapStation {
+  stopId: string;
+  name: string;
+  lat: number;
+  lng: number;
+  teamRouteId: TeamRouteId;
+  observations: number;
+  slowShare: number;
+  avgSpeedMps: number | null;
+}
+export interface DelayHeatmapResponse {
+  /** false when there is no history store (no DB); stations is then empty */
+  available: boolean;
+  updatedAt: string;
+  windowMinutes: number;
+  stations: HeatmapStation[];
+}
+
 export interface SimulateDelayRequest {
   teamRouteId: TeamRouteId;
   active: boolean;
