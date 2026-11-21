@@ -5,7 +5,8 @@ import type { DelayResponse } from "@/contracts";
 import { delayFixture, noDelayFixture } from "@/contracts/fixtures";
 import { USE_MOCKS } from "./useMocks";
 
-const POLL_MS = 5000;
+// /api/delay isn't CDN-cached; A's guidance on #1 is to poll about every 15s.
+const POLL_MS = 15000;
 
 export function useDelay(teamRouteId?: string | null) {
   const [data, setData] = useState<DelayResponse>(USE_MOCKS ? delayFixture : noDelayFixture);

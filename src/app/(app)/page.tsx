@@ -41,7 +41,7 @@ export default function Home() {
         <Leaderboard data={leaderboard} loading={leaderboardLoading} />
       </details>
 
-      <LiveMap />
+      <LiveMap riderId={rider?.riderId ?? null} />
     </div>
   );
 }

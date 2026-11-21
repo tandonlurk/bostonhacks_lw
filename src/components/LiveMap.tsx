@@ -2,10 +2,12 @@
 
 import { useMemo, useState } from "react";
 import { TEAMS, TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
-import type { Vehicle } from "@/contracts";
+import type { Landmark, Vehicle } from "@/contracts";
 import { useVehicles } from "@/hooks/useVehicles";
+import { useLandmarks } from "@/hooks/useLandmarks";
 import { LineChip } from "./LineChip";
 import { EmptyState } from "./EmptyState";
+import { LandmarkPanel } from "./LandmarkPanel";
 
 /**
  * Rough bounding box around the rapid-transit core (Cambridge/Boston/JP/Airport/Seaport).
@@ -48,10 +50,48 @@ function VehicleMarker({ vehicle, onSelect }: { vehicle: Vehicle; onSelect: (v: 
   );
 }
 
-export function LiveMap() {
+function isVehicle(x: Vehicle | Landmark): x is Vehicle {
+  return "currentStatus" in x;
+}
+
+function LandmarkMarker({ landmark, onSelect }: { landmark: Landmark; onSelect: (l: Landmark) => void }) {
+  const { left, top } = project(landmark.lat, landmark.lng);
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(landmark)}
+      aria-label={`${landmark.name}${landmark.claimed ? ", claimed" : `, +${landmark.bonusPoints} points`}`}
+      style={{
+        position: "absolute",
+        left: `${left}%`,
+        top: `${top}%`,
+        width: 22,
+        height: 22,
+        marginLeft: -11,
+        marginTop: -11,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        fontSize: 14,
+        borderRadius: "50%",
+        background: landmark.claimed ? "var(--surface)" : "#caa23a",
+        border: "2px solid var(--surface)",
+        boxShadow: "var(--shadow-card)",
+        padding: 0,
+        cursor: "pointer",
+        opacity: landmark.claimed ? 0.6 : 1,
+      }}
+    >
+      <span aria-hidden="true">★</span>
+    </button>
+  );
+}
+
+export function LiveMap({ riderId = null }: { riderId?: string | null }) {
   const [activeTeams, setActiveTeams] = useState<Set<TeamRouteId>>(new Set(TEAM_ROUTE_IDS));
-  const [selected, setSelected] = useState<Vehicle | null>(null);
+  const [selected, setSelected] = useState<Vehicle | Landmark | null>(null);
   const { data, loading, error } = useVehicles();
+  const { data: landmarks, refresh: refreshLandmarks } = useLandmarks();
 
   const vehicles = useMemo(
     () => (data?.vehicles ?? []).filter((v) => activeTeams.has(v.teamRouteId)),
@@ -124,7 +164,11 @@ export function LiveMap() {
           <VehicleMarker key={v.id} vehicle={v} onSelect={setSelected} />
         ))}
 
-        {selected ? (
+        {landmarks.map((l) => (
+          <LandmarkMarker key={l.id} landmark={l} onSelect={setSelected} />
+        ))}
+
+        {selected && isVehicle(selected) ? (
           <div
             role="status"
             style={{
@@ -159,6 +203,15 @@ export function LiveMap() {
               ✕
             </button>
           </div>
+        ) : null}
+
+        {selected && !isVehicle(selected) ? (
+          <LandmarkPanel
+            landmark={selected}
+            riderId={riderId}
+            onClaimed={refreshLandmarks}
+            onDismiss={() => setSelected(null)}
+          />
         ) : null}
       </div>
     </div>
