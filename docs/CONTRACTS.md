@@ -67,6 +67,12 @@ GET /api/tokens?riderId=.. -> { balance, ledger: [{ delta, reason, createdAt, tx
 POST /api/demo/sim { action: "start"|"stop"|"reset" } -> { running, riders }
 ```
 
+### 4a. Hunt clue visibility (clarification, #47; no shape changes)
+- `GET /api/hunts?stopId=` returns only **human-verified** physical clues by default, so `clues` may be empty. Physical clues with `verified: false` are never returned or completable.
+- While the simulator is running (`POST /api/demo/sim {action:"start"}`), each known stop also gets two clearly labeled **virtual demo clues**: ids prefixed `demo:`, `verified: false`, with no physical claims about the station.
+- `POST /api/hunts/complete` accepts `demo:` clues only while the simulator is running. The response shape is unchanged: `{ pointsAwarded, tokensAwarded, alreadyDone }`.
+- Demo path: start the sim, simulate a delay, and the hunt card shows the virtual clues. UI should label `demo:` clues as demo content.
+
 ## 5. Mock mode
 `src/contracts/fixtures.ts` exports one realistic fixture per response above. With `NEXT_PUBLIC_USE_MOCKS=1`, C's data hooks return fixtures instead of fetching, so the UI never waits on a backend.
 
