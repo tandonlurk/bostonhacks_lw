@@ -1,23 +1,46 @@
-/* Design tokens. See docs/design.md section 1. Line colors are fixed by docs/CONTRACTS.md section 1 — do not change them here. */
+/* Design tokens. See docs/design.md section 1. Line colors are fixed by docs/CONTRACTS.md section 1; do not change them here.
+   U00 overhaul: one dark, immersive "night transit" theme (Snapchat Map / Instagram vibe). Maps, glow and the 3D city
+   read best on dark, and a single theme keeps five parallel screens consistent. Legacy names (--ink, --paper, --surface,
+   --border, --muted) are kept so older components keep working. */
 :root {
+  color-scheme: dark;
+
   --line-red: #da291c;
   --line-orange: #ed8b00;
   --line-blue: #003da5;
   --line-green: #00843d;
   --line-silver: #7c878e;
-  /* --line-orange as foreground text on a light surface is 2.5:1 (fails WCAG AA 4.5:1) — use this
-     darkened variant for text/icons; --line-orange itself is fine for fills, chips and motifs. */
-  --line-orange-text: #a35a00;
+  /* Brighter twins of the line colors for strokes/glows/text on the dark background (fills still use the originals). */
+  --glow-red: #ff4d3d;
+  --glow-orange: #ffa62b;
+  --glow-blue: #3d7bff;
+  --glow-green: #1fd17a;
+  --glow-silver: #b5c0c7;
+  --line-orange-text: #ffa62b;
 
-  --ink: #14181c;
-  --paper: #f7f7f5;
-  --surface: #ffffff;
-  --border: #e4e2dd;
-  --muted: #6b7076;
+  /* Signature accent: "points" yellow-lime. Used for points, primary CTA ring, active nav. */
+  --accent: #e4ff3a;
+  --accent-ink: #11140a;
+  --hot: #ff3d7f; /* live / delay / notification dot */
+
+  --bg: #07090d;
+  --ink: #f4f5f2;
+  --paper: #07090d;
+  --surface: #12161d;
+  --surface-2: #1a1f28;
+  --surface-3: #242a35;
+  --border: #262c37;
+  --muted: #98a0ab;
+  --glass: rgba(18, 22, 29, 0.72);
+  --glass-border: rgba(255, 255, 255, 0.09);
+
+  --font-display: var(--font-bricolage), var(--font-geist-sans), system-ui, sans-serif;
+  --font-body: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 
   --radius-pill: 999px;
-  --radius-card: 14px;
-  --radius-sheet: 20px;
+  --radius-card: 18px;
+  --radius-sheet: 28px;
 
   --space-1: 4px;
   --space-2: 8px;
@@ -26,21 +49,13 @@
   --space-5: 24px;
   --space-6: 32px;
 
-  --nav-height: 64px;
+  /* Floating capsule nav: 68px bar + 12px gap above the home indicator. Screens pad by --nav-clearance. */
+  --nav-height: 68px;
+  --nav-gap: 12px;
+  --nav-clearance: calc(var(--nav-height) + var(--nav-gap) + 16px + env(safe-area-inset-bottom, 0px));
   --tap-min: 44px;
 
-  --shadow-card: 0 1px 2px rgba(20, 24, 28, 0.06), 0 2px 8px rgba(20, 24, 28, 0.08);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --ink: #f2f2f0;
-    --paper: #14181c;
-    --surface: #1b2025;
-    --border: #2a2f34;
-    --muted: #9aa0a6;
-    /* --line-orange already clears 6.5:1 against the dark surface, so no darkening needed here. */
-    --line-orange-text: #ed8b00;
-    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.35);
-  }
+  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.45);
+  --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }

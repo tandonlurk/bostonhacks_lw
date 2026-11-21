@@ -10,7 +10,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const delay = useDelay(rider?.homeTeamRouteId);
 
   return (
-    <div className="app-shell">
+    <div className="app-shell" data-delay={delay.active ? "true" : undefined}>
       <DelayBanner delay={delay} />
       <main className="app-main">{children}</main>
       <BottomNav />
