@@ -3,7 +3,7 @@ import type { RideState } from "@/contracts";
 const META: Record<RideState, { label: string; icon: string; color: string }> = {
   searching: { label: "Searching", icon: "🔍", color: "var(--muted)" },
   on_vehicle: { label: "On vehicle", icon: "🚆", color: "var(--line-green)" },
-  in_tunnel: { label: "In tunnel", icon: "🚇", color: "var(--line-orange)" },
+  in_tunnel: { label: "In tunnel", icon: "🚇", color: "var(--line-orange-text)" },
   left: { label: "Left vehicle", icon: "🚶", color: "var(--muted)" },
 };
 

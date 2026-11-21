@@ -5,6 +5,9 @@
   --line-blue: #003da5;
   --line-green: #00843d;
   --line-silver: #7c878e;
+  /* --line-orange as foreground text on a light surface is 2.5:1 (fails WCAG AA 4.5:1) — use this
+     darkened variant for text/icons; --line-orange itself is fine for fills, chips and motifs. */
+  --line-orange-text: #a35a00;
 
   --ink: #14181c;
   --paper: #f7f7f5;
@@ -36,6 +39,8 @@
     --surface: #1b2025;
     --border: #2a2f34;
     --muted: #9aa0a6;
+    /* --line-orange already clears 6.5:1 against the dark surface, so no darkening needed here. */
+    --line-orange-text: #ed8b00;
     --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.35);
   }
 }

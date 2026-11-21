@@ -15,7 +15,8 @@ export function DelayBanner({ delay }: { delay: DelayResponse }) {
         gap: 8,
         padding: "var(--space-3) var(--space-4)",
         background: "var(--line-orange)",
-        color: "#fff",
+        // White text fails WCAG AA here (2.5:1); dark text passes comfortably (7.1:1).
+        color: "#14181c",
       }}
     >
       <span style={{ display: "flex", alignItems: "center", gap: 8, fontSize: 13, fontWeight: 600 }}>
