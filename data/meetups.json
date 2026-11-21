@@ -1,0 +1,38 @@
+[
+  {
+    "id": "demo-city-builders",
+    "title": "City builders club",
+    "teamRouteId": "Green",
+    "interest": "Campus life and city building",
+    "description": "Demo card: imagine swapping skyline-building tips with other Green Line riders.",
+    "suggestedLandmarkId": "boston-public-library",
+    "startsAt": null,
+    "mock": true,
+    "rsvpEnabled": false,
+    "notice": "Fictional demo entry. No meetup is scheduled and no attendance is expected."
+  },
+  {
+    "id": "demo-harbor-explorers",
+    "title": "Harbor explorers",
+    "teamRouteId": "Blue",
+    "interest": "Waterfront walks and Boston discoveries",
+    "description": "Demo card: imagine comparing favorite waterfront landmarks after a ride.",
+    "suggestedLandmarkId": "new-england-aquarium",
+    "startsAt": null,
+    "mock": true,
+    "rsvpEnabled": false,
+    "notice": "Fictional demo entry. No meetup is scheduled and no attendance is expected."
+  },
+  {
+    "id": "demo-commute-curiosity",
+    "title": "Curious commuters",
+    "teamRouteId": "Red",
+    "interest": "Local history and public spaces",
+    "description": "Demo card: imagine sharing a favorite Boston history fact with fellow commuters.",
+    "suggestedLandmarkId": "massachusetts-state-house",
+    "startsAt": null,
+    "mock": true,
+    "rsvpEnabled": false,
+    "notice": "Fictional demo entry. No meetup is scheduled and no attendance is expected."
+  }
+]
