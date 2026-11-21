@@ -5,7 +5,6 @@
 import { useEffect, useMemo, useState } from "react";
 import { CheckIcon, CloseIcon, StarIcon } from "@/components/icons";
 import { hash, type StationGame } from "./placeholderGames";
-import { SparkIcon } from "./huntIcons";
 import { eyebrow, primaryButton, secondaryButton } from "./styles";
 
 interface Question {
@@ -138,8 +137,8 @@ export function TriviaGame({ stopId, game, onExit }: { stopId: string; game: Sta
     return (
       <div style={{ display: "grid", gap: 16, justifyItems: "center", textAlign: "center", padding: "8px 0 4px" }}>
         <div style={{ position: "relative", width: 132, height: 132, display: "grid", placeItems: "center" }}>
-          <span aria-hidden="true" style={{ position: "absolute", inset: 0, color: "var(--accent)", opacity: 0.55, animation: "spin-slow 9s linear infinite", display: "grid", placeItems: "center" }}>
-            <SparkIcon size={132} weight={1.2} />
+          <span aria-hidden="true" style={{ position: "absolute", inset: -12, color: "var(--accent)", animation: "spin-slow 14s linear infinite" }}>
+            <Burst />
           </span>
           <span className="num" style={{ fontSize: 56, fontWeight: 800, animation: "tier-up 420ms var(--ease-out)" }}>
             {score}/{questions.length}
@@ -228,6 +227,28 @@ export function TriviaGame({ stopId, game, onExit }: { stopId: string; game: Sta
         {phase !== "reveal" ? "Tap an answer" : picked === q.answer ? "Correct!" : picked == null ? `Time! It's ${q.answer}.` : `Nope, it's ${q.answer}.`}
       </p>
     </div>
+  );
+}
+
+/** Loose hand-drawn rays around the score, leaving the middle clear for the number. */
+function Burst() {
+  const rays = Array.from({ length: 14 }, (_, i) => {
+    const a = (i / 14) * Math.PI * 2 + (i % 2 ? 0.08 : -0.05);
+    const r0 = i % 2 ? 62 : 58;
+    const r1 = i % 2 ? 72 : 76;
+    const bend = i % 3 === 0 ? 2.5 : -1.5;
+    const x0 = 78 + Math.cos(a) * r0;
+    const y0 = 78 + Math.sin(a) * r0;
+    const x1 = 78 + Math.cos(a) * r1;
+    const y1 = 78 + Math.sin(a) * r1;
+    const mx = (x0 + x1) / 2 - Math.sin(a) * bend;
+    const my = (y0 + y1) / 2 + Math.cos(a) * bend;
+    return `M${x0.toFixed(1)} ${y0.toFixed(1)}Q${mx.toFixed(1)} ${my.toFixed(1)} ${x1.toFixed(1)} ${y1.toFixed(1)}`;
+  });
+  return (
+    <svg width="156" height="156" viewBox="0 0 156 156" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round">
+      <path d={rays.join("")} />
+    </svg>
   );
 }
 

@@ -62,17 +62,3 @@ export function FrameIcon(p: IconProps) {
     </>,
   );
 }
-
-/** Spiral-ish sparkle burst: result celebration. */
-export function SparkIcon(p: IconProps) {
-  return Svg(
-    p,
-    <>
-      <path d="M12.1 3.4c.1 2.2.1 4.3-.1 6.4" />
-      <path d="M12 14.3c.1 2.1.1 4.2-.1 6.3" />
-      <path d="M3.5 12.1c2.1-.1 4.2-.1 6.3.1" />
-      <path d="M14.3 11.9c2.1-.1 4.2 0 6.3.2" />
-      <path d="M6.2 6.1c1 .9 1.9 1.9 2.7 3M15.1 15.2c.9.9 1.8 1.9 2.6 2.9M17.8 6c-.9 1-1.8 2-2.8 2.9M8.9 15.1c-.9 1-1.8 1.9-2.8 2.8" />
-    </>,
-  );
-}
