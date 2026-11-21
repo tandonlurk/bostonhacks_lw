@@ -1,12 +1,13 @@
-// Placeholder home page from the T01 scaffold. Owner: C. Replace freely.
+import { LiveMap } from "@/components/LiveMap";
+
 export default function Home() {
   return (
-    <main style={{ padding: 24, fontFamily: "system-ui, sans-serif" }}>
-      <h1>T-City</h1>
-      <p>Your commute builds the city. Delays become quests.</p>
-      <p>
-        API health: <a href="/api/health">/api/health</a>
-      </p>
-    </main>
+    <div style={{ display: "flex", flexDirection: "column", height: "100%" }}>
+      <header style={{ padding: "var(--space-4) var(--space-4) 0" }}>
+        <h1 style={{ fontSize: 20, fontWeight: 800 }}>T-City</h1>
+        <p style={{ fontSize: 13, color: "var(--muted)" }}>Your commute builds the city.</p>
+      </header>
+      <LiveMap />
+    </div>
   );
 }

@@ -1,0 +1,41 @@
+/* Design tokens. See docs/design.md section 1. Line colors are fixed by docs/CONTRACTS.md section 1 — do not change them here. */
+:root {
+  --line-red: #da291c;
+  --line-orange: #ed8b00;
+  --line-blue: #003da5;
+  --line-green: #00843d;
+  --line-silver: #7c878e;
+
+  --ink: #14181c;
+  --paper: #f7f7f5;
+  --surface: #ffffff;
+  --border: #e4e2dd;
+  --muted: #6b7076;
+
+  --radius-pill: 999px;
+  --radius-card: 14px;
+  --radius-sheet: 20px;
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+
+  --nav-height: 64px;
+  --tap-min: 44px;
+
+  --shadow-card: 0 1px 2px rgba(20, 24, 28, 0.06), 0 2px 8px rgba(20, 24, 28, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --ink: #f2f2f0;
+    --paper: #14181c;
+    --surface: #1b2025;
+    --border: #2a2f34;
+    --muted: #9aa0a6;
+    --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 0, 0, 0.35);
+  }
+}
