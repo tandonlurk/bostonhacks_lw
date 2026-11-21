@@ -75,13 +75,26 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
     reader.readAsDataURL(file);
   }
 
-  function finish() {
+  async function finish() {
     if (location !== "granted" && location !== "demo") return;
+    const profile = { displayName: name.trim(), homeTeamRouteId: team, interests: selected, avatarDataUrl: photo };
     try {
-      localStorage.setItem("tspots:demo-profile", JSON.stringify({ displayName: name.trim(), homeTeamRouteId: team, interests: selected, avatarDataUrl: photo, locationMode: location === "demo" ? "simulated" : "browser", completedAt: new Date().toISOString() }));
-      setStorageNote("Demo profile saved in this browser. No account has been created.");
+      localStorage.setItem("tspots:demo-profile", JSON.stringify({ ...profile, locationMode: location === "demo" ? "simulated" : "browser", completedAt: new Date().toISOString() }));
     } catch {
-      setStorageNote("Your demo is ready for this session. Browser storage was unavailable.");
+      // storage unavailable; the demo account below still works for this page load
+    }
+    // [A] Demo account: creates a rider wired to demo mode (sim, seeded hotspot, simulated delay)
+    // and signs the app into it via the same keys useRider / useProfileLocal read.
+    try {
+      const res = await fetch("/api/riders/demo", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(profile) });
+      if (!res.ok) throw new Error(String(res.status));
+      const { riderId } = (await res.json()) as { riderId: string };
+      localStorage.setItem("tcity.riderId", riderId);
+      localStorage.setItem("tcity.interests", JSON.stringify(selected));
+      if (photo) localStorage.setItem("tcity.avatar", photo);
+      setStorageNote("Demo account ready. Tap below to jump in.");
+    } catch {
+      setStorageNote("Couldn't create the demo account. You can still join from the Ride tab.");
     }
     setComplete(true);
   }
