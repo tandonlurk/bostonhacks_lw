@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import Link from "next/link";
 import { TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
+import { bricolage } from "./fonts";
 import { SOFT_LINE, TicketArt } from "./TicketArt";
 import styles from "./onboarding.module.css";
 
@@ -128,7 +129,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
   const lineColor = team ? SOFT_LINE[team] : "#3B73D1";
 
   return (
-    <section className={styles.flow} aria-label="tspots onboarding">
+    <section className={`${styles.flow} ${bricolage.variable}`} aria-label="tspots onboarding">
       <RouteLines step={complete ? 4 : step} />
       <div className={styles.flowHeader}>
         <span className={styles.stepMeta}>{complete ? "Your city awaits" : `A little about you · ${step + 1} of 4`}</span>
