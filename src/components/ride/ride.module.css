@@ -1,6 +1,194 @@
-/* Ride screen (U01). Pseudo-states and keyframes that inline styles can't express. */
+/* Ride screen, "Living Paper Boston". Pseudo-states and keyframes that inline styles can't express.
+   Route strip styles live in route.module.css. */
 
-/* ---------- Blue location dot ---------- */
+/* ---------- Layout stacks ---------- */
+.topStack {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + var(--banner-space) + 10px);
+  left: 12px;
+  right: 12px;
+  z-index: 5;
+  max-width: 520px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Bottom panels sit above the bottom-left demo trigger (which lives between the nav and the panel). */
+.bottomPanel {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: calc(var(--nav-clearance) + 44px);
+  z-index: 5;
+  max-width: 520px;
+  margin: 0 auto;
+}
+
+/* ---------- Top card ---------- */
+.topCard {
+  padding: 9px 10px 8px;
+  animation: paper-unfold var(--dur-fold) var(--ease-fold) both;
+}
+
+.topRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Rider medallion: a disc of line-colored card stock folded into four facets. */
+.avatar {
+  position: relative;
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 19px;
+  box-shadow:
+    0 0 0 2px var(--cream),
+    0 0 0 3px var(--paper-edge),
+    0 3px 4px var(--paper-lift);
+  overflow: hidden;
+}
+
+.avatar::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: conic-gradient(from 45deg, rgba(255, 255, 255, 0.22) 0 25%, rgba(0, 0, 0, 0.1) 0 50%, rgba(255, 255, 255, 0.1) 0 75%, rgba(0, 0, 0, 0.18) 0);
+}
+
+.avatar > span {
+  position: relative;
+}
+
+.who {
+  flex: 1;
+  min-width: 0;
+}
+
+.whoName {
+  font-family: var(--font-display);
+  font-weight: 800;
+  font-size: 17px;
+  line-height: 1.15;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.whoTeam {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 700;
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.statusRow {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed rgba(92, 66, 32, 0.25);
+}
+
+/* Status chip: icon + words, never color alone. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  padding: 0 10px 0 8px;
+  border-radius: var(--radius-chip);
+  background: var(--cream-2);
+  border: 1px solid var(--paper-edge);
+  box-shadow: 0 1px 0 var(--fold-shadow);
+  font-size: 12.5px;
+  font-weight: 700;
+  white-space: nowrap;
+  color: var(--ink);
+}
+
+.chip[data-tone="good"] {
+  color: var(--glow-green);
+  background: #eef3e6;
+}
+
+.chip[data-tone="warn"] {
+  color: var(--gold-ink);
+  background: #f6ecd2;
+}
+
+.chip[data-tone="bad"] {
+  color: #8f3c1f;
+  background: #f5e3d8;
+}
+
+.chip[data-tone="muted"] {
+  color: var(--muted);
+}
+
+/* Chip that is also a button: full 44px tap target without growing the row. */
+.chipBtn {
+  min-height: var(--tap-min);
+  margin: -7px 0;
+  padding: 0 12px 0 10px;
+  cursor: pointer;
+  color: var(--accent);
+  transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out);
+}
+
+.chipBtn:active {
+  transform: translateY(1px);
+  box-shadow: none;
+}
+
+.stateTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 11px 0 9px;
+  flex-shrink: 0;
+  border-radius: var(--radius-chip);
+  background: var(--cream);
+  border: 1.5px solid currentColor;
+  font-size: 13px;
+  font-weight: 800;
+  white-space: nowrap;
+  box-shadow: 0 2px 0 var(--fold-shadow);
+}
+
+.standing {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: auto;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--muted);
+  white-space: nowrap;
+}
+
+.standing strong {
+  color: var(--accent);
+  font-family: var(--font-display);
+  font-weight: 800;
+}
+
+/* ---------- Location marker: a harbor-blue paper disc on a cream ring ---------- */
 .dot {
   position: absolute;
   left: 0;
@@ -11,10 +199,10 @@
 
 .dotPulseWrap {
   position: absolute;
-  left: -34px;
-  top: -34px;
-  width: 68px;
-  height: 68px;
+  left: -32px;
+  top: -32px;
+  width: 64px;
+  height: 64px;
   transform: scaleY(0.55);
 }
 
@@ -22,42 +210,42 @@
   width: 100%;
   height: 100%;
   border-radius: 50%;
-  background: rgba(61, 139, 255, 0.42);
-  animation: pulse-ring 2.4s var(--ease-out) infinite;
+  border: 2px solid rgba(47, 93, 124, 0.55);
+  background: rgba(47, 93, 124, 0.12);
+  animation: pulse-ring 2.6s var(--ease-out) infinite;
 }
 
 .dotBody {
   position: absolute;
   left: -12px;
-  top: -14px;
+  top: -15px;
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  background: radial-gradient(circle at 38% 32%, #7fb2ff, #3d8bff 55%, #2a6cf0);
-  border: 3.5px solid #fff;
+  background: conic-gradient(from 30deg, #3d7499 0 25%, #2f5d7c 0 50%, #25506c 0 75%, #36698b 0);
+  border: 3.5px solid var(--cream);
   box-shadow:
-    0 6px 10px rgba(0, 0, 0, 0.55),
-    0 0 0 7px rgba(61, 139, 255, 0.18);
+    0 0 0 1px var(--paper-edge),
+    0 3px 0 rgba(42, 30, 18, 0.25);
 }
 
 .dotShadow {
   position: absolute;
-  left: -10px;
+  left: -9px;
   top: 4px;
-  width: 20px;
-  height: 7px;
+  width: 18px;
+  height: 6px;
   border-radius: 50%;
-  background: rgba(0, 0, 0, 0.55);
-  filter: blur(2px);
+  background: rgba(42, 30, 18, 0.28);
 }
 
-/* ---------- Start (shutter) button ---------- */
-.shutter {
+/* ---------- Start medallion ---------- */
+.medallion {
   position: relative;
   display: grid;
   place-items: center;
-  width: 118px;
-  height: 118px;
+  width: 124px;
+  height: 124px;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -65,103 +253,115 @@
   isolation: isolate;
   -webkit-tap-highlight-color: transparent;
   touch-action: manipulation;
+  cursor: pointer;
 }
 
-.shutterRing {
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 6px solid var(--accent);
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.4),
-    0 0 28px rgba(63,122,0,0.35),
-    inset 0 0 0 1px rgba(0, 0, 0, 0.35);
-  transition: transform 260ms var(--ease-out);
+.medallion:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 4px;
 }
 
-.shutterHalo {
+.medallionFacets {
   position: absolute;
   inset: 0;
+  filter: drop-shadow(0 3px 0 rgba(42, 30, 18, 0.22)) drop-shadow(0 10px 12px rgba(74, 52, 22, 0.22));
+  transition: transform 260ms var(--ease-fold);
+}
+
+.medallionHalo {
+  position: absolute;
+  inset: 6px;
   border-radius: 50%;
-  border: 3px solid var(--accent);
-  opacity: 0;
+  border: 2px dashed rgba(47, 107, 69, 0.55);
   z-index: -1;
-  animation: shutter-breathe 2.8s var(--ease-out) infinite;
+  animation: medallion-breathe 3s var(--ease-out) infinite;
 }
 
-.shutterCore {
+.medallionCore {
   position: relative;
   display: grid;
-  place-items: center;
-  gap: 2px;
-  width: 92px;
-  height: 92px;
+  justify-items: center;
+  align-content: center;
+  gap: 1px;
+  width: 70px;
+  height: 70px;
   border-radius: 50%;
+  background-color: var(--cream);
+  background-image: var(--grain);
+  color: var(--ink);
   font-family: var(--font-display);
   font-weight: 800;
-  font-size: 17px;
-  letter-spacing: 0.02em;
+  font-size: 15px;
+  letter-spacing: 0.08em;
+  line-height: 1;
   box-shadow:
-    inset 0 2px 0 rgba(255, 255, 255, 0.28),
-    inset 0 -6px 14px rgba(0, 0, 0, 0.3),
-    0 10px 24px rgba(0, 0, 0, 0.5);
-  transition: transform 220ms var(--ease-out);
+    0 0 0 1px var(--paper-edge),
+    0 2px 0 var(--fold-shadow),
+    inset 0 -3px 0 var(--cream-3);
+  transition: transform 200ms var(--ease-fold);
 }
 
-.shutter:active .shutterCore {
-  transform: scale(0.86);
+.medallion:active:not(:disabled) .medallionCore {
+  transform: translateY(2px) scale(0.95);
   transition-duration: 90ms;
 }
 
-.shutter:active .shutterRing {
-  transform: scale(1.06);
+.medallion:active:not(:disabled) .medallionFacets {
+  transform: rotate(-8deg) scale(0.97);
   transition-duration: 90ms;
 }
 
-.shutter[data-firing="true"] .shutterCore {
-  animation: shutter-fire 520ms var(--ease-out);
+.medallion[data-firing="true"] .medallionFacets {
+  animation: medallion-unfold 620ms var(--ease-fold);
 }
 
-.shutter[data-firing="true"]::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  border: 4px solid var(--accent);
-  animation: pulse-ring 600ms var(--ease-out) forwards;
+.medallion:disabled {
+  cursor: not-allowed;
 }
 
-@keyframes shutter-breathe {
+.medallion:disabled .medallionFacets {
+  filter: grayscale(1) opacity(0.55);
+}
+
+.medallion:disabled .medallionHalo {
+  display: none;
+}
+
+.medallion:disabled .medallionCore {
+  color: var(--muted);
+}
+
+@keyframes medallion-breathe {
   0% {
-    transform: scale(1);
-    opacity: 0.55;
+    transform: scale(1) rotate(0deg);
+    opacity: 0.8;
   }
   100% {
-    transform: scale(1.35);
+    transform: scale(1.22) rotate(20deg);
     opacity: 0;
   }
 }
 
-@keyframes shutter-fire {
+@keyframes medallion-unfold {
   0% {
-    transform: scale(0.84);
+    transform: rotate(-12deg) scale(0.9);
   }
   55% {
-    transform: scale(1.08);
+    transform: rotate(40deg) scale(1.12);
   }
   100% {
-    transform: scale(1);
+    transform: rotate(45deg) scale(1);
   }
 }
 
 /* ---------- Generic pressable ---------- */
 .press {
-  transition: transform 140ms var(--ease-out), background-color 160ms var(--ease-out);
+  transition: transform 140ms var(--ease-out), box-shadow 140ms var(--ease-out);
   touch-action: manipulation;
 }
 
 .press:active {
-  transform: scale(0.96);
+  transform: translateY(2px);
 }
 
 .textBtn {
@@ -171,61 +371,96 @@
   background: none;
   color: var(--ink);
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 650;
   text-decoration: underline;
-  text-decoration-color: rgba(244, 245, 242, 0.35);
+  text-decoration-style: dashed;
+  text-decoration-color: rgba(42, 36, 29, 0.45);
   text-underline-offset: 4px;
-  text-shadow: 0 1px 8px rgba(0, 0, 0, 0.9);
+  cursor: pointer;
 }
 
 /* ---------- Live badge ---------- */
 .liveDot {
   position: relative;
-  width: 8px;
-  height: 8px;
+  width: 9px;
+  height: 9px;
   border-radius: 50%;
   background: var(--hot);
   flex-shrink: 0;
-}
-
-.liveDot::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: 50%;
-  background: var(--hot);
-  animation: pulse-ring 1.6s var(--ease-out) infinite;
+  animation: live-blink 1.4s ease-in-out infinite;
 }
 
 .searchSpin {
   animation: spin-slow 2.4s linear infinite;
 }
 
-/* ---------- Hold to end ---------- */
+/* ---------- Live panel ---------- */
+.livePanel {
+  padding: 12px;
+  animation: paper-unfold var(--dur-fold) var(--ease-fold) both;
+}
+
+.statCard {
+  position: relative;
+  min-width: 0;
+  padding: 9px 9px 8px;
+  border-radius: var(--radius-card);
+  background-color: var(--cream-2);
+  background-image: var(--grain);
+  border: 1px solid var(--paper-edge);
+  box-shadow: 0 2px 0 var(--fold-shadow);
+}
+
+.statCard[data-accent="true"] {
+  background-color: var(--accent-soft);
+}
+
+.statCard[data-accent="true"]::after {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(225deg, var(--cream) 50%, #b9cdb1 50%);
+}
+
+/* ---------- Hold to end: a perforated ticket stub you tear off ---------- */
 .hold {
   position: relative;
   overflow: hidden;
   width: 100%;
-  min-height: 54px;
-  border-radius: var(--radius-pill);
-  border: 1px solid rgba(255, 61, 127, 0.35);
-  background: rgba(255, 61, 127, 0.1);
-  color: var(--ink);
-  font-weight: 700;
+  min-height: 52px;
+  border-radius: var(--radius-card);
+  border: 1.5px dashed rgba(180, 83, 47, 0.6);
+  background-color: #f7e6dc;
+  background-image: var(--grain);
+  color: #7e3920;
+  font-weight: 750;
   font-size: 15px;
   user-select: none;
   -webkit-user-select: none;
   -webkit-touch-callout: none;
   touch-action: none;
+  cursor: pointer;
+}
+
+.hold:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
 }
 
 .holdFill {
   position: absolute;
   inset: 0;
-  background: var(--hot);
+  background: var(--brick);
   transform-origin: left center;
   transform: scaleX(0);
   transition: transform 220ms var(--ease-out);
+}
+
+.hold[data-holding="true"] {
+  color: #fffaf0;
 }
 
 .hold[data-holding="true"] .holdFill {
@@ -241,9 +476,78 @@
   gap: 8px;
 }
 
+/* ---------- Receipt (ride summary) ---------- */
+.receiptWrap {
+  filter: drop-shadow(0 2px 2px var(--paper-lift)) drop-shadow(0 14px 18px rgba(74, 52, 22, 0.2));
+  animation: receipt-print 620ms var(--ease-fold) both;
+}
+
+.receipt {
+  position: relative;
+  padding: 24px 16px 20px;
+  background-color: var(--cream);
+  background-image: var(--grain);
+  /* Torn zigzag top and bottom edges. */
+  --tear: 7px;
+  -webkit-mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--tear)) 51% repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--tear)) 51% repeat-x;
+  mask:
+    conic-gradient(from -45deg at bottom, #0000, #000 1deg 89deg, #0000 90deg) bottom / calc(2 * var(--tear)) 51% repeat-x,
+    conic-gradient(from 135deg at top, #0000, #000 1deg 89deg, #0000 90deg) top / calc(2 * var(--tear)) 51% repeat-x;
+}
+
+@keyframes receipt-print {
+  from {
+    transform: translateY(40px) scaleY(0.7);
+    transform-origin: bottom center;
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+
+.receiptRow {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 6px 0;
+  font-size: 14px;
+}
+
+.receiptLeader {
+  flex: 1;
+  min-width: 12px;
+  border-bottom: 2px dotted rgba(92, 66, 32, 0.32);
+  transform: translateY(-4px);
+}
+
+.perforation {
+  height: 0;
+  margin: 12px -16px;
+  border-top: 2px dashed rgba(92, 66, 32, 0.3);
+}
+
+.stampIn {
+  animation: stamp-in 560ms cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes stamp-in {
+  from {
+    transform: scale(2.2) rotate(-14deg);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1) rotate(-6deg);
+    opacity: 0.92;
+  }
+}
+
 /* ---------- Panels ---------- */
 .rise {
-  animation: rise-in 360ms var(--ease-out);
+  animation: rise-in 360ms var(--ease-fold);
 }
 
 @keyframes rise-in {
@@ -272,22 +576,27 @@
   }
 }
 
-.spark {
-  transform-origin: 50% 50%;
-  animation: spark-out 900ms var(--ease-out) both;
+/* Demo hop award: a rubber stamp thumped onto the map. */
+.awardPop {
+  animation: award-pop 1600ms var(--ease-fold) both;
 }
 
-@keyframes spark-out {
-  from {
-    transform: scale(0.3) rotate(-12deg);
+@keyframes award-pop {
+  0% {
+    transform: translate(-50%, 16px) rotate(-14deg) scale(1.6);
     opacity: 0;
   }
-  60% {
+  18% {
+    transform: translate(-50%, 0) rotate(-4deg) scale(1);
     opacity: 1;
   }
-  to {
-    transform: scale(1) rotate(0deg);
+  80% {
+    transform: translate(-50%, 0) rotate(-4deg) scale(1);
     opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -18px) rotate(-4deg) scale(0.96);
+    opacity: 0;
   }
 }
 
@@ -306,29 +615,42 @@
   }
 }
 
-/* ---------- Join card line tiles ---------- */
+/* ---------- Join card line tiles: folded line-colored cards ---------- */
 .lineTile {
+  position: relative;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   justify-content: space-between;
-  min-height: 92px;
-  padding: 10px 9px 9px;
-  border-radius: 16px;
+  min-height: 88px;
+  padding: 10px 8px 9px;
+  border-radius: var(--radius-card);
   border: 2px solid transparent;
   text-align: left;
+  clip-path: polygon(0 0, calc(100% - 12px) 0, 100% 12px, 100% 100%, 0 100%);
+  box-shadow: inset 0 -4px 0 rgba(0, 0, 0, 0.16);
+  cursor: pointer;
   transition:
-    transform 160ms var(--ease-out),
-    box-shadow 200ms var(--ease-out),
+    transform 160ms var(--ease-fold),
     opacity 200ms var(--ease-out);
 }
 
+.lineTile::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 12px;
+  height: 12px;
+  background: linear-gradient(225deg, transparent 50%, rgba(0, 0, 0, 0.3) 50%, rgba(255, 255, 255, 0.3) 100%);
+}
+
 .lineTile:active {
-  transform: scale(0.94);
+  transform: translateY(2px);
 }
 
 .lineTile[aria-pressed="false"] {
-  opacity: 0.55;
+  opacity: 0.62;
 }
 
 .lineTile[aria-pressed="true"] {
@@ -339,10 +661,12 @@
 .input {
   width: 100%;
   min-height: 52px;
-  padding: 0 16px;
-  border-radius: 16px;
+  padding: 0 14px;
+  border-radius: var(--radius-card);
   border: 1px solid var(--border);
-  background: var(--surface-2);
+  background-color: var(--cream-2);
+  background-image: var(--grain);
+  box-shadow: inset 0 2px 0 var(--cream-3);
   color: var(--ink);
   font-size: 17px;
   font-weight: 600;
@@ -358,19 +682,29 @@
   outline-offset: 1px;
 }
 
-.shutter:disabled {
-  cursor: not-allowed;
+/* Station rows in the manual pick sheet. */
+.pickRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 0 14px;
+  border: none;
+  background: transparent;
+  text-align: left;
+  cursor: pointer;
 }
 
-.shutter:disabled .shutterCore {
-  filter: grayscale(0.85) brightness(0.6);
+.pickRow[aria-checked="true"] {
+  background: var(--accent-soft);
 }
 
-.shutter:disabled .shutterRing {
-  border-color: var(--surface-3);
-  box-shadow: none;
-}
-
-.shutter:disabled .shutterHalo {
-  display: none;
+@media (prefers-reduced-motion: reduce) {
+  .medallionHalo,
+  .liveDot,
+  .searchSpin,
+  .dotPulse {
+    animation: none;
+  }
 }

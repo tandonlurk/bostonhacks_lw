@@ -78,13 +78,14 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
               }}
               style={{
                 minHeight: 44,
-                borderRadius: 14,
+                borderRadius: "var(--radius-card)",
                 border: on ? "2px solid var(--ink)" : "2px solid transparent",
+                boxShadow: "inset 0 -3px 0 rgba(0,0,0,0.16)",
                 background: fill(t),
                 color: TEAM_ON[t],
                 fontWeight: 800,
                 fontSize: 13,
-                opacity: on ? 1 : 0.55,
+                opacity: on ? 1 : 0.6,
               }}
             >
               {t}
@@ -100,9 +101,10 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
         style={{
           maxHeight: 232,
           overflowY: "auto",
-          borderRadius: 16,
-          border: "1px solid var(--border)",
-          background: "var(--surface-2)",
+          borderRadius: "var(--radius-card)",
+          border: "1px solid var(--paper-edge)",
+          backgroundColor: "var(--cream-2)",
+          backgroundImage: "var(--grain)",
         }}
       >
         {stations.map((s, i) => {
@@ -114,18 +116,8 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
               role="radio"
               aria-checked={on}
               onClick={() => setPickedId(s.id)}
-              style={{
-                display: "flex",
-                alignItems: "center",
-                gap: 10,
-                width: "100%",
-                minHeight: 48,
-                padding: "0 14px",
-                border: "none",
-                borderTop: i === 0 ? "none" : "1px solid var(--border)",
-                background: on ? "rgba(18,22,29,0.06)" : "transparent",
-                textAlign: "left",
-              }}
+              className={styles.pickRow}
+              style={{ borderTop: i === 0 ? "none" : "1px dashed rgba(92,66,32,0.22)" }}
             >
               <span
                 aria-hidden="true"
@@ -165,9 +157,10 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
               style={{
                 minHeight: 48,
                 padding: "6px 10px",
-                borderRadius: 14,
-                border: on ? `2px solid ${glow(team)}` : "1px solid var(--border)",
-                background: on ? "rgba(18,22,29,0.06)" : "var(--surface-2)",
+                borderRadius: "var(--radius-card)",
+                border: on ? `2px solid ${glow(team)}` : "1px solid var(--paper-edge)",
+                background: on ? "var(--cream)" : "var(--cream-2)",
+                boxShadow: on ? "0 2px 0 var(--fold-shadow)" : "none",
                 fontWeight: on ? 800 : 600,
                 fontSize: 14,
                 lineHeight: 1.25,
@@ -182,7 +175,7 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
       <button
         type="button"
         disabled={!station}
-        className={styles.press}
+        className="paper-btn paper-btn--primary"
         onClick={() => {
           if (!station) return;
           onConfirm({ routeId: routeIdFor(team, station.id), directionId: direction, stopId: station.id }, station.lat, station.lng);
@@ -192,10 +185,6 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
           width: "100%",
           minHeight: 54,
           marginTop: 18,
-          borderRadius: "var(--radius-pill)",
-          border: "none",
-          background: "var(--accent)",
-          color: "var(--accent-ink)",
           fontWeight: 800,
           fontSize: 16,
         }}

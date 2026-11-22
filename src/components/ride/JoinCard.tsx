@@ -3,6 +3,8 @@
 import { useState } from "react";
 import { TEAM_ROUTE_IDS, TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { ChevronIcon } from "@/components/icons";
+import { Stamp } from "@/components/paper/Paper";
+import { Brownstone, StateHouse, TripleDecker } from "@/components/paper/origami";
 import { SparkleIcon } from "./rideIcons";
 import { fill, glow, TEAM_ON, TEAM_SHORT } from "./util";
 import styles from "./ride.module.css";
@@ -21,7 +23,7 @@ export function JoinCard({ onJoin, loading, error }: JoinCardProps) {
 
   return (
     <form
-      className={`glass ${styles.rise}`}
+      className={`paper paper--stack ${styles.rise}`}
       aria-labelledby="join-title"
       onSubmit={(e) => {
         e.preventDefault();
@@ -31,35 +33,27 @@ export function JoinCard({ onJoin, loading, error }: JoinCardProps) {
         position: "absolute",
         left: 12,
         right: 12,
-        bottom: "calc(var(--nav-clearance) + 14px)",
+        bottom: "calc(var(--nav-clearance) + 44px)",
         maxWidth: 520,
         margin: "0 auto",
-        maxHeight: "calc(100dvh - var(--nav-clearance) - 40px - var(--banner-space) - env(safe-area-inset-top, 0px))",
+        maxHeight: "calc(100dvh - var(--nav-clearance) - 70px - var(--banner-space) - env(safe-area-inset-top, 0px))",
         overflowY: "auto",
         zIndex: 6,
-        borderRadius: 30,
         padding: "18px 16px 16px",
-        boxShadow: "var(--shadow-float)",
       }}
     >
-      <span
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 6,
-          padding: "4px 10px 4px 7px",
-          borderRadius: "var(--radius-pill)",
-          background: "rgba(63,122,0,0.12)",
-          color: "var(--accent)",
-          fontSize: 12,
-          fontWeight: 800,
-          letterSpacing: "0.1em",
-        }}
-      >
-        <SparkleIcon size={16} weight={2.2} />
-        TSPOTS
-      </span>
-      <h1 id="join-title" style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.02, marginTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 8 }}>
+        <Stamp color="var(--accent)" rotate={-3}>
+          <SparkleIcon size={14} weight={2.2} />
+          tspots
+        </Stamp>
+        <span aria-hidden="true" style={{ display: "flex", alignItems: "flex-end", gap: 2, marginBottom: -4 }}>
+          <Brownstone height={34} />
+          <StateHouse height={44} />
+          <TripleDecker height={34} />
+        </span>
+      </div>
+      <h1 id="join-title" style={{ fontFamily: "var(--font-display)", fontSize: 30, fontWeight: 800, lineHeight: 1.02, marginTop: 12 }}>
         Your commute
         <br />
         builds the city.
@@ -93,9 +87,8 @@ export function JoinCard({ onJoin, loading, error }: JoinCardProps) {
               aria-label={TEAMS[t].name}
               onClick={() => setTeam(t)}
               style={{
-                background: `linear-gradient(160deg, ${glow(t)} 0%, ${fill(t)} 70%)`,
+                background: fill(t),
                 color: TEAM_ON[t],
-                boxShadow: team === t ? `0 10px 24px color-mix(in srgb, ${fill(t)} 55%, transparent)` : "none",
               }}
             >
               <span className="num" style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
@@ -111,7 +104,7 @@ export function JoinCard({ onJoin, loading, error }: JoinCardProps) {
       </fieldset>
 
       {error ? (
-        <p role="alert" style={{ fontSize: 13, color: "var(--hot)", marginTop: 10 }}>
+        <p role="alert" style={{ fontSize: 13, color: "#8f3c1f", marginTop: 10 }}>
           Couldn&apos;t join just now ({error}). Try again in a moment.
         </p>
       ) : null}
@@ -119,23 +112,8 @@ export function JoinCard({ onJoin, loading, error }: JoinCardProps) {
       <button
         type="submit"
         disabled={!trimmed || loading}
-        className={styles.press}
-        style={{
-          display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          gap: 6,
-          width: "100%",
-          minHeight: 54,
-          marginTop: 14,
-          borderRadius: "var(--radius-pill)",
-          border: "none",
-          background: trimmed ? "var(--accent)" : "var(--surface-3)",
-          color: trimmed ? "var(--accent-ink)" : "var(--muted)",
-          fontWeight: 800,
-          fontSize: 16,
-          opacity: loading ? 0.7 : 1,
-        }}
+        className="paper-btn paper-btn--primary"
+        style={{ width: "100%", minHeight: 54, marginTop: 14, fontWeight: 800, fontSize: 16, opacity: loading ? 0.7 : undefined }}
       >
         {loading ? "Joining…" : `Join the ${TEAMS[team].name}`}
         {loading ? null : <ChevronIcon size={18} weight={2.6} />}

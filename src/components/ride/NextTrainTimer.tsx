@@ -46,15 +46,17 @@ export function NextTrainTimer({ stopId }: { stopId: string | null }) {
   if (!next) return null;
   const secs = Math.max(0, Math.round((Date.parse(next.arrivalAt) - now) / 1000));
   const label = secs <= 30 ? "Arriving" : `${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, "0")}`;
+  const color = TEAMS[next.teamRouteId]?.color ?? "#7c878e";
   return (
     <p
       role="timer"
       aria-live="off"
-      style={{ display: "inline-flex", alignItems: "center", gap: 8, margin: "6px auto 0", padding: "4px 12px", borderRadius: 999, background: "rgba(18,22,29,0.07)", fontSize: 13 }}
+      className="paper"
+      style={{ display: "inline-flex", alignItems: "center", gap: 8, minHeight: 32, padding: "0 12px 0 0", fontSize: 13, overflow: "hidden", boxShadow: "var(--shadow-card)" }}
     >
-      <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 999, background: TEAMS[next.teamRouteId]?.color ?? "#fff" }} />
-      <span>Next {TEAMS[next.teamRouteId]?.name ?? "train"}</span>
-      <span className="num" style={{ fontWeight: 700, color: "var(--accent)" }}>{label}</span>
+      <span aria-hidden="true" style={{ alignSelf: "stretch", width: 8, background: color, borderRight: "2px dashed var(--cream)" }} />
+      <span style={{ fontWeight: 600 }}>Next {TEAMS[next.teamRouteId]?.name ?? "train"}</span>
+      <span className="num" style={{ fontWeight: 800, fontSize: 15, color: "var(--accent)" }}>{label}</span>
     </p>
   );
 }
