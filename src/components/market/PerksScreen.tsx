@@ -7,6 +7,7 @@ import { useRider } from "@/hooks/useRider";
 import { useTokens } from "@/hooks/useTokens";
 import { usePerks } from "@/hooks/usePerks";
 import { Sheet } from "@/components/ui/Sheet";
+import { PaperButton } from "@/components/paper/Paper";
 import { BountyIcon, CheckIcon, PerkIcon, PlusIcon } from "@/components/icons";
 import { useBoard, type BoardItem } from "./boardStore";
 import type { BoardPost } from "./types";
@@ -106,8 +107,8 @@ export function PerksScreen() {
       <header className="screen-header" style={{ display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 12 }}>
           <div style={{ minWidth: 0 }}>
-            <h1 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1 }}>Perks</h1>
-            <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 6 }}>
+            <h1 style={{ fontFamily: "var(--font-display)", fontSize: 34, fontWeight: 800, lineHeight: 1 }}>Perks</h1>
+            <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 6 }}>
               {tab === "board" ? "Post bounties. Trade coins." : "Spend CitiTokens around Boston."}
             </p>
           </div>
@@ -126,11 +127,18 @@ export function PerksScreen() {
 
       {tab === "board" ? (
         <>
-          <div style={{ margin: "0 16px 16px", padding: "12px 14px", borderRadius: 16, background: "var(--surface-2)", color: "var(--muted)", fontSize: 14, lineHeight: 1.5 }}>
+          <div className="paper paper--fold" style={{ margin: "0 16px 14px", padding: "12px 26px 12px 14px", color: "var(--muted)", fontSize: 14, lineHeight: 1.5 }}>
             {board.mock ? "Sample board · actions do not transfer tokens in mock mode." : "A board for your fellow riders. Tokens are held safely until the author confirms delivery. Trades arrange items between riders; only CitiTokens transfer here."}
           </div>
-          {board.loading ? <p role="status" style={{ padding: 16 }}>Loading the board…</p> : null}
-          {board.error ? <div role="alert" style={{ padding: 16, color: "var(--hot)" }}>{board.error}<button type="button" onClick={() => void board.refresh()} style={{ display: "block", minHeight: 44, background: "transparent", border: "none", textDecoration: "underline" }}>Try again</button></div> : null}
+          {board.loading ? <p role="status" style={{ padding: 16, color: "var(--muted)" }}>Loading the board…</p> : null}
+          {board.error ? (
+            <div role="alert" className="paper" style={{ margin: "0 16px 16px", padding: 14, color: "var(--hot)", fontWeight: 600 }}>
+              {board.error}
+              <PaperButton size="sm" onClick={() => void board.refresh()} style={{ display: "flex", marginTop: 10, minHeight: 44 }}>
+                Try again
+              </PaperButton>
+            </div>
+          ) : null}
           {!board.loading && !board.error ? <BoardView items={board.items} now={now} rider={rider} onPrimary={onPrimary} onCancel={(item) => void updateBoard(item, "cancel")} onCompose={() => setComposerOpen(true)} onNeedJoin={() => promptJoin("filter by your line")} /> : null}
         </>
       ) : (
@@ -138,11 +146,11 @@ export function PerksScreen() {
       )}
 
       {tab === "board" ? (
-        <button
-          type="button"
+        <PaperButton
+          variant="primary"
           aria-label="New post"
           onClick={() => setComposerOpen(true)}
-          className={`${s.fab} ${s.press}`}
+          className={s.fab}
           style={{
             position: "fixed",
             right: "max(16px, calc(50vw - 210px + 4px))",
@@ -150,22 +158,15 @@ export function PerksScreen() {
             zIndex: 30,
             minHeight: 56,
             padding: "0 22px 0 18px",
-            display: "inline-flex",
-            alignItems: "center",
-            gap: 8,
-            border: "none",
-            borderRadius: "var(--radius-pill)",
-            background: "var(--accent)",
-            color: "var(--accent-ink)",
             fontFamily: "var(--font-display)",
             fontWeight: 800,
             fontSize: 17,
-            boxShadow: "0 0 0 4px var(--bg), 0 12px 30px rgba(228,255,58,0.3)",
+            borderRadius: 6,
           }}
         >
           <PlusIcon size={22} weight={2.8} />
           Post
-        </button>
+        </PaperButton>
       ) : null}
 
       <Sheet open={composerOpen} onClose={() => setComposerOpen(false)} title={rider ? "Pin a post" : "Join to post"}>

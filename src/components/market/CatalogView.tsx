@@ -2,6 +2,7 @@
 
 import type { Perk } from "@/contracts";
 import { PerkIcon } from "@/components/icons";
+import { Tape } from "@/components/paper/Paper";
 import { PerkTicket, TicketSkeleton } from "./PerkTicket";
 import s from "./market.module.css";
 
@@ -31,13 +32,16 @@ export function CatalogView({ perks, loading, balance, joined, now, onOpen }: Pr
         aria-label="Perk catalog"
         style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "56px 24px", textAlign: "center" }}
       >
-        <span style={{ color: "var(--muted)" }}>
-          <PerkIcon size={44} weight={1.8} />
-        </span>
-        <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 20 }}>The shelf is empty</p>
-        <p style={{ fontSize: 14, color: "var(--muted)", maxWidth: 280 }}>
-          Partners restock when the catalog rotates. Keep riding so you&apos;re ready when it drops.
-        </p>
+        <div className="paper paper--tilt-l" style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 10, padding: "26px 20px 20px", maxWidth: 320 }}>
+          <Tape />
+          <span style={{ color: "var(--muted)" }}>
+            <PerkIcon size={40} weight={1.8} />
+          </span>
+          <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 20 }}>The coupon book is empty</p>
+          <p style={{ fontSize: 14, color: "var(--muted)", maxWidth: 280 }}>
+            Partners restock when the catalog rotates. Keep riding so you&apos;re ready when it drops.
+          </p>
+        </div>
       </section>
     );
   }
@@ -51,11 +55,11 @@ export function CatalogView({ perks, loading, balance, joined, now, onOpen }: Pr
 
   return (
     <section aria-label="Perk catalog">
-      <p style={{ padding: "6px 16px 0", fontSize: 13, color: "var(--muted)" }}>
+      <p style={{ padding: "6px 16px 0", fontSize: 13.5, color: "var(--muted)" }}>
         {joined ? (
           <>
             You can grab{" "}
-            <span className="num" style={{ color: "var(--accent)", fontWeight: 800, fontSize: 14 }}>
+            <span className="num" style={{ color: "var(--accent)", fontWeight: 800, fontSize: 15 }}>
               {affordable}
             </span>{" "}
             of {perks.length} perks right now.

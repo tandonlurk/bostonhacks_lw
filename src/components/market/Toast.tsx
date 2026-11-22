@@ -32,28 +32,30 @@ export function useToast() {
   return { toast, show, dismiss: () => setToast(null) };
 }
 
+const TONE_COLOR = { accent: "var(--accent)", hot: "var(--hot)", plain: "var(--faint)" } as const;
+
+/** A paper slip that slides up above the nav, with a colored edge strip for tone (text carries the meaning). */
 export function Toast({ toast }: { toast: ToastMsg | null }) {
   return (
     <div aria-live="polite" role="status" style={{ position: "fixed", inset: "auto 0 0 0", pointerEvents: "none", zIndex: 50 }}>
       {toast ? (
         <div
           key={toast.id}
-          className={`glass ${s.toast}`}
+          className={`paper ${s.toast}`}
           style={{
             position: "fixed",
             left: "50%",
             transform: "translateX(-50%)",
             bottom: "calc(var(--nav-clearance) + 68px)",
-            background: "rgba(26, 31, 40, 0.94)",
             width: "min(360px, calc(100vw - 32px))",
             display: "flex",
             alignItems: "center",
             gap: 10,
-            padding: "10px 10px 10px 14px",
-            borderRadius: 18,
-            boxShadow: "var(--shadow-float)",
+            padding: "10px 10px 10px 16px",
+            borderRadius: 4,
+            boxShadow: `inset 5px 0 0 ${TONE_COLOR[toast.tone ?? "plain"]}, var(--shadow-float)`,
             pointerEvents: "auto",
-            borderColor: toast.tone === "hot" ? "rgba(255,61,127,0.45)" : toast.tone === "accent" ? "rgba(228,255,58,0.35)" : undefined,
+            color: "var(--ink)",
           }}
         >
           {toast.icon ? (
@@ -63,21 +65,7 @@ export function Toast({ toast }: { toast: ToastMsg | null }) {
             {toast.text}
           </span>
           {toast.link ? (
-            <Link
-              href={toast.link.href}
-              style={{
-                flex: "none",
-                minHeight: 40,
-                padding: "0 14px",
-                borderRadius: "var(--radius-pill)",
-                display: "inline-flex",
-                alignItems: "center",
-                background: "var(--accent)",
-                color: "var(--accent-ink)",
-                fontWeight: 800,
-                fontSize: 14,
-              }}
-            >
+            <Link href={toast.link.href} className="paper-btn paper-btn--primary paper-btn--sm" style={{ flex: "none", minHeight: 40 }}>
               {toast.link.label}
             </Link>
           ) : null}

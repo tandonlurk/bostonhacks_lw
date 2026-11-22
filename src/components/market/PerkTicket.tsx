@@ -8,7 +8,7 @@ import s from "./market.module.css";
 
 const HOLES = 10;
 
-/** A perk as a tear-off transit ticket: details on the left, a punchable cost stub on the right. */
+/** A perk as a perforated tear-off coupon: details on the left, a punchable cost stub on the right. */
 export function PerkTicket({
   perk,
   balance,
@@ -38,26 +38,26 @@ export function PerkTicket({
       aria-label={`${perk.title} from ${perk.partner}, ${perk.costTokens} tokens, ${soldOut ? "sold out" : `${perk.remaining} left`}${
         !soldOut && !canAfford && short ? `, you need ${short} more` : ""
       }`}
-      style={{ opacity: soldOut ? 0.55 : 1, boxShadow: live ? "0 0 0 1px rgba(228,255,58,0.35), var(--shadow-card)" : undefined }}
+      style={{ filter: soldOut ? "grayscale(0.6)" : undefined, opacity: soldOut ? 0.8 : 1 }}
     >
-      <div style={{ position: "relative", padding: "14px 14px 14px 16px", display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
+      <span className={s.scallop} aria-hidden="true" />
+      <div style={{ position: "relative", padding: "14px 14px 14px 18px", display: "flex", flexDirection: "column", gap: 8, minWidth: 0 }}>
         <p
+          className="paper-eyebrow"
           style={{
-            fontSize: 11,
-            fontWeight: 800,
-            letterSpacing: "0.12em",
-            textTransform: "uppercase",
-            color: "var(--muted)",
+            fontSize: 10.5,
             overflow: "hidden",
             textOverflow: "ellipsis",
             whiteSpace: "nowrap",
           }}
         >
-          {perk.partner}
+          Coupon · {perk.partner}
         </p>
-        <h3 style={{ fontSize: 19, fontWeight: 800, lineHeight: 1.1, color: "var(--ink)", overflowWrap: "anywhere" }}>{perk.title}</h3>
+        <h3 style={{ fontFamily: "var(--font-display)", fontSize: 19, fontWeight: 750, lineHeight: 1.12, color: "var(--ink)", overflowWrap: "anywhere" }}>
+          {perk.title}
+        </h3>
 
-        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto" }}>
+        <div style={{ display: "flex", alignItems: "center", gap: 8, marginTop: "auto", flexWrap: "wrap" }}>
           <span aria-hidden="true" style={{ display: "flex", gap: 3 }}>
             {Array.from({ length: HOLES }, (_, i) => (
               <span
@@ -67,7 +67,7 @@ export function PerkTicket({
                   height: 7,
                   borderRadius: "50%",
                   background: i < Math.min(perk.remaining, HOLES) ? (low ? "var(--hot)" : "var(--ink)") : "transparent",
-                  boxShadow: "inset 0 0 0 1.5px var(--surface-3)",
+                  boxShadow: "inset 0 0 0 1.5px var(--fold-shadow)",
                 }}
               />
             ))}
@@ -77,41 +77,35 @@ export function PerkTicket({
           </span>
         </div>
         {rotates ? (
-          <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12, color: "var(--muted)" }}>
+          <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, color: "var(--muted)" }}>
             <ClockIcon size={14} weight={2.2} />
             {rotates}
           </p>
         ) : null}
 
         {soldOut ? (
-          <span style={{ position: "absolute", right: 10, top: 34 }}>
-            <Stamp label="Sold out" color="var(--hot)" size={16} rot={-12} paper={false} />
+          <span style={{ position: "absolute", right: 10, top: 36 }}>
+            <Stamp label="Sold out" color="var(--glow-red)" size={16} rot={-12} />
           </span>
         ) : null}
       </div>
 
-      <div
-        className={s.stub}
-        style={{
-          background: live ? "var(--accent)" : "var(--surface-2)",
-          color: live ? "var(--accent-ink)" : "var(--ink)",
-          borderLeftColor: live ? "rgba(17,20,10,0.4)" : "var(--surface-3)",
-        }}
-      >
+      <div className={`${s.stub} ${live ? s.stubLive : s.stubIdle}`}>
         <Coin size={26} />
         <span className="num" style={{ fontSize: 30, fontWeight: 800, lineHeight: 1 }}>
           {perk.costTokens}
         </span>
-        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", opacity: 0.7 }}>tokens</span>
+        <span style={{ fontSize: 10, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase" }}>tokens</span>
         <span
           style={{
             marginTop: 4,
             fontSize: 12,
             fontWeight: 800,
-            padding: "3px 9px",
-            borderRadius: "var(--radius-pill)",
-            background: live ? "var(--accent-ink)" : "transparent",
-            color: live ? "var(--accent)" : "var(--muted)",
+            padding: "3px 8px",
+            borderRadius: 3,
+            border: live ? "none" : "1.5px dashed var(--muted)",
+            background: live ? "var(--cream)" : "transparent",
+            color: live ? "var(--accent)" : "var(--ink)",
           }}
         >
           {stubNote}
