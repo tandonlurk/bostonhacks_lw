@@ -4,8 +4,9 @@
 import { useState } from "react";
 import type { ChallengeSubmitResponse, ChallengesResponse } from "@/contracts";
 import { CameraIcon, CheckIcon } from "@/components/icons";
+import { Stamp } from "@/components/paper/Paper";
 import { downscaleToJpegBase64 } from "./downscale";
-import { primaryButton } from "./styles";
+import { PRIMARY_BTN, paperCard } from "./styles";
 import { submitChallenge } from "./useChallenges";
 
 interface ChallengeGameProps {
@@ -52,29 +53,32 @@ export function ChallengeGame({ data, riderId, onEarned }: ChallengeGameProps) {
             <li
               key={c.id}
               style={{
+                ...paperCard,
                 padding: 14,
-                borderRadius: 18,
-                background: "var(--surface-2)",
-                border: `1px solid ${passed ? "rgba(31,209,122,0.4)" : "var(--border)"}`,
+                borderLeft: passed ? "4px solid var(--accent)" : paperCard.border,
                 display: "grid",
                 gap: 10,
               }}
             >
               <div style={{ display: "flex", gap: 12, alignItems: "flex-start" }}>
                 <p style={{ flex: 1, fontSize: 15.5, fontWeight: 650, lineHeight: 1.35 }}>{c.prompt}</p>
-                <span className="num" style={{ fontSize: 16, fontWeight: 800, color: "var(--accent)", whiteSpace: "nowrap" }}>
+                <span className="num" style={{ fontSize: 16, fontWeight: 700, color: "var(--accent)", whiteSpace: "nowrap" }}>
                   {passed ? `+${awarded}` : `up to ${c.points}`}
                 </span>
               </div>
               {passed ? (
-                <p style={{ display: "flex", alignItems: "center", gap: 6, fontSize: 14, fontWeight: 750, color: "var(--glow-green)" }}>
-                  <CheckIcon size={18} weight={2.6} />
+                <p style={{ display: "flex", alignItems: "center", gap: 10, fontSize: 14, fontWeight: 700, color: "var(--accent)" }}>
+                  <Stamp color="var(--accent)" rotate={-5}>
+                    <CheckIcon size={14} weight={2.8} />
+                    Passed
+                  </Stamp>
                   {result?.alreadyDone ? "Already done this round" : result ? result.reason : "Done this round"}
                 </p>
               ) : (
                 <label
                   htmlFor={inputId}
-                  style={{ ...primaryButton, justifySelf: "start", opacity: disabled ? 0.55 : 1, cursor: disabled ? "default" : "pointer" }}
+                  className={PRIMARY_BTN}
+                  style={{ justifySelf: "start", opacity: disabled ? 0.55 : 1, cursor: disabled ? "default" : "pointer" }}
                 >
                   <CameraIcon size={18} weight={2.2} />
                   {busy ? "Grading…" : result ? "Try another shot" : "Snap it"}
@@ -94,7 +98,7 @@ export function ChallengeGame({ data, riderId, onEarned }: ChallengeGameProps) {
                 </label>
               )}
               {result && !passed ? (
-                <p style={{ fontSize: 13, color: result.enabled ? "var(--glow-orange)" : "var(--muted)" }}>
+                <p style={{ fontSize: 13, color: result.enabled ? "var(--glow-orange)" : "var(--muted)" }} role="status">
                   {result.reason}
                   {result.score != null ? ` (score ${Math.round(result.score * 100)}%)` : ""}
                 </p>

@@ -301,15 +301,15 @@ interface Piece {
 
 /** Big recognisable landmarks: appear once you're at neighborhood zoom. */
 const LANDMARKS: Piece[] = [
-  { Art: StateHouse, at: [42.359, -71.0648], h: 13 },
-  { Art: CustomHouse, at: [42.3593, -71.0535], h: 17 },
-  { Art: OldNorth, at: [42.3665, -71.0548], h: 14 },
-  { Art: Zakim, at: [42.3688, -71.0645], h: 9 },
-  { Art: Citgo, at: [42.3507, -71.0985], h: 8 },
-  { Art: Fenway, at: [42.346, -71.0975], h: 9 },
-  { Art: BackBayTowers, at: [42.3478, -71.08], h: 20 },
-  { Art: GreatDome, at: [42.3597, -71.0925], h: 10 },
-  { Art: SeaportCrane, at: [42.3465, -71.0345], h: 13 },
+  { Art: StateHouse, at: [42.3592, -71.0652], h: 20 },
+  { Art: CustomHouse, at: [42.3593, -71.0535], h: 27 },
+  { Art: OldNorth, at: [42.3668, -71.0548], h: 22 },
+  { Art: Zakim, at: [42.3692, -71.0652], h: 14 },
+  { Art: Citgo, at: [42.3512, -71.099], h: 13 },
+  { Art: Fenway, at: [42.3458, -71.0985], h: 14 },
+  { Art: BackBayTowers, at: [42.3478, -71.08], h: 30 },
+  { Art: GreatDome, at: [42.3597, -71.0935], h: 16 },
+  { Art: SeaportCrane, at: [42.3462, -71.0345], h: 21 },
 ];
 
 /** Street-level filler: rowhouses, triple-deckers, trees. Only when zoomed right in. */

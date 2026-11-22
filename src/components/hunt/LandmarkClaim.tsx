@@ -3,9 +3,11 @@
 // Restyled landmark check-in (same flow as src/components/LandmarkPanel: geolocate, then POST /api/landmarks/claim).
 import { useState } from "react";
 import type { Landmark } from "@/contracts";
-import { CheckIcon, PinIcon, StarIcon } from "@/components/icons";
+import { CheckIcon, PinIcon } from "@/components/icons";
+import { PaperButton, Stamp } from "@/components/paper/Paper";
+import { StationArt } from "@/components/paper/origami";
 import { claimLandmark } from "@/hooks/useLandmarks";
-import { primaryButton } from "./styles";
+import { paperCard } from "./styles";
 
 type Status = "idle" | "locating" | "claiming" | "done" | "error";
 
@@ -50,29 +52,32 @@ export function LandmarkClaim({ landmark, riderId, onClaimed }: { landmark: Land
   const busy = status === "locating" || status === "claiming";
   return (
     <div style={{ display: "grid", gap: 14 }}>
-      <div style={{ padding: 18, borderRadius: 22, background: "linear-gradient(150deg, rgba(255,209,92,0.2), rgba(255,209,92,0.03))", border: "1px solid rgba(255,209,92,0.3)", display: "flex", gap: 14, alignItems: "center" }}>
-        <span style={{ display: "grid", placeItems: "center", width: 56, height: 56, borderRadius: 18, background: "rgba(255,209,92,0.16)", color: "#a87900", flexShrink: 0 }}>
-          <StarIcon size={30} weight={2.2} />
+      <div className="paper--fold" style={{ ...paperCard, padding: 18, display: "flex", gap: 14, alignItems: "center", borderTop: "4px solid var(--gold)" }}>
+        <span aria-hidden="true" style={{ display: "grid", placeItems: "end center", width: 60, height: 60, flexShrink: 0 }}>
+          <StationArt name={landmark.name} height={56} />
         </span>
-        <div>
-          <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 800, lineHeight: 1.1 }}>{landmark.name}</p>
+        <div style={{ minWidth: 0 }}>
+          <p style={{ fontFamily: "var(--font-display)", fontSize: 22, fontWeight: 700, lineHeight: 1.1 }}>{landmark.name}</p>
           <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 4 }}>
-            Walk over and check in for <strong className="num" style={{ color: "var(--accent)" }}>+{landmark.bonusPoints} pts</strong>. We check your GPS is close by.
+            Walk over and check in for <strong className="num" style={{ color: "var(--gold-ink)" }}>+{landmark.bonusPoints} pts</strong>. We check your GPS is close by.
           </p>
         </div>
       </div>
       {status === "done" ? (
-        <p style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 750, color: "var(--glow-green)" }}>
-          <CheckIcon size={20} weight={2.6} />
+        <p role="status" style={{ display: "flex", alignItems: "center", gap: 12, fontWeight: 700, color: "var(--accent)" }}>
+          <Stamp color="var(--brick)" rotate={-6} style={{ fontSize: 13 }}>
+            <CheckIcon size={14} weight={2.8} />
+            Claimed
+          </Stamp>
           {message}
         </p>
       ) : (
-        <button type="button" onClick={claim} disabled={busy} style={{ ...primaryButton, minHeight: 52, fontSize: 16, opacity: busy ? 0.7 : 1 }}>
+        <PaperButton variant="primary" onClick={claim} disabled={busy} style={{ minHeight: 52, fontSize: 16 }}>
           <PinIcon size={18} weight={2.3} />
           {status === "locating" ? "Finding you…" : status === "claiming" ? "Checking in…" : "I'm here, check me in"}
-        </button>
+        </PaperButton>
       )}
-      {status === "error" && message ? <p style={{ fontSize: 13, color: "var(--glow-red)" }}>{message}</p> : null}
+      {status === "error" && message ? <p role="alert" style={{ fontSize: 13, color: "var(--glow-red)" }}>{message}</p> : null}
     </div>
   );
 }

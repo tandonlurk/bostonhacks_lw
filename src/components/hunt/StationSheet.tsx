@@ -4,6 +4,8 @@ import type { ChallengesResponse, Landmark, Perk } from "@/contracts";
 import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { BoltIcon, ChevronIcon } from "@/components/icons";
 import { LineChip } from "@/components/LineChip";
+import { Eyebrow, PaperBadge } from "@/components/paper/Paper";
+import { StationArt } from "@/components/paper/origami";
 import { Sheet } from "@/components/ui/Sheet";
 import { GAME_META, HEAT, heatLevel } from "./gameMeta";
 import { ChallengeGame } from "./ChallengeGame";
@@ -13,7 +15,7 @@ import { STATION_BY_ID } from "./mapModel";
 import type { GameKind, StationGame, StationGames } from "./placeholderGames";
 import { SpendStrip } from "./SpendStrip";
 import { StationHunt } from "./StationHunt";
-import { eyebrow } from "./styles";
+import { kraftWell } from "./styles";
 import { TriviaGame } from "./TriviaGame";
 
 interface StationSheetProps {
@@ -66,28 +68,36 @@ function StationOverview({ stopId, games, onPlay, delayedTeams, delayMessage, sl
           <LineChip key={t} teamRouteId={t} size="sm" />
         ))}
       </div>
-      <h2 style={{ fontSize: 32, fontWeight: 800, lineHeight: 1.05, marginTop: 10 }}>{station.name}</h2>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 12, marginTop: 10 }}>
+        <h2 style={{ flex: 1, minWidth: 0, fontSize: 30, fontWeight: 700, lineHeight: 1.05 }}>{station.name}</h2>
+        {/* Decorative origami art for the neighborhood (not a claim about the station itself). */}
+        <span aria-hidden="true" style={{ flexShrink: 0, filter: "drop-shadow(1px 2px 0 rgba(74,52,22,0.18))" }}>
+          <StationArt name={station.name} height={54} />
+        </span>
+      </div>
 
       <div style={{ display: "flex", flexWrap: "wrap", gap: 8, marginTop: 10 }}>
         {delayedHere.length ? (
-          <StatusPill color="var(--hot)" strong>
+          <PaperBadge bg="var(--hot)" ink="#fffaf0">
             <BoltIcon size={14} weight={2.4} />
             Delay on {delayedHere.map((t) => TEAMS[t].name).join(" + ")}
-          </StatusPill>
+          </PaperBadge>
         ) : (
-          <StatusPill color="var(--glow-green)">Running normally</StatusPill>
+          <PaperBadge bg="var(--accent-soft)" ink="var(--accent)">
+            Running normally
+          </PaperBadge>
         )}
         {level ? (
-          <StatusPill color={HEAT[level].color}>
+          <PaperBadge bg="var(--cream-3)" ink={HEAT[level].ink}>
             {HEAT[level].label} · <span className="num">{Math.round(slowShare! * 100)}%</span> slow
-          </StatusPill>
+          </PaperBadge>
         ) : null}
       </div>
       {delayedHere.length && delayMessage ? <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.45 }}>{delayMessage}</p> : null}
 
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 22, marginBottom: 10 }}>
-        <p style={{ ...eyebrow, flex: 1 }}>{games?.live ? "Play while you wait" : list.length ? "Practice rounds" : "Mini-games"}</p>
-        {list.length ? <span style={{ fontSize: 12, color: "var(--muted)" }}>{list.length} here</span> : null}
+        <Eyebrow style={{ flex: 1 }}>{games?.live ? "Play while you wait" : list.length ? "Practice rounds" : "Mini-games"}</Eyebrow>
+        {list.length ? <span className="hand" style={{ fontSize: 17, color: "var(--muted)" }}>{list.length} here</span> : null}
       </div>
 
       {list.length ? (
@@ -99,7 +109,7 @@ function StationOverview({ stopId, games, onPlay, delayedTeams, delayMessage, sl
           ))}
         </ul>
       ) : (
-        <div style={{ padding: 16, borderRadius: 18, background: "var(--surface-2)", fontSize: 14, color: "var(--muted)" }}>
+        <div style={{ ...kraftWell, padding: 16, fontSize: 14, color: "var(--muted)" }}>
           Nothing to play here right now. Games pop up along a line when it slows down.
         </div>
       )}
@@ -113,10 +123,12 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
   const { Icon, color, blurb } = GAME_META[game.kind];
   // Game availability and maximum rewards come from the server catalog.
   const real = game.kind === "landmark" || game.kind === "challenge" || game.kind === "trivia" || game.kind === "clue";
+  const tag = game.kind === "challenge" ? "MAX PTS" : game.rewardPoints === 0 ? "PRACTICE" : real ? "PTS" : "PREVIEW";
   return (
     <button
       type="button"
       onClick={onPlay}
+      className="paper"
       style={{
         width: "100%",
         display: "flex",
@@ -124,24 +136,35 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
         gap: 14,
         minHeight: 76,
         padding: "12px 14px 12px 12px",
-        borderRadius: 20,
-        border: `1px solid ${live ? "rgba(255,61,127,0.35)" : "var(--border)"}`,
-        background: "var(--surface-2)",
+        borderRadius: 6,
         textAlign: "left",
+        borderLeft: live ? "4px solid var(--hot)" : "1px solid var(--paper-edge)",
       }}
     >
-      <span style={{ display: "grid", placeItems: "center", width: 52, height: 52, borderRadius: 16, background: `color-mix(in srgb, ${color} 16%, transparent)`, color, flexShrink: 0 }}>
+      <span
+        style={{
+          display: "grid",
+          placeItems: "center",
+          width: 52,
+          height: 52,
+          borderRadius: 6,
+          background: `color-mix(in srgb, ${color} 13%, var(--cream))`,
+          border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+          boxShadow: "1px 2px 0 rgba(74,52,22,0.12)",
+          color,
+          flexShrink: 0,
+        }}
+      >
         <Icon size={28} weight={2.2} />
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>
-        <span style={{ display: "block", fontWeight: 800, fontSize: 16 }}>{game.title}</span>
+        <span style={{ display: "block", fontFamily: "var(--font-display)", fontWeight: 650, fontSize: 16.5 }}>{game.title}</span>
         <span style={{ display: "block", fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>{blurb}</span>
+        {live ? <span style={{ display: "block", fontSize: 11, fontWeight: 700, color: "#a8243f", marginTop: 3, letterSpacing: "0.06em" }}>LIVE DURING DELAY</span> : null}
       </span>
       <span style={{ textAlign: "right", flexShrink: 0 }}>
-        <span className="num" style={{ display: "block", fontWeight: 800, fontSize: 18, color: "var(--accent)", lineHeight: 1.1 }}>+{game.rewardPoints}</span>
-        <span style={{ display: "block", fontSize: 10, fontWeight: 800, color: "var(--muted)", letterSpacing: "0.06em", marginTop: 2 }}>
-          {game.kind === "challenge" ? "MAX PTS" : game.rewardPoints === 0 ? "PRACTICE" : real ? "PTS" : "PREVIEW"}
-        </span>
+        <span className="num" style={{ display: "block", fontWeight: 700, fontSize: 19, color: "var(--accent)", lineHeight: 1.1 }}>+{game.rewardPoints}</span>
+        <span style={{ display: "block", fontSize: 10, fontWeight: 800, color: "var(--muted)", letterSpacing: "0.06em", marginTop: 2 }}>{tag}</span>
       </span>
       <ChevronIcon size={16} weight={2.4} style={{ color: "var(--muted)", flexShrink: 0 }} />
     </button>
@@ -161,7 +184,8 @@ function GameView({ stopId, game, onBack, riderId, landmarks, challenges, onEarn
           type="button"
           onClick={onBack}
           aria-label="Back to this station's games"
-          style={{ display: "grid", placeItems: "center", width: 44, height: 44, borderRadius: "50%", border: "none", background: "var(--surface-2)", flexShrink: 0 }}
+          className="paper-btn"
+          style={{ width: 44, height: 44, padding: 0, flexShrink: 0 }}
         >
           <BackIcon size={20} weight={2.3} />
         </button>
@@ -169,7 +193,7 @@ function GameView({ stopId, game, onBack, riderId, landmarks, challenges, onEarn
           <Icon size={22} weight={2.2} />
         </span>
         <div style={{ minWidth: 0 }}>
-          <p style={{ fontWeight: 800, fontSize: 16, lineHeight: 1.1 }}>{label}</p>
+          <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 17, lineHeight: 1.1 }}>{label}</p>
           <p style={{ fontSize: 12.5, color: "var(--muted)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{station.name}</p>
         </div>
       </div>
@@ -191,27 +215,5 @@ function GameView({ stopId, game, onBack, riderId, landmarks, challenges, onEarn
         )
       ) : null}
     </div>
-  );
-}
-
-function StatusPill({ color, strong, children }: { color: string; strong?: boolean; children: React.ReactNode }) {
-  return (
-    <span
-      style={{
-        display: "inline-flex",
-        alignItems: "center",
-        gap: 6,
-        padding: "5px 11px",
-        borderRadius: "var(--radius-pill)",
-        fontSize: 12.5,
-        fontWeight: 750,
-        color: strong ? "#fff" : color,
-        background: strong ? color : `color-mix(in srgb, ${color} 14%, transparent)`,
-        border: strong ? "none" : `1px solid color-mix(in srgb, ${color} 40%, transparent)`,
-      }}
-    >
-      {strong ? null : <span aria-hidden="true" style={{ width: 7, height: 7, borderRadius: "50%", background: color }} />}
-      {children}
-    </span>
   );
 }
