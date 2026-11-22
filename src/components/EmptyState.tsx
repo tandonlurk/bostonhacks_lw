@@ -12,7 +12,7 @@ export function EmptyState({ title, body }: { title: string; body?: string }) {
         color: "var(--muted)",
       }}
     >
-      <p style={{ fontWeight: 600, color: "var(--ink)" }}>{title}</p>
+      <p style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 17, color: "var(--ink)" }}>{title}</p>
       {body ? <p style={{ fontSize: 14 }}>{body}</p> : null}
     </div>
   );
