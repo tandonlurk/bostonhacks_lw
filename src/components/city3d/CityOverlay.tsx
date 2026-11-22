@@ -2,9 +2,10 @@
 
 import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { CloseIcon, TeamIcon } from "@/components/icons";
+import { PaperBadge, PaperButton, PaperCard, Stamp, Tape } from "@/components/paper/Paper";
 import { HomeViewIcon, OrbitIcon } from "./icons";
-import type { TeamStat } from "./model";
-import { TEAM_HEX } from "./palette";
+import { TIER_NAMES, type TeamStat } from "./model";
+import { TEAM_HEX, TEAM_ON, TEAM_SHORT } from "./palette";
 import styles from "./city3d.module.css";
 
 const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
@@ -16,29 +17,33 @@ const TOP = "calc(env(safe-area-inset-top, 0px) + var(--banner-space) + 12px)";
 /** Bottom edge of the leaderboard dock (sits just above the floating nav). */
 export const DOCK_BOTTOM = "calc(var(--nav-height) + var(--nav-gap) + env(safe-area-inset-bottom, 0px) + 12px)";
 
+/** Team swatch: exact line color with a short code, so teams never read by color alone. */
+export function TeamSwatch({ team }: { team: TeamRouteId }) {
+  return (
+    <span aria-hidden="true" className={styles.swatch} style={{ background: TEAM_HEX[team].base, color: TEAM_ON[team] }}>
+      {TEAM_SHORT[team]}
+    </span>
+  );
+}
+
+/** Five folded-house pips filled up to the tier, plus the tier in words for screen readers. */
+export function TierPips({ tier }: { tier: number }) {
+  return (
+    <span className={styles.pips} role="img" aria-label={`Tier ${tier} of 5, ${TIER_NAMES[tier]}`}>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <span key={i} className={`${styles.pip} ${i <= tier ? styles.pipOn : ""}`} />
+      ))}
+    </span>
+  );
+}
+
 export function CityHeader({ total, riders, loading, live }: { total: number; riders: number; loading: boolean; live: boolean }) {
   return (
-    <header
-      data-ui
-      className="glass"
-      style={{
-        position: "absolute",
-        top: TOP,
-        left: 12,
-        right: 12,
-        zIndex: 5,
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "space-between",
-        gap: 12,
-        padding: "10px 14px 10px 16px",
-        borderRadius: 22,
-        boxShadow: "var(--shadow-float)",
-      }}
-    >
+    <PaperCard as="header" data-ui className={styles.header} style={{ position: "absolute", top: TOP, boxShadow: "var(--shadow-float)" }}>
+      <Tape rotate={-4} style={{ left: 28, marginLeft: 0, top: -9, width: 54 }} />
       <div style={{ minWidth: 0 }}>
-        <h1 style={{ fontSize: 26, fontWeight: 800, lineHeight: 1 }}>Boston</h1>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)" }}>
+        <h1 className={styles.title}>Boston</h1>
+        <div className={styles.meta}>
           {live ? <span className={styles.livePulse} aria-hidden="true" /> : null}
           <span style={{ color: live ? "var(--hot)" : "var(--muted)" }}>{loading ? "LOADING" : live ? "LIVE" : "OFFLINE"}</span>
           <span aria-hidden="true">·</span>
@@ -49,79 +54,49 @@ export function CityHeader({ total, riders, loading, live }: { total: number; ri
         <div className="num" style={{ fontSize: 28, fontWeight: 800, color: "var(--accent)", lineHeight: 1 }} aria-label={`${fmtFull(total)} city points`}>
           {fmtFull(total)}
         </div>
-        <div style={{ fontSize: 11, fontWeight: 700, letterSpacing: "0.08em", color: "var(--muted)", marginTop: 6 }}>CITY POINTS</div>
+        <div className={styles.eyebrowSmall}>CITY POINTS</div>
       </div>
-    </header>
+    </PaperCard>
   );
 }
 
 export function CityControls({ onRotate, onHome }: { onRotate: () => void; onHome: () => void }) {
   return (
-    <div
-      data-ui
-      style={{
-        position: "absolute",
-        top: `calc(${TOP} + 84px)`,
-        right: 12,
-        zIndex: 5,
-        display: "flex",
-        flexDirection: "column",
-        gap: 10,
-      }}
-    >
-      <button type="button" className={`glass ${styles.fab}`} onClick={onRotate} aria-label="Rotate city view 90 degrees">
+    <div data-ui style={{ position: "absolute", top: `calc(${TOP} + 84px)`, right: 12, zIndex: 5, display: "flex", flexDirection: "column", gap: 10 }}>
+      <PaperButton className={styles.fab} onClick={onRotate} aria-label="Turn the city a quarter turn">
         <OrbitIcon size={22} />
-      </button>
-      <button type="button" className={`glass ${styles.fab}`} onClick={onHome} aria-label="Reset camera">
+      </PaperButton>
+      <PaperButton className={styles.fab} onClick={onHome} aria-label="Reset camera">
         <HomeViewIcon size={22} />
-      </button>
+      </PaperButton>
     </div>
   );
 }
 
-export function TeamCard({
-  stat,
-  leader,
-  isMine,
-  onClose,
-}: {
-  stat: TeamStat;
-  leader: TeamStat | null;
-  isMine: boolean;
-  onClose: () => void;
-}) {
+export function TeamCard({ stat, tier, leader, isMine, onClose }: { stat: TeamStat; tier: number; leader: TeamStat | null; isMine: boolean; onClose: () => void }) {
   const hex = TEAM_HEX[stat.team];
   const gap = leader && leader.team !== stat.team ? leader.points - stat.points : 0;
   return (
-    <section
+    <PaperCard
+      as="section"
       data-ui
       key={stat.team}
-      className={`glass ${styles.card}`}
+      className={styles.card}
       aria-label={`${TEAMS[stat.team].name} details`}
-      style={{
-        position: "absolute",
-        left: 12,
-        right: 12,
-        bottom: `calc(${DOCK_BOTTOM} + 74px)`,
-        zIndex: 6,
-        borderRadius: 22,
-        padding: "14px 10px 14px 16px",
-        boxShadow: `var(--shadow-float), inset 0 0 0 1px ${hex.glow}33`,
-        overflow: "hidden",
-      }}
+      style={{ position: "absolute", left: 12, right: 12, bottom: `calc(${DOCK_BOTTOM} + 74px)`, zIndex: 6, padding: "14px 10px 14px 20px", boxShadow: "var(--shadow-float)" }}
     >
-      <div aria-hidden="true" style={{ position: "absolute", left: 0, top: 0, bottom: 0, width: 5, background: hex.glow }} />
+      <div aria-hidden="true" className={styles.teamFlap} style={{ background: hex.base }} />
       <div style={{ display: "flex", alignItems: "flex-start", gap: 10 }}>
         <div style={{ flex: 1, minWidth: 0 }}>
           <div style={{ display: "flex", alignItems: "center", gap: 8, flexWrap: "wrap" }}>
-            <h2 style={{ fontSize: 22, fontWeight: 800, color: hex.glow, lineHeight: 1.1 }}>{TEAMS[stat.team].name}</h2>
-            <span className="num" style={{ fontSize: 13, fontWeight: 800, padding: "3px 8px", borderRadius: 999, background: "var(--surface-3)" }}>
-              #{stat.rank}
-            </span>
+            <h2 style={{ fontSize: 22, fontWeight: 750, color: hex.ink, lineHeight: 1.1 }}>{TEAMS[stat.team].name}</h2>
+            <Stamp color={stat.rank === 1 && stat.points > 0 ? "var(--gold-ink)" : "var(--brick)"} rotate={-5}>
+              No. {stat.rank}
+            </Stamp>
             {isMine ? (
-              <span style={{ fontSize: 11, fontWeight: 800, letterSpacing: "0.06em", padding: "3px 8px", borderRadius: 999, background: "var(--accent)", color: "var(--accent-ink)" }}>
-                YOUR TEAM
-              </span>
+              <PaperBadge bg="var(--accent)" ink="var(--accent-ink)">
+                Your team
+              </PaperBadge>
             ) : null}
           </div>
           <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>{stat.districtName}</p>
@@ -130,40 +105,48 @@ export function TeamCard({
           type="button"
           onClick={onClose}
           aria-label="Close team card"
-          style={{ display: "grid", placeItems: "center", width: 44, height: 44, marginTop: -6, borderRadius: "50%", border: "none", background: "transparent", flex: "none" }}
+          style={{ display: "grid", placeItems: "center", width: 44, height: 44, marginTop: -6, marginRight: 8, borderRadius: "50%", border: "none", background: "transparent", color: "var(--ink)", flex: "none" }}
         >
           <CloseIcon size={18} />
         </button>
       </div>
-      <div style={{ display: "flex", alignItems: "flex-end", gap: 18, marginTop: 10 }}>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 18, marginTop: 10, flexWrap: "wrap" }}>
         <div>
           <div className="num" style={{ fontSize: 30, fontWeight: 800, lineHeight: 1 }}>
             {fmtFull(stat.points)}
           </div>
-          <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: "0.06em", marginTop: 4 }}>POINTS</div>
+          <div className={styles.eyebrowSmall}>POINTS</div>
         </div>
         <div>
           <div className="num" style={{ fontSize: 20, fontWeight: 800, lineHeight: 1, display: "flex", alignItems: "center", gap: 5 }}>
             <TeamIcon size={16} /> {stat.riders}
           </div>
-          <div style={{ fontSize: 11, color: "var(--muted)", fontWeight: 700, letterSpacing: "0.06em", marginTop: 4 }}>RIDERS</div>
+          <div className={styles.eyebrowSmall}>RIDERS</div>
         </div>
-        <div style={{ marginLeft: "auto", textAlign: "right", fontSize: 13, fontWeight: 700, paddingRight: 6 }}>
-          {stat.points === 0 ? (
-            <span style={{ color: "var(--muted)" }}>Ride to lay the first floor</span>
-          ) : stat.rank === 1 ? (
-            <span style={{ color: "var(--accent)" }}>Tallest skyline in Boston</span>
-          ) : (
-            <span style={{ color: "var(--muted)" }}>
-              <span className="num" style={{ color: "var(--ink)" }}>
-                {fmtFull(gap)}
-              </span>{" "}
-              pts to #1
-            </span>
-          )}
+        <div>
+          <div style={{ height: 20, display: "flex", alignItems: "center" }}>
+            <TierPips tier={tier} />
+          </div>
+          <div className={styles.eyebrowSmall}>
+            TIER {tier} · {TIER_NAMES[tier].toUpperCase()}
+          </div>
         </div>
       </div>
-    </section>
+      <p style={{ marginTop: 10, fontSize: 13, fontWeight: 650 }}>
+        {stat.points === 0 ? (
+          <span style={{ color: "var(--muted)" }}>Ride to fold the first floor.</span>
+        ) : stat.rank === 1 ? (
+          <span style={{ color: "var(--accent)" }}>Tallest skyline in Boston.</span>
+        ) : (
+          <span style={{ color: "var(--muted)" }}>
+            <span className="num" style={{ color: "var(--ink)" }}>
+              {fmtFull(gap)}
+            </span>{" "}
+            pts to No. 1
+          </span>
+        )}
+      </p>
+    </PaperCard>
   );
 }
 

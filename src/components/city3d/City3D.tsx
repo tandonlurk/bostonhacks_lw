@@ -1,29 +1,58 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { TeamRouteId } from "@/contracts/routes";
 import { useRider } from "@/hooks/useRider";
 import { USE_MOCKS } from "@/hooks/useMocks";
-import { CityScene } from "./CityScene";
+import { BuildingsLayer, GroundLayer, LabelsLayer, Markers, SCENE_FRAME } from "./CityScene";
 import { CityControls, CityHeader, TeamCard, teamFromId } from "./CityOverlay";
 import { LeaderboardDock, LeaderboardSheet } from "./Leaderboard3d";
-import { makeIso } from "./iso";
-import { FLOOR, buildCity } from "./model";
+import { buildingItem, freeLandmarkItems, staticItems, type SceneItem } from "./archetypes";
+import { buildCity, teamTiers } from "./model";
 import { useBursts, useCityData } from "./useCityData";
 import { useCamera } from "./useCamera";
-import { useAnimatedFloors, useRotation } from "./useCityMotion";
+import { useIntro, usePrevFloors, useRotation, useTierUps } from "./useCityMotion";
 import styles from "./city3d.module.css";
 
-/** The City tab: an isometric night skyline of Boston where each line's district rises with its points. */
+/** Quarter turns pivot on downtown. */
+const TURN_ORIGIN = { "--turn-x": `${-SCENE_FRAME.minX}px`, "--turn-y": `${-SCENE_FRAME.minY}px` } as CSSProperties;
+
+/** The City tab: an origami Boston on a kraft table where each line's district folds up taller with its points. */
 export function City3D() {
   const { stats, loading, online } = useCityData();
   const { rider } = useRider();
   const mine = rider?.homeTeamRouteId ?? null;
 
   const buildings = useMemo(() => buildCity(stats), [stats]);
-  const floors = useAnimatedFloors(buildings);
+  const prev = usePrevFloors(buildings);
+  const tiers = useMemo(() => teamTiers(buildings), [buildings]);
+  const tierUps = useTierUps(tiers);
   const bursts = useBursts(stats);
-  const { theta, rotate } = useRotation();
+  const intro = useIntro();
+  const { rot, phase, rotate } = useRotation();
+
+  // Painter-sorted scene: static trees/bridge + unclaimed landmarks + team buildings (all memoized per item).
+  const items = useMemo(() => {
+    const claimed = new Set(buildings.filter((b) => b.landmark).map((b) => b.key));
+    const list: SceneItem[] = [...staticItems(rot), ...freeLandmarkItems(rot, claimed), ...buildings.map((b) => buildingItem(rot, b))];
+    return list.sort((a, b) => b.depth - a.depth);
+  }, [buildings, rot]);
+
+  // Tallest roof per team (tags, pennant) and the average roof (camera focus).
+  const { anchors, centres } = useMemo(() => {
+    const anchors = new Map<TeamRouteId, [number, number]>();
+    const sums = new Map<TeamRouteId, [number, number, number]>();
+    for (const it of items) {
+      if (!it.team || it.kind !== "bld") continue;
+      const cur = anchors.get(it.team);
+      if (!cur || it.roof[1] < cur[1]) anchors.set(it.team, it.roof);
+      const s = sums.get(it.team) ?? [0, 0, 0];
+      sums.set(it.team, [s[0] + it.roof[0], s[1] + it.roof[1], s[2] + 1]);
+    }
+    const centres = new Map<TeamRouteId, [number, number]>();
+    for (const [t, s] of sums) centres.set(t, [s[0] / s[2], s[1] / s[2]]);
+    return { anchors, centres };
+  }, [items]);
 
   const ranked = useMemo(() => [...stats].sort((a, b) => a.rank - b.rank), [stats]);
   const total = useMemo(() => stats.reduce((s, x) => s + x.points, 0), [stats]);
@@ -41,31 +70,33 @@ export function City3D() {
   const focusTeam = useCallback(
     (team: TeamRouteId) => {
       setSelected(team);
-      const mineB = buildings.filter((b) => b.team === team);
-      if (!mineB.length) return;
-      // Centre on the team's skyline: average footprint, lifted by its typical height.
-      const iso = makeIso(theta);
-      let sx = 0;
-      let sy = 0;
-      for (const b of mineB) {
-        const [x, y] = iso.pt(b.x, b.y, (b.floors * FLOOR) / 2);
-        sx += x;
-        sy += y;
-      }
-      camera.focus(sx / mineB.length, sy / mineB.length, Math.max(camera.scale(), 1.1), [0.5, 0.36]);
+      const c = centres.get(team);
+      if (!c) return;
+      camera.focus(c[0], c[1], Math.max(camera.scale(), 1.1), [0.5, 0.4]);
     },
-    [buildings, camera, theta],
+    [camera, centres],
   );
 
   const selectedStat = teamFromId(stats, selected);
 
   return (
     <div className="screen-bleed" style={{ overflow: "hidden" }}>
-      <div ref={stageRef} className={styles.stage} role="img" aria-label="3D map of Boston. Each MBTA line's district grows taller as its riders earn points. Drag to pan, pinch to zoom.">
-        <div className={styles.stars} />
+      <div
+        ref={stageRef}
+        className={styles.stage}
+        data-sel={selected ?? undefined}
+        data-intro={intro ? "true" : undefined}
+        role="img"
+        aria-label="Paper map of Boston. Each MBTA line's district folds up taller as its riders earn points. Drag to pan, pinch to zoom."
+      >
         <div ref={cameraRef} className={styles.camera}>
-          <div ref={driftRef} className={styles.drift}>
-            <CityScene theta={theta} buildings={buildings} floors={floors} leader={leader} selected={selected} bursts={bursts} />
+          <div className={styles.turn} data-phase={phase} style={TURN_ORIGIN}>
+            <div ref={driftRef} className={styles.drift}>
+              <GroundLayer rot={rot} />
+              <BuildingsLayer items={items} prev={prev} />
+              <LabelsLayer rot={rot} />
+              <Markers anchors={anchors} leader={leader} bursts={bursts} tierUps={tierUps} />
+            </div>
           </div>
         </div>
       </div>
@@ -74,7 +105,7 @@ export function City3D() {
       <CityControls onRotate={() => rotate(1)} onHome={() => camera.home()} />
 
       {selectedStat ? (
-        <TeamCard stat={selectedStat} leader={ranked[0] ?? null} isMine={mine === selectedStat.team} onClose={() => setSelected(null)} />
+        <TeamCard stat={selectedStat} tier={tiers[selectedStat.team]} leader={ranked[0] ?? null} isMine={mine === selectedStat.team} onClose={() => setSelected(null)} />
       ) : null}
 
       <LeaderboardDock
@@ -88,6 +119,7 @@ export function City3D() {
         open={sheetOpen}
         onClose={() => setSheetOpen(false)}
         ranked={ranked}
+        tiers={tiers}
         mine={mine}
         onSelect={(t) => {
           setSheetOpen(false);
