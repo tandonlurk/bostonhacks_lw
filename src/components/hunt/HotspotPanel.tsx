@@ -8,6 +8,8 @@ import { meetMatchedFixture, meetWaitingFixture } from "@/contracts/fixtures";
 import { TEAMS } from "@/contracts/routes";
 import { STATIONS } from "@/components/map/mbta-geo";
 import { USE_MOCKS } from "@/hooks/useMocks";
+import { CloseIcon } from "@/components/icons";
+import { PaperFlag, PaperT } from "@/components/paper/origami";
 import { hotspotJson, useHotspots } from "./useHotspots";
 import s from "./hotspots.module.css";
 
@@ -64,13 +66,13 @@ export function HotspotPanel({ riderId, onSelect, onHotspots, onEarned }: Props)
   const hotspots = USE_MOCKS && data ? data.hotspots : data?.hotspots ?? [];
   return <>
     <button ref={opener} type="button" className={s.launcher} onClick={() => setOpen(true)} aria-haspopup="dialog">
-      <span className={s.spark} aria-hidden="true">✳</span><span>Hotspots</span><span className={s.miniBadge}>{hotspots.length || "5×"}</span>
+      <span className={s.spark} aria-hidden="true"><PaperFlag height={24} tint="#2f6b45" /></span><span>Hotspots</span><span className={s.miniBadge}>{hotspots.length || "5×"}</span>
     </button>
     {open && createPortal(<div className={s.overlay}>
       <button type="button" tabIndex={-1} className={s.scrim} aria-label="Close hotspots" onClick={close} />
       <div ref={dialog} className={s.dialog} role="dialog" aria-modal="true" aria-labelledby="hotspot-heading">
         <div className={s.handle} aria-hidden="true" />
-        <div className={s.topline}><p className={s.eyebrow}>A different way to get there</p><button type="button" onClick={close} className={s.close} aria-label="Close hotspots">×</button></div>
+        <div className={s.topline}><p className={s.eyebrow}>A different way to get there</p><button type="button" onClick={close} className={s.close} aria-label="Close hotspots"><CloseIcon size={18} /></button></div>
         {selected && riderId ? <HotspotMeet key={`${riderId}:${selected.id}`} hotspot={selected} riderId={riderId} onBack={() => setSelected(null)} onEarned={onEarned} /> : <>
           <h2 id="hotspot-heading" className={s.heading}>Same city.<br /><span>New connections.</span></h2>
           <p className={s.intro}>Take a new route. Meet another rider at your hotspot. You both earn a 5× meeting bonus.</p>
@@ -180,7 +182,7 @@ function HotspotMeet({ hotspot, riderId, onBack, onEarned }: { hotspot: Hotspot;
     <p className={s.eyebrow}>MEET AT {hotspot.name}</p>
     <h2 id="hotspot-heading" className={s.heading}>{result?.status === "matched" ? "A new connection." : "Good things\nhappen together."}</h2>
     {USE_MOCKS && <p className={s.preview}>Preview mode · no real points are awarded</p>}
-    <div className={`${s.phoneArt} ${waiting ? s.pairing : ""}`} aria-hidden="true"><span>t</span><i>✳</i><span>t</span></div>
+    <div className={`${s.phoneArt} ${waiting ? s.pairing : ""}`} aria-hidden="true"><span><PaperT height={44} /></span><i><PaperFlag height={30} tint="#2f6b45" /></i><span><PaperT height={44} /></span></div>
     {result?.status === "matched" ? <div className={s.success} role="status"><span className={s.bigReward}>+{result.pointsAwarded}<small> {USE_MOCKS ? "preview points" : "points"}</small></span><h3>{result.partner ? `You met ${result.partner.displayName}.` : "You’re connected."}</h3><p>{result.message}</p><p className={s.note}>One reward per pair, per hotspot, per day. Meet someone new for another bonus.</p><button type="button" className={s.primary} onClick={onBack}>Find your next stop</button></div> : <>
       <p className={s.intro}>Both riders tap Bump at {hotspot.name} within a few seconds. Or share a four-digit code. No NFC needed.</p>
       {waiting && result && <div className={s.codeCard} role="status"><span>Your pairing code</span><strong className={s.code}>{result.code}</strong><span>Share with your partner · expires in {remaining}s</span><span className={s.waitLabel}>Waiting for another rider…</span></div>}

@@ -1,8 +1,10 @@
 "use client";
 
 // Dependency-free pan / pinch / wheel / double-tap zoom for an SVG map.
-// The transform is written straight to a <g> each frame (no React render while dragging); React only re-renders when the
-// zoom crosses a bucket, which drives marker sizes and label level-of-detail.
+// The transform is written straight to a <g> once per animation frame (no React render while dragging). When the zoom
+// crosses a bucket, `onBucket` fires synchronously so the caller can retune CSS variables / level-of-detail on the DOM
+// (still no React render), and React re-renders once, after input settles, for the zoom-dependent label layout.
+// Keyboard: arrow keys pan, + / - zoom (the <svg> is focusable).
 import { startTransition, useCallback, useEffect, useRef, useState } from "react";
 
 export interface View {
@@ -17,6 +19,8 @@ interface Options {
   world: { w: number; h: number };
   /** Called with svg-local screen coordinates on a clean tap (no drag). */
   onTap: (sx: number, sy: number, view: View) => void;
+  /** Called synchronously whenever the zoom bucket changes (before any React render). */
+  onBucket?: (bucket: number, svg: SVGSVGElement) => void;
 }
 
 const TAP_SLOP = 8;
@@ -31,21 +35,25 @@ export function prefersReducedMotion() {
   return typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
 }
 
-export function usePanZoom({ minK, maxK, world, onTap }: Options) {
+export function usePanZoom({ minK, maxK, world, onTap, onBucket }: Options) {
   const svgRef = useRef<SVGSVGElement | null>(null);
   const groupRef = useRef<SVGGElement | null>(null);
   const view = useRef<View>({ x: 0, y: 0, k: 1 });
   const size = useRef({ w: 0, h: 0 });
   const [zoom, setZoom] = useState(1);
   const [ready, setReady] = useState(false);
-  const bucket = useRef(1);
+  // 0 = "never applied", so the first apply always reports a bucket.
+  const bucket = useRef(0);
+  const rect = useRef<{ left: number; top: number } | null>(null);
   const anim = useRef<number | null>(null);
   const zoomCommit = useRef<ReturnType<typeof setTimeout> | null>(null);
   const onTapRef = useRef(onTap);
+  const onBucketRef = useRef(onBucket);
 
   useEffect(() => {
     onTapRef.current = onTap;
-  }, [onTap]);
+    onBucketRef.current = onBucket;
+  }, [onTap, onBucket]);
 
   const clamp = useCallback(
     (v: View): View => {
@@ -69,6 +77,7 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
       const b = zoomBucket(v.k);
       if (b !== bucket.current) {
         bucket.current = b;
+        if (svgRef.current) onBucketRef.current?.(b, svgRef.current);
         // Re-laying out markers/labels re-renders the whole map, so don't do it mid-gesture: commit
         // the new zoom level once input settles. The SVG transform above stays live every frame.
         if (zoomCommit.current) clearTimeout(zoomCommit.current);
@@ -155,12 +164,15 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
     const svg = svgRef.current;
     if (!svg) return;
     const first = svg.getBoundingClientRect();
+    rect.current = { left: first.left, top: first.top };
     if (first.width > 0 && size.current.w === 0) {
       size.current = { w: first.width, h: first.height };
       setReady(true);
     }
     const ro = new ResizeObserver(([entry]) => {
       const { width, height } = entry.contentRect;
+      const r = svg.getBoundingClientRect();
+      rect.current = { left: r.left, top: r.top };
       const prev = size.current;
       size.current = { w: width, h: height };
       if (prev.w === 0 && width > 0) setReady(true);
@@ -184,9 +196,34 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
     let downAt = 0;
     let lastTap = { t: 0, x: 0, y: 0 };
 
-    const local = (e: PointerEvent | WheelEvent) => {
+    // The svg rect is cached (refreshed on resize and at each gesture start) so pointermove never forces a
+    // synchronous layout right after we've dirtied the SVG with a new transform.
+    const measure = () => {
       const r = svg.getBoundingClientRect();
+      rect.current = { left: r.left, top: r.top };
+      return rect.current;
+    };
+    const local = (e: PointerEvent | WheelEvent) => {
+      const r = rect.current ?? measure();
       return { x: e.clientX - r.left, y: e.clientY - r.top };
+    };
+    // Coalesce pointer moves into one transform per frame (high-rate touch panels fire 120-240 Hz).
+    let pending: View | null = null;
+    let moveFrame: number | null = null;
+    const flush = () => {
+      if (moveFrame != null) cancelAnimationFrame(moveFrame);
+      moveFrame = null;
+      if (pending) apply(pending);
+      pending = null;
+    };
+    const schedule = (v: View) => {
+      pending = v;
+      if (moveFrame == null)
+        moveFrame = requestAnimationFrame(() => {
+          moveFrame = null;
+          if (pending) apply(pending);
+          pending = null;
+        });
     };
     const rebase = () => {
       base = { v: { ...view.current }, pts: [...pts.values()].map((p) => ({ ...p })) };
@@ -195,6 +232,8 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
     const down = (e: PointerEvent) => {
       if (e.pointerType === "mouse" && e.button !== 0) return;
       stopAnim();
+      flush();
+      if (pts.size === 0) measure();
       svg.setPointerCapture?.(e.pointerId);
       pts.set(e.pointerId, local(e));
       if (pts.size === 1) {
@@ -213,7 +252,7 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
         const dx = p.x - base.pts[0].x;
         const dy = p.y - base.pts[0].y;
         moved = Math.max(moved, Math.hypot(dx, dy));
-        apply({ k: base.v.k, x: base.v.x + dx, y: base.v.y + dy });
+        schedule({ k: base.v.k, x: base.v.x + dx, y: base.v.y + dy });
       } else if (now.length >= 2 && base.pts.length >= 2) {
         moved = TAP_SLOP + 1;
         const [a0, b0] = base.pts;
@@ -225,12 +264,13 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
         const k = Math.min(maxK, Math.max(minK, base.v.k * (d / d0)));
         const wx = (m0.x - base.v.x) / base.v.k;
         const wy = (m0.y - base.v.y) / base.v.k;
-        apply({ k, x: m.x - wx * k, y: m.y - wy * k });
+        schedule({ k, x: m.x - wx * k, y: m.y - wy * k });
       }
     };
 
     const up = (e: PointerEvent) => {
       if (!pts.has(e.pointerId)) return;
+      flush();
       const p = local(e);
       const wasSingle = pts.size === 1;
       pts.delete(e.pointerId);
@@ -272,16 +312,43 @@ export function usePanZoom({ minK, maxK, world, onTap }: Options) {
     svg.addEventListener("pointerup", up);
     svg.addEventListener("pointercancel", up);
     svg.addEventListener("wheel", wheel, { passive: false });
+
+    const key = (e: KeyboardEvent) => {
+      if (e.altKey || e.ctrlKey || e.metaKey) return;
+      const { w, h } = size.current;
+      const step = 80;
+      const v = view.current;
+      let next: View | null = null;
+      if (e.key === "ArrowLeft") next = { ...v, x: v.x + step };
+      else if (e.key === "ArrowRight") next = { ...v, x: v.x - step };
+      else if (e.key === "ArrowUp") next = { ...v, y: v.y + step };
+      else if (e.key === "ArrowDown") next = { ...v, y: v.y - step };
+      else if (e.key === "+" || e.key === "=") {
+        e.preventDefault();
+        zoomAt(1.6, w / 2, h / 2, true);
+        return;
+      } else if (e.key === "-" || e.key === "_") {
+        e.preventDefault();
+        zoomAt(1 / 1.6, w / 2, h / 2, true);
+        return;
+      }
+      if (!next) return;
+      e.preventDefault();
+      animateTo(next, 160);
+    };
+    svg.addEventListener("keydown", key);
     return () => {
       svg.removeEventListener("pointerdown", down);
       svg.removeEventListener("pointermove", move);
       svg.removeEventListener("pointerup", up);
       svg.removeEventListener("pointercancel", up);
       svg.removeEventListener("wheel", wheel);
+      svg.removeEventListener("keydown", key);
       if (wheelFrame != null) cancelAnimationFrame(wheelFrame);
+      if (moveFrame != null) cancelAnimationFrame(moveFrame);
       stopAnim();
     };
-  }, [apply, maxK, minK, zoomAt]);
+  }, [animateTo, apply, maxK, minK, zoomAt]);
 
   return { svgRef, groupRef, zoom, ready, apply, animateTo, zoomAt, fit, focus, getView, getSize };
 }

@@ -1,8 +1,10 @@
 "use client";
 
 import { ChevronIcon } from "@/components/icons";
+import { Stamp, Tape } from "@/components/paper/Paper";
+import { PaperFlag, StationArt } from "@/components/paper/origami";
 import { GAME_META, GAME_ORDER, HEAT, heatLevel } from "./gameMeta";
-import { GLOW, STATION_BY_ID, type MapStation } from "./mapModel";
+import { LINE_FILL, STATION_BY_ID, type MapStation } from "./mapModel";
 import type { StationGames } from "./placeholderGames";
 
 interface GameStripProps {
@@ -13,8 +15,8 @@ interface GameStripProps {
 }
 
 /**
- * Bottom carousel above the nav. During a delay: the live game stations as swipeable cards (also the keyboard /
- * screen-reader path into the map). When all clear: a calm card that previews what unlocks plus practice stops.
+ * Bottom carousel above the nav. During a delay: the live game stations as swipeable paper tags (also the keyboard /
+ * screen-reader path into the map). When all clear: a taped note that previews what unlocks plus practice stops.
  */
 export function GameStrip({ live, stations, heat, onPick }: GameStripProps) {
   return (
@@ -36,7 +38,7 @@ export function GameStrip({ live, stations, heat, onPick }: GameStripProps) {
           gap: 10,
           overflowX: "auto",
           scrollSnapType: "x mandatory",
-          padding: "4px 12px 6px",
+          padding: "12px 12px 8px",
           scrollPaddingInline: 12,
           pointerEvents: "auto",
           scrollbarWidth: "none",
@@ -58,33 +60,42 @@ function StationCard({ s, g, share, onPick }: { s: MapStation; g: StationGames; 
     <button
       type="button"
       onClick={() => onPick(s.id)}
-      aria-label={`${s.name}: ${g.games.length} mini-games, up to ${best} points${g.live ? ", live during delay" : ", practice"}`}
-      className="glass"
+      aria-label={`${s.name}: ${g.games.length} mini-games, up to ${best} points${g.live ? ", live during delay" : ", practice"}${level ? `, ${HEAT[level].label.toLowerCase()}` : ""}`}
+      className="paper"
       style={{
         flex: "0 0 auto",
-        width: 176,
-        minHeight: 88,
+        width: 184,
+        minHeight: 92,
         scrollSnapAlign: "start",
         display: "flex",
         flexDirection: "column",
         alignItems: "stretch",
         gap: 8,
-        padding: "10px 12px 10px 14px",
-        borderRadius: 20,
+        padding: "10px 12px 10px 16px",
+        borderRadius: 6,
         textAlign: "left",
         position: "relative",
-        overflow: "hidden",
-        borderColor: g.live ? "rgba(255,61,127,0.45)" : "var(--glass-border)",
+        overflow: "visible",
       }}
     >
-      <span aria-hidden="true" style={{ position: "absolute", left: 0, top: 10, bottom: 10, width: 4, borderRadius: 2, display: "flex", flexDirection: "column" }}>
+      {/* line-color paper strips glued along the left edge */}
+      <span aria-hidden="true" style={{ position: "absolute", left: 4, top: 8, bottom: 8, width: 5, display: "flex", flexDirection: "column", gap: 2 }}>
         {s.teams.map((t) => (
-          <span key={t} style={{ flex: 1, background: GLOW[t] }} />
+          <span key={t} style={{ flex: 1, borderRadius: 2, background: LINE_FILL[t], boxShadow: "1px 1px 0 rgba(60,40,18,0.25)" }} />
         ))}
       </span>
-      <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-        <span style={{ flex: 1, minWidth: 0, fontWeight: 750, fontSize: 15, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>{s.name}</span>
-        {level ? <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: "50%", background: HEAT[level].color, flexShrink: 0 }} /> : null}
+      {g.live ? (
+        <span aria-hidden="true" style={{ position: "absolute", right: 10, top: -12 }}>
+          <PaperFlag height={22} tint="#c8325a" />
+        </span>
+      ) : null}
+      <span style={{ display: "flex", alignItems: "center", gap: 8, minWidth: 0 }}>
+        <span aria-hidden="true" style={{ flexShrink: 0, display: "inline-flex", alignItems: "flex-end", height: 26 }}>
+          <StationArt name={s.name} height={24} />
+        </span>
+        <span style={{ flex: 1, minWidth: 0, fontFamily: "var(--font-display)", fontWeight: 650, fontSize: 15.5, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+          {s.name}
+        </span>
       </span>
       <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
         {g.games.map((game) => {
@@ -95,8 +106,13 @@ function StationCard({ s, g, share, onPick }: { s: MapStation; g: StationGames; 
             </span>
           );
         })}
+        {level && level !== "ok" ? (
+          <span aria-hidden="true" style={{ fontSize: 11, fontWeight: 700, color: HEAT[level].ink }}>
+            {HEAT[level].label}
+          </span>
+        ) : null}
         <span style={{ flex: 1 }} />
-        <span className="num" style={{ fontSize: 13, fontWeight: 800, color: g.live ? "var(--accent)" : "var(--muted)" }}>
+        <span className="num" style={{ fontSize: 14, fontWeight: 700, color: g.live ? "var(--accent)" : "var(--muted)" }}>
           +{best}
         </span>
         <ChevronIcon size={14} weight={2.4} style={{ color: "var(--muted)" }} />
@@ -108,27 +124,32 @@ function StationCard({ s, g, share, onPick }: { s: MapStation; g: StationGames; 
 function AllClear() {
   return (
     <div
-      className="glass"
+      className="paper paper--crease paper-unfold"
       style={{
-        margin: "0 12px 8px",
-        padding: "12px 14px",
-        borderRadius: 20,
+        margin: "8px 12px 6px",
+        padding: "14px 14px 12px",
+        borderRadius: 6,
         display: "flex",
         alignItems: "center",
         gap: 12,
         pointerEvents: "auto",
-        animation: "fade-in 240ms var(--ease-out)",
       }}
     >
+      <Tape rotate={-4} />
       <div style={{ flex: 1, minWidth: 0 }}>
-        <p style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 17, lineHeight: 1.15 }}>All clear.</p>
-        <p style={{ fontSize: 12.5, color: "var(--muted)", marginTop: 2 }}>Mini-games unlock along a line when it slows down. Warm up below.</p>
+        <p style={{ display: "flex", alignItems: "center", gap: 8 }}>
+          <span style={{ fontFamily: "var(--font-display)", fontWeight: 700, fontSize: 18, lineHeight: 1.15 }}>All clear.</span>
+          <Stamp color="var(--accent)" rotate={-3}>
+            Practice
+          </Stamp>
+        </p>
+        <p style={{ fontSize: 13, color: "var(--muted)", marginTop: 4 }}>Mini-games unlock along a line when it slows down. Warm up below.</p>
       </div>
       <div aria-hidden="true" style={{ display: "grid", gridTemplateColumns: "repeat(2, 22px)", gap: 6 }}>
         {GAME_ORDER.map((k) => {
           const { Icon, color } = GAME_META[k];
           return (
-            <span key={k} style={{ color, display: "inline-flex", opacity: 0.9 }}>
+            <span key={k} style={{ color, display: "inline-flex" }}>
               <Icon size={22} weight={2.1} />
             </span>
           );

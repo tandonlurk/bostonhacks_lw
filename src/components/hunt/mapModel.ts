@@ -16,6 +16,24 @@ export const GLOW: Record<TeamRouteId, string> = {
   Silver: "var(--glow-silver)",
 };
 
+/** Exact contract line colors (docs/CONTRACTS.md section 1) for the paper route strips. */
+export const LINE_FILL: Record<TeamRouteId, string> = {
+  Red: "var(--line-red)",
+  Orange: "var(--line-orange)",
+  Blue: "var(--line-blue)",
+  Green: "var(--line-green)",
+  Silver: "var(--line-silver)",
+};
+
+/** Same colors as hex, for the origami shade() helper (cut edges of the paper strips). */
+export const LINE_HEX: Record<TeamRouteId, string> = {
+  Red: "#da291c",
+  Orange: "#ed8b00",
+  Blue: "#003da5",
+  Green: "#00843d",
+  Silver: "#7c878e",
+};
+
 export const SHORT: Record<TeamRouteId, string> = { Red: "RL", Orange: "OL", Blue: "BL", Green: "GL", Silver: "SL" };
 
 export type Importance = 1 | 2 | 3;
