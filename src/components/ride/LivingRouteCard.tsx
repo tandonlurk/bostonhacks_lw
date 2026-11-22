@@ -126,7 +126,7 @@ export function LivingRouteCard({ strip, hotspots, riding }: { strip: RouteStrip
         </ol>
       </div>
 
-      {hotLabel ? (
+      {hotLabel && !riding ? (
         <Link href="/hunt" className={css.hotRow}>
           <span className={css.hotIcon} aria-hidden="true">
             <PinIcon size={16} weight={2.4} />

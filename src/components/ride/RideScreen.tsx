@@ -30,9 +30,32 @@ import styles from "./ride.module.css";
 type Phase = "loading" | "join" | "idle" | "live" | "summary";
 
 const ANCHOR: Record<Phase, number> = { loading: 0.45, join: 0.2, idle: 0.45, live: 0.42, summary: 0.33 };
-/** Map labels above this y would hide under the top card + route card. */
-const LABEL_TOP: Record<Phase, number> = { loading: 120, join: 60, idle: 260, live: 260, summary: 120 };
+/** Rough height the bottom controls take (px above the screen bottom), for centering the rider dot. */
+const BOTTOM_PX: Partial<Record<Phase, number>> = { idle: 330, live: 410 };
+
 const MAP_MODE: Record<Phase, MapMode> = { loading: "idle", join: "onboarding", idle: "idle", live: "riding", summary: "idle" };
+
+/** Measures where the floating top cards end so the map can keep the rider dot and labels below them. */
+function useStackBottom(el: HTMLElement | null) {
+  const [m, setM] = useState({ bottom: 0, height: 0 });
+  useEffect(() => {
+    if (!el) return;
+    const measure = () => {
+      const bottom = Math.round(el.getBoundingClientRect().bottom);
+      const height = window.innerHeight;
+      setM((prev) => (prev.bottom === bottom && prev.height === height ? prev : { bottom, height }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [el]);
+  return m;
+}
 
 function ErrorToast({ message, onDismiss, onPickStop }: { message: string; onDismiss: () => void; onPickStop?: () => void }) {
   return (
@@ -81,6 +104,8 @@ export function RideScreen() {
   const fixNow = demoSpot ? { lat: demoSpot.lat, lng: demoSpot.lng, heading: demoSpot.heading, accuracy: 10 } : pos.snapshot;
   const nearby = previewNearby(preview, useNearbyStation(fixNow, pos.gpsState === "on" || demoSpot !== null));
 
+  const [stackEl, setStackEl] = useState<HTMLDivElement | null>(null);
+  const stack = useStackBottom(stackEl);
   const [manualOpen, setManualOpen] = useState(false);
   const [ending, setEnding] = useState(false);
   const [dismissedResult, setDismissedResult] = useState<object | null>(null);
@@ -104,6 +129,13 @@ export function RideScreen() {
   const phase: Phase = !hydrated || riderLoading ? "loading" : !rider ? "join" : session.active ? "live" : showSummary ? "summary" : "idle";
   const error = session.error && session.error !== dismissedError ? session.error : null;
 
+  // Keep the rider dot in the open map between the top cards and the bottom controls.
+  const bottomPx = BOTTOM_PX[phase];
+  const anchorY =
+    bottomPx && stack.height && stack.bottom
+      ? Math.min(0.72, Math.max(ANCHOR[phase], (stack.bottom + (stack.height - bottomPx)) / 2 / stack.height))
+      : ANCHOR[phase];
+
   const end = async () => {
     setEnding(true);
     try {
@@ -121,11 +153,11 @@ export function RideScreen() {
         getFix={pos.getFix}
         team={team}
         mode={MAP_MODE[phase]}
-        anchorY={ANCHOR[phase]}
+        anchorY={anchorY}
         vehicles={vehicles?.vehicles ?? []}
         nearestId={nearest?.id ?? null}
         reducedMotion={reducedMotion}
-        labelMinY={LABEL_TOP[phase]}
+        labelMinY={phase === "join" ? 60 : stack.bottom ? stack.bottom + 8 : 190}
       />
       {/* Legibility scrim behind the floating controls. */}
       <div
@@ -143,7 +175,7 @@ export function RideScreen() {
       />
 
       {phase !== "join" ? (
-        <div className={styles.topStack}>
+        <div className={styles.topStack} ref={setStackEl}>
           <TopCard
             name={rider?.displayName ?? (phase === "loading" ? "…" : null)}
             team={team}

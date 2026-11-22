@@ -7,7 +7,6 @@ import { SideQuestCard } from "@/components/SideQuestCard";
 import { ClockIcon, TeamIcon, TrophyIcon } from "@/components/icons";
 import { PaperCard, Stamp } from "@/components/paper/Paper";
 import { HoldToEnd } from "./HoldToEnd";
-import { StateBadge } from "./TopCard";
 import { formatClock, formatPoints, useCountUp, useNow } from "./util";
 import styles from "./ride.module.css";
 
@@ -99,24 +98,22 @@ export function LivePanel(p: LivePanelProps) {
           <span className={styles.liveDot} aria-hidden="true" />
           LIVE RIDE
         </span>
-        <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
-          <StateBadge active state={p.state} />
-          {p.team ? <LineChip teamRouteId={p.team} size="sm" label="short" /> : null}
-        </div>
+        {p.team ? <LineChip teamRouteId={p.team} size="sm" label="short" /> : null}
       </div>
 
-      <div style={{ marginTop: 4 }}>
-        <div className="num" role="timer" aria-label={`Ride time ${formatClock(elapsed)}`} style={{ fontSize: 50, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.04em" }}>
+      {/* Ride state is shown (and announced, role=status) by the top card's tag. */}
+      <div style={{ display: "flex", alignItems: "baseline", gap: 10, marginTop: 2, minWidth: 0 }}>
+        <div className="num" role="timer" aria-label={`Ride time ${formatClock(elapsed)}`} style={{ fontSize: 42, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.04em", flexShrink: 0 }}>
           {formatClock(elapsed)}
         </div>
-        <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "var(--muted)", marginTop: 4 }}>
-          <ClockIcon size={15} weight={2.2} />
-          ride time · {onTrain ? `${onTrain} · ${stops}` : stops}
+        <p style={{ display: "flex", alignItems: "center", gap: 5, minWidth: 0, fontSize: 12.5, fontWeight: 600, color: "var(--muted)" }}>
+          <ClockIcon size={15} weight={2.2} style={{ flexShrink: 0 }} />
+          <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{onTrain ? `${onTrain} · ${stops}` : stops}</span>
         </p>
       </div>
 
       {p.message ? (
-        <p aria-live="polite" style={{ fontSize: 13, color: "var(--muted)", marginTop: 6, lineHeight: 1.35 }}>
+        <p aria-live="polite" style={{ fontSize: 13, color: "var(--muted)", marginTop: 4, lineHeight: 1.35, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
           {p.message}
         </p>
       ) : null}
