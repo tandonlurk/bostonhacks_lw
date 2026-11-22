@@ -1,4 +1,4 @@
-// T-City in-house icon set. Drawn by hand as loose marker strokes (slightly wobbly curves,
+// tspots in-house icon set. Drawn by hand as loose marker strokes (slightly wobbly curves,
 // round caps) so the app feels made, not stock. Every icon is 24x24, inherits currentColor,
 // and is decorative by default (aria-hidden). Pass `title` to make one meaningful on its own.
 import type { SVGProps } from "react";

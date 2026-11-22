@@ -1,4 +1,4 @@
-// Shared lat/lng -> SVG projection for every T-City map (ride, hunt, city).
+// Shared lat/lng -> SVG projection for every tspots map (ride, hunt, city).
 // Equirectangular with a cos(lat) correction: accurate enough at city scale, no tile server needed.
 import type { TeamRouteId } from "@/contracts/routes";
 import { LINES, STATIONS, type GeoStation } from "./mbta-geo";

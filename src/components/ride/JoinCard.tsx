@@ -57,7 +57,7 @@ export function JoinCard({ onJoin, loading, error }: JoinCardProps) {
         }}
       >
         <SparkleIcon size={16} weight={2.2} />
-        T-CITY
+        TSPOTS
       </span>
       <h1 id="join-title" style={{ fontSize: 30, fontWeight: 800, lineHeight: 1.02, marginTop: 10 }}>
         Your commute

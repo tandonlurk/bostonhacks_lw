@@ -102,7 +102,7 @@ export function WelcomeExperience() {
   return (
     <div className={styles.welcome}>
       <header className={styles.header}>
-        <a href="/welcome" className={styles.logo} aria-label="T-spots home"><span className={styles.tMark}>t</span><span>t-spots</span></a>
+        <a href="/welcome" className={styles.logo} aria-label="tspots home"><span className={styles.tMark}>t</span><span>tspots</span></a>
         <div className={styles.headerActions}>
           <button ref={startRef} className={styles.start} onClick={() => setStarted(true)}>Get started</button>
         </div>
@@ -111,7 +111,7 @@ export function WelcomeExperience() {
       <div className={styles.art}><AsciiCity /></div>
 
       <main className={styles.hero}>
-        <h1>t-spots<span className={styles.period}>.</span></h1>
+        <h1>tspots<span className={styles.period}>.</span></h1>
         <p className={styles.pitch}>A Community of Commuters</p>
         <button className={styles.heroStart} onClick={() => setStarted(true)}>Let’s make moves</button>
       </main>

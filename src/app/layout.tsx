@@ -20,15 +20,15 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "T-City",
-  description: "Your commute builds the city. Delays become quests.",
+  title: "tspots",
+  description: "A Community of Commuters.",
 };
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#07090d",
+  themeColor: "#ffffff",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

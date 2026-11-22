@@ -12,7 +12,7 @@ test('memory redemptions cannot overdraft or oversell; rotation replenishes stoc
  await assert.rejects(redeemPerk('perk_one',perk.id),e=>e.code==='insufficient_tokens');
  await awardPoints({riderId:'perk_one',teamRouteId:'Green',type:'landmark',amount:perk.costTokens*10,ref:'perk_one:fund'});
  const one=await Promise.allSettled(Array.from({length:20},()=>redeemPerk('perk_one',perk.id)));
- const won=one.filter(r=>r.status==='fulfilled');assert.equal(won.length,1);assert.match(won[0].value.redemptionCode,/^TCITY-[A-F0-9]{16}$/);
+ const won=one.filter(r=>r.status==='fulfilled');assert.equal(won.length,1);assert.match(won[0].value.redemptionCode,/^TSPOTS-[A-F0-9]{16}$/);
  assert.equal((await tokenWallet('perk_one')).balance,0);
  const remaining=(await perkCatalog()).find(p=>p.id===perk.id).remaining;assert.equal(remaining,perk.remaining-1);
  registerMemoryRider({riderId:'perk_rich',displayName:'Rich',homeTeamRouteId:'Green'});
