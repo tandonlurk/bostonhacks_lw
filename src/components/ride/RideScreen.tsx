@@ -57,7 +57,7 @@ function ErrorToast({ message, onDismiss, onPickStop }: { message: string; onDis
           type="button"
           onClick={onPickStop}
           className={styles.press}
-          style={{ minHeight: 44, padding: "0 12px", borderRadius: "var(--radius-pill)", border: "none", background: "rgba(255,255,255,0.08)", fontWeight: 700, fontSize: 13, flexShrink: 0 }}
+          style={{ minHeight: 44, padding: "0 12px", borderRadius: "var(--radius-pill)", border: "none", background: "rgba(18,22,29,0.08)", fontWeight: 700, fontSize: 13, flexShrink: 0 }}
         >
           Pick stop
         </button>
@@ -139,7 +139,7 @@ export function RideScreen() {
           right: 0,
           bottom: 0,
           height: phase === "idle" ? "48%" : "34%",
-          background: "linear-gradient(to top, rgba(7,9,13,0.92) 18%, rgba(7,9,13,0))",
+          background: "linear-gradient(to top, rgba(255,255,255,0.94) 18%, rgba(255,255,255,0))",
           pointerEvents: "none",
           transition: "height 400ms var(--ease-out)",
         }}

@@ -20,12 +20,12 @@ export function DemoAwardPop() {
       role="status"
       style={{
         position: "absolute", left: "50%", top: "30%", transform: "translateX(-50%)", zIndex: 30,
-        padding: "8px 16px", borderRadius: 999, background: "rgba(10,14,18,0.85)",
+        padding: "8px 16px", borderRadius: 999, background: "var(--bg)", boxShadow: "var(--shadow-float)",
         border: `1px solid ${TEAMS[award.teamRouteId]?.color ?? "#fff"}`, color: "var(--accent)",
         fontWeight: 800, fontSize: 18, pointerEvents: "none", whiteSpace: "nowrap",
       }}
     >
-      +{award.points} pts <span style={{ color: "#fff", fontWeight: 500, fontSize: 13 }}>· {award.stationName}</span>
+      +{award.points} pts <span style={{ color: "var(--ink)", fontWeight: 500, fontSize: 13 }}>· {award.stationName}</span>
     </div>
   );
 }

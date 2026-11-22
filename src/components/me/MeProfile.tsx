@@ -13,6 +13,7 @@ import { ProfileHero } from "./ProfileHero";
 import { SectionTitle } from "./SectionTitle";
 import { glowVar } from "./team";
 import s from "./me.module.css";
+import { FriendsSection } from "@/components/friends/FriendsScreen";
 
 type MeSheet = "edit" | "interests" | null;
 
@@ -74,6 +75,8 @@ export function MeProfile({ rider }: { rider: Rider }) {
         <Highlights ledger={ledger} landmarks={landmarks.data} team={rider.homeTeamRouteId} now={now} />
 
         <InterestsSection selected={interests} onEdit={() => setSheet("interests")} />
+
+        <FriendsSection />
 
         <section aria-labelledby="me-activity" style={{ padding: "0 var(--space-4)" }}>
           <SectionTitle id="me-activity" title="Recent activity" />

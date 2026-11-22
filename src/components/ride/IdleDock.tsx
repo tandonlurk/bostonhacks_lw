@@ -31,7 +31,7 @@ function GateLine({ nearby }: { nearby: NearbyState }) {
     borderRadius: "var(--radius-pill)",
     fontSize: 13.5,
     fontWeight: 700,
-    background: "rgba(7,9,13,0.72)",
+    background: "rgba(255,255,255,0.88)", boxShadow: "var(--shadow-card)",
     border: "1px solid var(--glass-border)",
   };
   const text = (t: string) => <span style={{ overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{t}</span>;
@@ -99,7 +99,7 @@ export function IdleDock({ team, teamStats, nearby, onStart, onPickStop, childre
               gap: 4,
               padding: "2px 8px",
               borderRadius: "var(--radius-pill)",
-              background: "rgba(255,255,255,0.07)",
+              background: "rgba(18,22,29,0.07)",
               color: glow(team),
             }}
           >

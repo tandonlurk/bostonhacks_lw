@@ -49,7 +49,7 @@ export function JoinCard({ onJoin, loading, error }: JoinCardProps) {
           gap: 6,
           padding: "4px 10px 4px 7px",
           borderRadius: "var(--radius-pill)",
-          background: "rgba(228,255,58,0.12)",
+          background: "rgba(63,122,0,0.12)",
           color: "var(--accent)",
           fontSize: 12,
           fontWeight: 800,

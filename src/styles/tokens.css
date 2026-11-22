@@ -1,9 +1,9 @@
 /* Design tokens. See docs/design.md section 1. Line colors are fixed by docs/CONTRACTS.md section 1; do not change them here.
-   U00 overhaul: one dark, immersive "night transit" theme (Snapchat Map / Instagram vibe). Maps, glow and the 3D city
+   Light theme (human request, was the U00 dark "night transit" theme) (Snapchat Map / Instagram vibe). Maps, glow and the 3D city
    read best on dark, and a single theme keeps five parallel screens consistent. Legacy names (--ink, --paper, --surface,
    --border, --muted) are kept so older components keep working. */
 :root {
-  color-scheme: dark;
+  color-scheme: light;
 
   --line-red: #da291c;
   --line-orange: #ed8b00;
@@ -11,28 +11,28 @@
   --line-green: #00843d;
   --line-silver: #7c878e;
   /* Brighter twins of the line colors for strokes/glows/text on the dark background (fills still use the originals). */
-  --glow-red: #ff4d3d;
-  --glow-orange: #ffa62b;
-  --glow-blue: #3d7bff;
-  --glow-green: #1fd17a;
-  --glow-silver: #b5c0c7;
-  --line-orange-text: #ffa62b;
+  --glow-red: #da291c;
+  --glow-orange: #c26f00;
+  --glow-blue: #1f5bd6;
+  --glow-green: #00843d;
+  --glow-silver: #5e6870;
+  --line-orange-text: #b35f00;
 
   /* Signature accent: "points" yellow-lime. Used for points, primary CTA ring, active nav. */
-  --accent: #e4ff3a;
-  --accent-ink: #11140a;
+  --accent: #3f7a00;
+  --accent-ink: #ffffff;
   --hot: #ff3d7f; /* live / delay / notification dot */
 
-  --bg: #07090d;
-  --ink: #f4f5f2;
-  --paper: #07090d;
-  --surface: #12161d;
-  --surface-2: #1a1f28;
-  --surface-3: #242a35;
-  --border: #262c37;
-  --muted: #98a0ab;
-  --glass: rgba(18, 22, 29, 0.72);
-  --glass-border: rgba(255, 255, 255, 0.09);
+  --bg: #ffffff;
+  --ink: #12161d;
+  --paper: #ffffff;
+  --surface: #f5f6f8;
+  --surface-2: #eceef2;
+  --surface-3: #e1e4ea;
+  --border: #dde1e7;
+  --muted: #5d6673;
+  --glass: rgba(255, 255, 255, 0.86);
+  --glass-border: rgba(18, 22, 29, 0.1);
 
   --font-display: var(--font-bricolage), var(--font-geist-sans), system-ui, sans-serif;
   --font-body: var(--font-geist-sans), system-ui, -apple-system, "Segoe UI", sans-serif;
@@ -55,7 +55,7 @@
   --nav-clearance: calc(var(--nav-height) + var(--nav-gap) + 16px + env(safe-area-inset-bottom, 0px));
   --tap-min: 44px;
 
-  --shadow-card: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 8px 24px rgba(0, 0, 0, 0.45);
-  --shadow-float: 0 12px 40px rgba(0, 0, 0, 0.6);
+  --shadow-card: 0 1px 2px rgba(18, 22, 29, 0.06), 0 6px 18px rgba(18, 22, 29, 0.08);
+  --shadow-float: 0 10px 30px rgba(18, 22, 29, 0.16);
   --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
 }

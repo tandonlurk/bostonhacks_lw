@@ -72,8 +72,8 @@ export const CityScene = memo(function CityScene({ theta, buildings, floors, lea
           <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
         </radialGradient>
         <linearGradient id="c3-water" x1="0" y1="0" x2="1" y2="1">
-          <stop offset="0%" stopColor="#0b1a2e" />
-          <stop offset="100%" stopColor="#081221" />
+          <stop offset="0%" stopColor="#cfe3f5" />
+          <stop offset="100%" stopColor="#b9d6ef" />
         </linearGradient>
         <linearGradient id="c3-beam" x1="0" y1="1" x2="0" y2="0">
           <stop offset="0%" stopColor="#ffffff" stopOpacity="0.9" />
@@ -90,11 +90,11 @@ export const CityScene = memo(function CityScene({ theta, buildings, floors, lea
       {/* Ground: harbor + rivers sit just below the land slab */}
       <g>
         {ground.water.map((d, i) => (
-          <path key={i} d={d} fill="url(#c3-water)" stroke="#3d7bff" strokeOpacity="0.35" strokeWidth="1.2" strokeLinejoin="round" />
+          <path key={i} d={d} fill="url(#c3-water)" stroke="#1f5bd6" strokeOpacity="0.3" strokeWidth="1.2" strokeLinejoin="round" />
         ))}
-        <path d={ground.slab} fill="#06080c" />
-        <path d={ground.land} fill="#141a24" />
-        <path d={ground.streets} clipPath="url(#c3-land)" stroke="#ffffff" strokeOpacity="0.045" strokeWidth="1" fill="none" />
+        <path d={ground.slab} fill="#c3c9d2" />
+        <path d={ground.land} fill="#eef1f5" />
+        <path d={ground.streets} clipPath="url(#c3-land)" stroke="#12161d" strokeOpacity="0.06" strokeWidth="1" fill="none" />
       </g>
 
       {/* Lines as glowing ground strokes */}

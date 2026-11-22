@@ -123,7 +123,7 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
                 padding: "0 14px",
                 border: "none",
                 borderTop: i === 0 ? "none" : "1px solid var(--border)",
-                background: on ? "rgba(255,255,255,0.06)" : "transparent",
+                background: on ? "rgba(18,22,29,0.06)" : "transparent",
                 textAlign: "left",
               }}
             >
@@ -167,7 +167,7 @@ function ManualPickForm({ defaultTeam, near, onConfirm, onClose }: ManualPickShe
                 padding: "6px 10px",
                 borderRadius: 14,
                 border: on ? `2px solid ${glow(team)}` : "1px solid var(--border)",
-                background: on ? "rgba(255,255,255,0.06)" : "var(--surface-2)",
+                background: on ? "rgba(18,22,29,0.06)" : "var(--surface-2)",
                 fontWeight: on ? 800 : 600,
                 fontSize: 14,
                 lineHeight: 1.25,

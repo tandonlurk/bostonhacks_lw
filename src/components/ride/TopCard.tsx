@@ -41,7 +41,7 @@ export function StateBadge({ active, state }: { active: boolean; state: RideStat
         height: 34,
         padding: "0 12px 0 9px",
         borderRadius: "var(--radius-pill)",
-        background: "rgba(255,255,255,0.06)",
+        background: "rgba(18,22,29,0.06)",
         border: "1px solid var(--glass-border)",
         color: meta.color,
         fontSize: 13,
@@ -144,7 +144,7 @@ export function TopCard(p: TopCardProps) {
               margin: "-12px 0",
               borderRadius: "var(--radius-pill)",
               border: "1px solid var(--glass-border)",
-              background: "rgba(255,255,255,0.06)",
+              background: "rgba(18,22,29,0.06)",
               fontSize: 12,
               fontWeight: 700,
             }}

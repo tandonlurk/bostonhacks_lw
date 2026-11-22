@@ -48,7 +48,7 @@ function PerkRow({ perk, note, locked }: { perk: Perk; note: string; locked?: bo
       href="/perks"
       style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 56, padding: "8px 10px", borderRadius: 16, background: "var(--surface)", opacity: locked ? 0.7 : 1 }}
     >
-      <span style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: 12, background: locked ? "var(--surface-3)" : "rgba(228,255,58,0.12)", color: locked ? "var(--muted)" : "var(--accent)", flexShrink: 0 }}>
+      <span style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: 12, background: locked ? "var(--surface-3)" : "rgba(63,122,0,0.12)", color: locked ? "var(--muted)" : "var(--accent)", flexShrink: 0 }}>
         <PerkIcon size={22} weight={2.1} />
       </span>
       <span style={{ flex: 1, minWidth: 0 }}>

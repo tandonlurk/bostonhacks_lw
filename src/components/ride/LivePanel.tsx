@@ -32,8 +32,8 @@ function Stat({ label, children, accent }: { label: string; children: React.Reac
       style={{
         padding: "10px 10px 9px",
         borderRadius: 16,
-        background: accent ? "rgba(228,255,58,0.08)" : "rgba(255,255,255,0.045)",
-        border: `1px solid ${accent ? "rgba(228,255,58,0.22)" : "var(--glass-border)"}`,
+        background: accent ? "rgba(63,122,0,0.08)" : "rgba(18,22,29,0.045)",
+        border: `1px solid ${accent ? "rgba(63,122,0,0.22)" : "var(--glass-border)"}`,
         minWidth: 0,
       }}
     >

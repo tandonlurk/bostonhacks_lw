@@ -181,10 +181,10 @@ h3 {
   left: 50%;
   bottom: calc(var(--nav-gap) + env(safe-area-inset-bottom, 0px));
   transform: translateX(-50%);
-  width: min(470px, calc(100vw - 16px));
+  width: min(420px, calc(100vw - 24px));
   height: var(--nav-height);
   display: grid;
-  grid-template-columns: 1fr 1fr 84px 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr 84px 1fr 1fr;
   align-items: center;
   border-radius: var(--radius-pill);
   box-shadow: var(--shadow-float);
@@ -231,7 +231,7 @@ h3 {
   justify-content: center;
   background: var(--accent);
   color: var(--accent-ink);
-  box-shadow: 0 0 0 5px var(--bg), 0 10px 30px rgba(228, 255, 58, 0.28);
+  box-shadow: 0 0 0 5px var(--bg), 0 10px 30px rgba(63,122,0,0.28);
   transition: transform 180ms var(--ease-out);
 }
 

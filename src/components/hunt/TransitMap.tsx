@@ -136,7 +136,7 @@ export function TransitMap({ hotspots = [], hotspotRoute, delayedTeams, heat, ga
       >
         <defs>
           <pattern id="hunt-dots" width="14" height="14" patternUnits="userSpaceOnUse">
-            <circle cx="7" cy="7" r="0.9" fill="rgba(255,255,255,0.07)" />
+            <circle cx="7" cy="7" r="0.9" fill="rgba(18,22,29,0.07)" />
           </pattern>
         </defs>
         <g ref={groupRef} style={{ visibility: ready ? "visible" : "hidden" }}>
@@ -162,7 +162,7 @@ export function TransitMap({ hotspots = [], hotspotRoute, delayedTeams, heat, ga
           inset: 0,
           pointerEvents: "none",
           background:
-            "linear-gradient(var(--bg) 0, transparent calc(var(--banner-space) + 120px)), linear-gradient(transparent 70%, rgba(7,9,13,0.85) 100%)",
+            "linear-gradient(var(--bg) 0, transparent calc(var(--banner-space) + 120px)), linear-gradient(transparent 70%, rgba(255,255,255,0.9) 100%)",
         }}
       />
 
@@ -314,7 +314,7 @@ const Stations = memo(function Stations({
               />
             ) : null}
             <circle cx={s.x} cy={s.y} r={r} fill={fill} stroke="#0b0d12" strokeWidth={(s.transfer ? 2 : 1.3) * inv} />
-            {s.transfer ? <circle cx={s.x} cy={s.y} r={r + 1.6 * inv} fill="none" stroke="#fff" strokeWidth={1.1 * inv} /> : null}
+            {s.transfer ? <circle cx={s.x} cy={s.y} r={r + 1.6 * inv} fill="none" stroke="var(--ink)" strokeWidth={1.1 * inv} /> : null}
           </g>
         );
       })}
@@ -417,11 +417,11 @@ function Badges({
         const shown = g.games.slice(0, 3);
         const extra = g.games.length - shown.length;
         const selected = b.id === selectedId;
-        const border = selected ? "var(--accent)" : g.live ? "var(--hot)" : "rgba(255,255,255,0.28)";
+        const border = selected ? "var(--accent)" : g.live ? "var(--hot)" : "rgba(18,22,29,0.22)";
         return (
           <g key={b.id} transform={`translate(${s.x} ${s.y}) scale(${inv}) translate(0 ${b.dy})`} style={{ animation: "fade-in 240ms" }}>
             <path d={`M-5,${b.h / 2 - 1} L0,${b.h / 2 + 5} L5,${b.h / 2 - 1} Z`} fill={border} />
-            <rect x={-b.w / 2} y={-b.h / 2} width={b.w} height={b.h} rx={b.h / 2} fill="#12161d" stroke={border} strokeWidth={1.6} />
+            <rect x={-b.w / 2} y={-b.h / 2} width={b.w} height={b.h} rx={b.h / 2} fill="#ffffff" stroke={border} strokeWidth={1.6} />
             {shown.map((game, i) => {
               const { Icon, color } = GAME_META[game.kind];
               const x = -b.w / 2 + 5 + i * step + 2;

@@ -442,8 +442,8 @@ export function drawNavMap(ctx: CanvasRenderingContext2D, view: View, o: DrawOpt
   // Horizon fog: the far field melts into the night sky.
   const fog = ctx.createLinearGradient(0, 0, 0, h * 0.42);
   fog.addColorStop(0, colors.bg);
-  fog.addColorStop(0.35, "rgba(7,9,13,0.75)");
-  fog.addColorStop(1, "rgba(7,9,13,0)");
+  fog.addColorStop(0.35, "rgba(255,255,255,0.75)");
+  fog.addColorStop(1, "rgba(255,255,255,0)");
   ctx.fillStyle = fog;
   ctx.fillRect(0, 0, w, h * 0.42);
 

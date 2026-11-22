@@ -51,7 +51,7 @@ export function LandmarkClaim({ landmark, riderId, onClaimed }: { landmark: Land
   return (
     <div style={{ display: "grid", gap: 14 }}>
       <div style={{ padding: 18, borderRadius: 22, background: "linear-gradient(150deg, rgba(255,209,92,0.2), rgba(255,209,92,0.03))", border: "1px solid rgba(255,209,92,0.3)", display: "flex", gap: 14, alignItems: "center" }}>
-        <span style={{ display: "grid", placeItems: "center", width: 56, height: 56, borderRadius: 18, background: "rgba(255,209,92,0.16)", color: "#ffd15c", flexShrink: 0 }}>
+        <span style={{ display: "grid", placeItems: "center", width: 56, height: 56, borderRadius: 18, background: "rgba(255,209,92,0.16)", color: "#a87900", flexShrink: 0 }}>
           <StarIcon size={30} weight={2.2} />
         </span>
         <div>

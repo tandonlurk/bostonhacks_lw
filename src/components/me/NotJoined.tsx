@@ -71,7 +71,7 @@ export function NotJoined() {
           color: "var(--accent-ink)",
           fontWeight: 800,
           fontSize: 17,
-          boxShadow: "0 10px 30px rgba(228, 255, 58, 0.25)",
+          boxShadow: "0 10px 30px rgba(63,122,0,0.25)",
         }}
       >
         <RideIcon size={22} weight={2.3} />

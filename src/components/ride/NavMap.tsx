@@ -38,9 +38,9 @@ function readColors(el: Element): MapColors {
   ) as Record<TeamRouteId, string>;
   return {
     bg: v("--bg", "#07090d"),
-    ground: "#0a0d14",
-    grid: "#9fb4d6",
-    water: "#0e2034",
+    ground: "#f3f5f8",
+    grid: "#8a96a8",
+    water: "#cfe3f5",
     ink: v("--ink", "#f4f5f2"),
     muted: v("--muted", "#98a0ab"),
     dot: "#3d8bff",

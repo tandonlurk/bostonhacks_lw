@@ -92,13 +92,13 @@ export function SummaryCard({ team, stopsCredited, pointsAwarded, durationMs, on
       </p>
 
       <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 8, marginTop: 16 }}>
-        <div style={{ padding: "10px 8px", borderRadius: 16, background: "rgba(255,255,255,0.045)", border: "1px solid var(--glass-border)" }}>
+        <div style={{ padding: "10px 8px", borderRadius: 16, background: "rgba(18,22,29,0.045)", border: "1px solid var(--glass-border)" }}>
           <div className="num" style={{ fontSize: 26, fontWeight: 800 }}>
             {durationMs != null ? formatClock(durationMs) : "—"}
           </div>
           <div style={{ fontSize: 12, color: "var(--muted)", fontWeight: 600 }}>ride time</div>
         </div>
-        <div style={{ padding: "10px 8px", borderRadius: 16, background: "rgba(255,255,255,0.045)", border: "1px solid var(--glass-border)" }}>
+        <div style={{ padding: "10px 8px", borderRadius: 16, background: "rgba(18,22,29,0.045)", border: "1px solid var(--glass-border)" }}>
           <div className="num" style={{ fontSize: 26, fontWeight: 800 }}>
             {stopsCredited}
           </div>
@@ -118,7 +118,7 @@ export function SummaryCard({ team, stopsCredited, pointsAwarded, durationMs, on
             minHeight: 52,
             borderRadius: "var(--radius-pill)",
             border: "1px solid var(--glass-border)",
-            background: "rgba(255,255,255,0.06)",
+            background: "rgba(18,22,29,0.06)",
             fontWeight: 700,
             fontSize: 15,
           }}

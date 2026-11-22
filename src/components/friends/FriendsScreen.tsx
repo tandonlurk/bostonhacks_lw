@@ -1,10 +1,11 @@
 "use client";
 
-// Friends tab: where the people you ride with are right now, on a live map and in a list.
+// Friends (on the Me screen): where the people you ride with are right now, on a live map and in a list.
 import { useEffect, useState } from "react";
 import type { Friend, FriendsResponse } from "@/contracts";
 import { TEAMS } from "@/contracts/routes";
 import { RIDER_ID_KEY } from "@/hooks/useRider";
+import { SectionTitle } from "@/components/me/SectionTitle";
 import { FriendsMap } from "./FriendsMap";
 
 function useFriends(): { friends: Friend[]; error: boolean } {
@@ -27,28 +28,30 @@ function useFriends(): { friends: Friend[]; error: boolean } {
   return state;
 }
 
-export function FriendsScreen() {
+/** Friends block for the Me screen: live map + list of the people you ride with. */
+export function FriendsSection() {
   const { friends, error } = useFriends();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const riding = friends.filter((f) => f.status === "riding").length;
 
   return (
-    <div style={{ display: "flex", flexDirection: "column", minHeight: "100%", paddingBottom: "var(--nav-clearance)" }}>
-      <header className="screen-header" style={{ display: "flex", flexDirection: "column", gap: 6 }}>
-        <h1 style={{ fontSize: 34, fontWeight: 800, lineHeight: 1 }}>Friends</h1>
-        <p style={{ fontSize: 13, color: "var(--muted)" }}>
-          {friends.length ? `${riding} of ${friends.length} riding right now` : error ? "Couldn't load your friends." : "Finding your friends…"}
-        </p>
-      </header>
-
-      <section
+    <section aria-labelledby="me-friends" style={{ padding: "0 var(--space-4)" }}>
+      <SectionTitle
+        id="me-friends"
+        title="Friends"
+        action={
+          <span style={{ fontSize: 13, color: "var(--muted)" }}>
+            {friends.length ? `${riding} of ${friends.length} riding now` : error ? "Couldn't load friends" : "Finding friends…"}
+          </span>
+        }
+      />
+      <div
         aria-label="Friends map"
-        style={{ margin: "12px 16px 0", borderRadius: "var(--radius-card)", background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", aspectRatio: "1 / 1", maxHeight: "52vh" }}
+        style={{ borderRadius: "var(--radius-card)", background: "var(--surface)", border: "1px solid var(--border)", overflow: "hidden", aspectRatio: "1 / 1", maxHeight: 360, width: "100%" }}
       >
         <FriendsMap friends={friends} selectedId={selectedId} onSelect={setSelectedId} />
-      </section>
-
-      <ul style={{ listStyle: "none", margin: "16px 16px 0", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
+      </div>
+      <ul style={{ listStyle: "none", margin: "12px 0 0", padding: 0, display: "flex", flexDirection: "column", gap: 10 }}>
         {friends.map((f) => {
           const team = TEAMS[f.teamRouteId];
           const selected = f.id === selectedId;
@@ -90,6 +93,6 @@ export function FriendsScreen() {
           );
         })}
       </ul>
-    </div>
+    </section>
   );
 }

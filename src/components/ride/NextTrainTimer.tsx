@@ -50,7 +50,7 @@ export function NextTrainTimer({ stopId }: { stopId: string | null }) {
     <p
       role="timer"
       aria-live="off"
-      style={{ display: "inline-flex", alignItems: "center", gap: 8, margin: "6px auto 0", padding: "4px 12px", borderRadius: 999, background: "rgba(255,255,255,0.07)", fontSize: 13 }}
+      style={{ display: "inline-flex", alignItems: "center", gap: 8, margin: "6px auto 0", padding: "4px 12px", borderRadius: 999, background: "rgba(18,22,29,0.07)", fontSize: 13 }}
     >
       <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 999, background: TEAMS[next.teamRouteId]?.color ?? "#fff" }} />
       <span>Next {TEAMS[next.teamRouteId]?.name ?? "train"}</span>
