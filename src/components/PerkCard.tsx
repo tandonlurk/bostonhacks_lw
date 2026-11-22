@@ -1,4 +1,5 @@
 import type { Perk } from "@/contracts";
+import { CoinIcon } from "@/components/icons";
 
 function formatCountdown(rotatesAt: string): string {
   const ms = new Date(rotatesAt).getTime() - Date.now();
@@ -20,10 +21,8 @@ export function PerkCard({ perk, balance, onRedeem }: PerkCardProps) {
 
   return (
     <div
+      className="paper"
       style={{
-        border: "1px solid var(--border)",
-        borderRadius: "var(--radius-card)",
-        background: "var(--surface)",
         padding: "var(--space-4)",
         display: "flex",
         flexDirection: "column",
@@ -32,7 +31,10 @@ export function PerkCard({ perk, balance, onRedeem }: PerkCardProps) {
     >
       <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
         <strong>{perk.title}</strong>
-        <span style={{ fontWeight: 700 }}>{perk.costTokens} 🪙</span>
+        <span style={{ fontWeight: 700, display: "inline-flex", alignItems: "center", gap: 4 }}>
+          {perk.costTokens} <CoinIcon size={16} aria-hidden="true" />
+          <span className="visually-hidden">CitiTokens</span>
+        </span>
       </div>
       <p style={{ fontSize: 13, color: "var(--muted)" }}>{perk.partner}</p>
       <p style={{ fontSize: 12, color: "var(--muted)" }}>

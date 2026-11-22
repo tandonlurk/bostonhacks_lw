@@ -5,6 +5,7 @@ import type { Rider } from "@/contracts";
 import { BountyIcon, PlusIcon, StarIcon, TradeIcon } from "@/components/icons";
 import type { BoardPost, PostKind } from "./types";
 import { BountyNotice } from "./BountyNotice";
+import { PaperButton } from "@/components/paper/Paper";
 import { Coin } from "./bits";
 import s from "./market.module.css";
 
@@ -96,27 +97,8 @@ export function PostComposer({ rider, available, onPost }: Props) {
           {KIND_OPTIONS.map((k) => {
             const active = k.value === kind;
             return (
-              <button
-                key={k.value}
-                type="button"
-                aria-pressed={active}
-                onClick={() => setKind(k.value)}
-                className={s.press}
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  alignItems: "flex-start",
-                  gap: 6,
-                  minHeight: 84,
-                  padding: "10px 12px",
-                  borderRadius: 16,
-                  border: `1.5px solid ${active ? "var(--accent)" : "var(--border)"}`,
-                  background: active ? "rgba(228,255,58,0.1)" : "var(--surface-2)",
-                  color: active ? "var(--accent)" : "var(--ink)",
-                  textAlign: "left",
-                }}
-              >
-                {k.icon}
+              <button key={k.value} type="button" aria-pressed={active} onClick={() => setKind(k.value)} className={s.kindCard}>
+                <span style={{ color: active ? "var(--accent)" : "var(--muted)" }}>{k.icon}</span>
                 <span style={{ fontFamily: "var(--font-display)", fontWeight: 800, fontSize: 15, color: "var(--ink)" }}>{k.label}</span>
                 <span style={{ fontSize: 11.5, color: "var(--muted)", lineHeight: 1.2 }}>{k.hint}</span>
               </button>
@@ -132,7 +114,7 @@ export function PostComposer({ rider, available, onPost }: Props) {
           maxLength={70}
           onChange={(e) => setTitle(e.target.value)}
           placeholder={TITLE_PLACEHOLDER[kind]}
-          style={input}
+          className={s.field}
           autoComplete="off"
         />
       </Field>
@@ -140,10 +122,10 @@ export function PostComposer({ rider, available, onPost }: Props) {
       {kind === "trade" ? (
         <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: 10 }}>
           <Field id={`${uid}-have`} label="You have">
-            <input id={`${uid}-have`} value={have} maxLength={40} onChange={(e) => setHave(e.target.value)} placeholder="Coffee perk" style={input} />
+            <input id={`${uid}-have`} value={have} maxLength={40} onChange={(e) => setHave(e.target.value)} placeholder="Coffee perk" className={s.field} />
           </Field>
           <Field id={`${uid}-want`} label="You want">
-            <input id={`${uid}-want`} value={want} maxLength={40} onChange={(e) => setWant(e.target.value)} placeholder="Museum perk" style={input} />
+            <input id={`${uid}-want`} value={want} maxLength={40} onChange={(e) => setWant(e.target.value)} placeholder="Museum perk" className={s.field} />
           </Field>
         </div>
       ) : null}
@@ -156,7 +138,8 @@ export function PostComposer({ rider, available, onPost }: Props) {
           rows={3}
           onChange={(e) => setBody(e.target.value)}
           placeholder="Where, when, what counts as proof."
-          style={{ ...input, minHeight: 84, paddingTop: 12, resize: "none", lineHeight: 1.4 }}
+          className={s.field}
+          style={{ minHeight: 84, paddingTop: 12, resize: "none", lineHeight: 1.4 }}
         />
       </Field>
 
@@ -167,7 +150,7 @@ export function PostComposer({ rider, available, onPost }: Props) {
           </span>
           {spends ? (
             <span style={{ fontSize: 12.5, color: "var(--muted)" }}>
-              <span className="num" style={{ color: "var(--accent)", fontWeight: 800 }}>
+              <span className="num" style={{ color: "var(--ink)", fontWeight: 800 }}>
                 {available}
               </span>{" "}
               available
@@ -184,9 +167,11 @@ export function PostComposer({ rider, available, onPost }: Props) {
             alignItems: "center",
             gap: 10,
             padding: 6,
-            borderRadius: 20,
-            background: "var(--surface-2)",
-            border: "1px solid var(--border)",
+            borderRadius: 6,
+            backgroundColor: "var(--cream)",
+            backgroundImage: "var(--grain)",
+            border: "1px solid var(--paper-edge)",
+            boxShadow: "inset 0 1px 2px rgba(74,52,22,0.1)",
           }}
         >
           <StepBtn label="Less" disabled={value <= min} onClick={() => setReward(value - 1)}>
@@ -209,29 +194,21 @@ export function PostComposer({ rider, available, onPost }: Props) {
 
       <div>
         <span style={legend}>Preview</span>
-        <div style={{ padding: "22px 10px 4px" }} aria-hidden="true">
+        <div className={s.cork} style={{ margin: "8px 0 0", padding: "26px 14px 14px" }} aria-hidden="true">
           <BountyNotice item={{ post: draft, action: null, status: "open", fresh: false }} now={null} preview />
         </div>
       </div>
 
       {error ? <p role="alert" style={{ color: "var(--hot)", fontSize: 14, lineHeight: 1.5 }}>{error}</p> : null}
-      <button
+      <PaperButton
         type="submit"
+        variant="primary"
         disabled={!canPost || pending}
-        className={s.inkBtn}
-        style={{
-          minHeight: 54,
-          borderRadius: "var(--radius-pill)",
-          background: canPost ? "var(--accent)" : "var(--surface-3)",
-          color: canPost ? "var(--accent-ink)" : "var(--muted)",
-          fontSize: 16.5,
-          fontFamily: "var(--font-display)",
-          boxShadow: canPost ? "0 10px 30px rgba(228,255,58,0.25)" : "none",
-        }}
+        style={{ width: "100%", minHeight: 54, fontSize: 16.5, fontFamily: "var(--font-display)", fontWeight: 750 }}
       >
         <PinGlyph />
         {pending ? "Pinning…" : canPost ? "Pin it to the board" : !titleOk ? "Add a title to post" : !body.trim() ? "Add delivery details" : !tradeOk ? "Fill in have and want" : "Not enough tokens"}
-      </button>
+      </PaperButton>
     </form>
   );
 }
@@ -257,17 +234,8 @@ function StepBtn({ label, disabled, onClick, children }: { label: string; disabl
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className={s.press}
-      style={{
-        width: 52,
-        height: 52,
-        borderRadius: 16,
-        border: "none",
-        display: "grid",
-        placeItems: "center",
-        background: disabled ? "transparent" : "var(--surface-3)",
-        color: disabled ? "var(--surface-3)" : "var(--ink)",
-      }}
+      className="paper-btn"
+      style={{ width: 52, height: 52, padding: 0 }}
     >
       {children}
     </button>
@@ -289,16 +257,4 @@ const legend: React.CSSProperties = {
   letterSpacing: "0.1em",
   textTransform: "uppercase",
   color: "var(--muted)",
-};
-
-const input: React.CSSProperties = {
-  width: "100%",
-  minHeight: 48,
-  padding: "0 14px",
-  borderRadius: 14,
-  border: "1px solid var(--border)",
-  background: "var(--surface-2)",
-  color: "var(--ink)",
-  fontSize: 16,
-  fontFamily: "inherit",
 };

@@ -1,6 +1,7 @@
 "use client";
 
 import type { ReactNode } from "react";
+import s from "./market.module.css";
 
 export interface SegmentOption<T extends string> {
   value: T;
@@ -9,7 +10,7 @@ export interface SegmentOption<T extends string> {
   badge?: number;
 }
 
-/** Pill segmented control with a sliding lime thumb. Rendered as a tablist. */
+/** Paper folder tabs on a kraft well; a cream card slides under the active tab. Rendered as a tablist. */
 export function Segmented<T extends string>({
   value,
   options,
@@ -23,32 +24,11 @@ export function Segmented<T extends string>({
 }) {
   const idx = Math.max(0, options.findIndex((o) => o.value === value));
   return (
-    <div
-      role="tablist"
-      aria-label={label}
-      style={{
-        position: "relative",
-        display: "grid",
-        gridTemplateColumns: `repeat(${options.length}, 1fr)`,
-        padding: 4,
-        borderRadius: "var(--radius-pill)",
-        background: "var(--surface)",
-        border: "1px solid var(--border)",
-      }}
-    >
+    <div role="tablist" aria-label={label} className={s.seg} style={{ gridTemplateColumns: `repeat(${options.length}, 1fr)` }}>
       <span
         aria-hidden="true"
-        style={{
-          position: "absolute",
-          top: 4,
-          bottom: 4,
-          left: 4,
-          width: `calc((100% - 8px) / ${options.length})`,
-          transform: `translateX(${idx * 100}%)`,
-          borderRadius: "var(--radius-pill)",
-          background: "var(--ink)",
-          transition: "transform 260ms var(--ease-out)",
-        }}
+        className={s.segThumb}
+        style={{ width: `calc((100% - 8px) / ${options.length})`, transform: `translateX(${idx * 100}%)` }}
       />
       {options.map((o) => {
         const active = o.value === value;
@@ -69,9 +49,13 @@ export function Segmented<T extends string>({
               justifyContent: "center",
               gap: 8,
               fontFamily: "var(--font-display)",
-              fontWeight: 800,
+              fontWeight: active ? 800 : 650,
               fontSize: 15.5,
-              color: active ? "var(--bg)" : "var(--muted)",
+              color: active ? "var(--ink)" : "#4f4333",
+              textDecoration: active ? "underline" : "none",
+              textDecorationThickness: 2,
+              textUnderlineOffset: 5,
+              textDecorationColor: "var(--brick)",
               transition: "color 200ms",
             }}
           >
@@ -84,12 +68,12 @@ export function Segmented<T extends string>({
                   minWidth: 20,
                   height: 20,
                   padding: "0 6px",
-                  borderRadius: 10,
+                  borderRadius: 3,
                   display: "grid",
                   placeItems: "center",
                   fontSize: 11.5,
-                  background: active ? "var(--accent)" : "var(--surface-3)",
-                  color: active ? "var(--accent-ink)" : "var(--ink)",
+                  background: active ? "var(--brick)" : "var(--cream-2)",
+                  color: active ? "#fffaf0" : "var(--ink)",
                 }}
               >
                 {o.badge}

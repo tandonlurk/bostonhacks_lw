@@ -1,7 +1,8 @@
 "use client";
 
 import type { TeamRouteId } from "@/contracts/routes";
-import { TEAM_SHORT, teamFill, teamGlow } from "./format";
+import { CheckIcon } from "@/components/icons";
+import { TEAM_INK, TEAM_SHORT, teamFill, teamGlow } from "./format";
 import s from "./market.module.css";
 
 export type KindFilter = "all" | "bounty" | "trade" | "offer";
@@ -23,46 +24,35 @@ interface Props {
 }
 
 export function BoardFilters({ kind, onKind, counts, myLine, onMyLine, team }: Props) {
+  const onTeam = myLine && team;
   return (
     <div className={s.chipRow} role="toolbar" aria-label="Filter posts">
       <button
         type="button"
         aria-pressed={myLine}
         onClick={() => onMyLine(!myLine)}
-        className={s.press}
-        style={{
-          ...chip,
-          ...(myLine && team
-            ? { background: teamFill(team), borderColor: teamGlow(team), color: team === "Orange" || team === "Silver" ? "#14181c" : "#fff" }
-            : null),
-        }}
+        className={s.chip}
+        style={onTeam ? { background: teamFill(team), borderColor: teamGlow(team), color: TEAM_INK[team] } : undefined}
       >
         <span
           aria-hidden="true"
           style={{
-            width: 10,
-            height: 10,
-            borderRadius: "50%",
-            background: team ? teamGlow(team) : "var(--muted)",
-            boxShadow: myLine ? "0 0 0 2px rgba(255,255,255,0.8)" : "none",
+            width: 16,
+            height: 5,
+            borderRadius: 1,
+            background: onTeam ? "currentColor" : team ? teamFill(team) : "var(--muted)",
           }}
         />
         {team ? `${TEAM_SHORT[team]} Line` : "My line"}
+        {onTeam ? <CheckIcon size={14} weight={3} /> : null}
       </button>
-      <span aria-hidden="true" style={{ flex: "none", width: 1, margin: "8px 2px", background: "var(--border)" }} />
+      <span aria-hidden="true" style={{ flex: "none", width: 1, margin: "8px 2px", borderLeft: "1px dashed var(--faint)" }} />
       {KINDS.map((k) => {
         const active = k.value === kind;
         return (
-          <button
-            key={k.value}
-            type="button"
-            aria-pressed={active}
-            onClick={() => onKind(k.value)}
-            className={s.press}
-            style={{ ...chip, ...(active ? chipActive : null) }}
-          >
+          <button key={k.value} type="button" aria-pressed={active} onClick={() => onKind(k.value)} className={s.chip}>
             {k.label}
-            <span className="num" style={{ fontSize: 12.5, opacity: active ? 0.7 : 0.55 }}>
+            <span className="num" style={{ fontSize: 12.5, opacity: 0.8 }}>
               {counts[k.value]}
             </span>
           </button>
@@ -71,25 +61,3 @@ export function BoardFilters({ kind, onKind, counts, myLine, onMyLine, team }: P
     </div>
   );
 }
-
-const chip: React.CSSProperties = {
-  flex: "none",
-  display: "inline-flex",
-  alignItems: "center",
-  gap: 7,
-  minHeight: 44,
-  padding: "0 16px",
-  borderRadius: "var(--radius-pill)",
-  border: "1px solid var(--border)",
-  background: "var(--surface)",
-  color: "var(--ink)",
-  fontWeight: 700,
-  fontSize: 14.5,
-  whiteSpace: "nowrap",
-};
-
-const chipActive: React.CSSProperties = {
-  background: "var(--accent)",
-  borderColor: "var(--accent)",
-  color: "var(--accent-ink)",
-};

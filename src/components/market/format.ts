@@ -24,7 +24,7 @@ export const teamGlow = (t: TeamRouteId) => `var(--glow-${t.toLowerCase()})`;
 export const KIND_LABEL: Record<PostKind, string> = { bounty: "Wanted", trade: "Trade", offer: "Offer" };
 export const KIND_PLURAL: Record<PostKind, string> = { bounty: "Bounties", trade: "Trades", offer: "Offers" };
 /** Dark "printed ink" color per kind, legible on its paper stock. */
-export const KIND_INK: Record<PostKind, string> = { bounty: "#8a2a12", trade: "#1f3f86", offer: "#3c4a00" };
+export const KIND_INK: Record<PostKind, string> = { bounty: "#8a2a12", trade: "#24476b", offer: "#5c4307" };
 
 export function initials(handle: string): string {
   const parts = handle.split(/[_\s.-]+/).filter(Boolean);
@@ -40,7 +40,8 @@ export function hash(s: string): number {
   return Math.abs(h);
 }
 
-const TILTS = [-1.6, 1.2, -0.7, 1.6, -1.2, 0.6, -0.3, 0.9];
+// Small hand-placed tilts: enough to feel pinned, never enough to hurt reading.
+const TILTS = [-1, 0.8, -0.5, 1.1, -0.8, 0.4, -0.2, 0.6];
 export const tiltFor = (id: string) => TILTS[hash(id) % TILTS.length];
 
 export function timeAgo(post: BoardPost, now: number | null): string {
