@@ -2,17 +2,33 @@
 
 import { useEffect, useRef, useState, type CSSProperties, type FormEvent } from "react";
 import Link from "next/link";
-import { TEAM_ROUTE_IDS, TEAMS, type TeamRouteId } from "@/contracts/routes";
+import { TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
+import { SOFT_LINE, TicketArt } from "./TicketArt";
 import styles from "./onboarding.module.css";
 
 const interests = ["Coffee stops", "Art & culture", "Food adventures", "Live music", "Hidden gems", "Outdoors", "Sports", "Campus life"];
 const steps = ["Your line", "Your location", "Your interests", "Your photo"];
-const artworks = [
-  "      .----------.\n      |  TSPOTS   |\n      | [ ]  [ ]  |\n      | [ ]  [ ]  |\n      |____  ____|\n       (o)----(o)\n  ==================",
-  "       .-----.\n      /   +   \\\n     |    |    |\n      \\   |   /\n       \\  |  /\n        \\ | /\n         \\|/\n     .----+----.",
-  "       *     +\n    +     .     *\n       .-----.\n      /  . .  \\\n      |   v   |\n       '-----'\n    *    |    +\n       __|__",
-  "       .-----.\n      /       \\\n     |  o   o  |\n     |    u    |\n      \\  ___  /\n       '-----'\n     .-'     '-.\n    /  HELLO!   \\",
-];
+const faceArt = "       .-----.\n      /       \\\n     |  o   o  |\n     |    u    |\n      \\  ___  /\n       '-----'\n     .-'     '-.\n    /  HELLO!   \\";
+const titles = ["Meet\nthe crew.", "A little context\ngoes a long way.", "What’s your\nkind of detour?", "Put a face\nto your name."];
+const eyebrows = [null, null, "More than your commute", "Make it yours"];
+
+/** Transit lines with station dots along the bottom; each line slides a little per step for parallax. */
+function RouteLines({ step }: { step: number }) {
+  const stops = (xs: number[], y: number) => xs.map((x) => <circle key={x} cx={x} cy={y} r="4" fill="#12344a" />);
+  const range = (a: number, b: number, n: number) => Array.from({ length: n }, (_, i) => Math.round(a + ((b - a) * i) / (n - 1)));
+  return (
+    <div className={styles.routeLines} aria-hidden="true">
+      <svg viewBox="0 0 1600 220" preserveAspectRatio="xMidYMax slice" style={{ transform: `translateX(${-step * 18}px)` }}>
+        <path d="M-40 160 C 180 160 260 118 440 118 H 1160 C 1340 118 1420 160 1640 160" stroke="#fff" strokeWidth="11" fill="none" strokeLinecap="round" />
+        {stops(range(480, 1120, 9), 118)}
+      </svg>
+      <svg viewBox="0 0 1600 220" preserveAspectRatio="xMidYMax slice" style={{ transform: `translateX(${-step * 42}px)` }}>
+        <path d="M-40 196 H 380 C 520 196 560 170 700 170 H 1640" stroke="#8fbfe0" strokeWidth="11" fill="none" strokeLinecap="round" />
+        {stops(range(40, 340, 5), 196)}{stops(range(760, 1560, 10), 170)}
+      </svg>
+    </div>
+  );
+}
 
 export function OnboardingFlow({ onClose }: { onClose: () => void }) {
   const [step, setStep] = useState(0);
@@ -109,10 +125,13 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
     setComplete(true);
   }
 
+  const lineColor = team ? SOFT_LINE[team] : "#3B73D1";
+
   return (
     <section className={styles.flow} aria-label="tspots onboarding">
+      <RouteLines step={complete ? 4 : step} />
       <div className={styles.flowHeader}>
-        <span className={styles.stepMeta}>{complete ? "YOUR CITY AWAITS" : `A LITTLE ABOUT YOU · ${step + 1} OF 4`}</span>
+        <span className={styles.stepMeta}>{complete ? "Your city awaits" : `A little about you · ${step + 1} of 4`}</span>
         <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Return to landing page">Close</button>
       </div>
       <ol className={styles.progress} aria-label="Onboarding progress">
@@ -120,12 +139,12 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
       </ol>
       {complete ? (
         <div className={styles.completion}>
-          <div className={styles.completionAvatar} style={{ "--line-color": team ? TEAMS[team].color : "#003DA5" } as CSSProperties}>
+          <div className={styles.completionAvatar} style={{ "--line-color": lineColor } as CSSProperties}>
             {/* User-selected data URL, kept in this browser. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             {photo ? <img src={photo} alt="Your selected profile photo" /> : <span>{name.trim().slice(0, 1).toUpperCase()}</span>}
           </div>
-          <p className={styles.eyebrow}>NEXT STOP: SOMETHING GOOD</p>
+          <p className={styles.eyebrow}>Next stop: something good</p>
           <h2 ref={heading} tabIndex={-1} className={styles.stepTitle}>You’re on board,<br />{name.trim()}.</h2>
           <p className={styles.stepIntro}>A familiar route. A few new discoveries. A whole city to build together.</p>
           <div className={styles.summaryChips}>
@@ -140,34 +159,51 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
       ) : (
         <div className={styles.flowGrid}>
           <aside className={styles.stepArt} aria-hidden="true">
-            <div className={styles.ticket} style={{ "--line-color": team ? TEAMS[team].color : "#003DA5" } as CSSProperties}>
-              <span className={styles.ticketLabel}>TSPOTS / ALL ABOARD</span>
-              <pre>{artworks[step]}</pre>
-              <span className={styles.ticketLine}>{step === 0 ? (team ? `${team.toUpperCase()} LINE` : "FIND YOUR LINE") : step === 1 ? "YOU ARE HERE" : step === 2 ? "TAKE THE SCENIC ROUTE" : "A FACE IN THE CITY"}</span>
-              <span className={styles.ticketCode}>BOSTON, MA · ONE CITY. EVERY LINE.</span>
+            <div className={styles.ticketWrap} key={step}>
+              <div className={styles.ticket} style={{ "--line-color": lineColor } as CSSProperties}>
+                <span className={styles.ticketLabel}>T*spots · All aboard</span>
+                <div className={styles.ticketScene}>{step < 3 ? <TicketArt step={step} team={team} /> : <pre>{faceArt}</pre>}</div>
+                <span className={styles.ticketLine}>{step === 0 ? (team ? `${team} Line` : "Find your line") : step === 1 ? "You are here" : step === 2 ? "Take the scenic route" : "A face in the city"}</span>
+                <span className={styles.ticketCode}>Boston, MA · One city. Every line.</span>
+                <span className={styles.ticketStub} />
+              </div>
             </div>
           </aside>
-          <form className={styles.stepBody} onSubmit={next}>
-            <p className={styles.eyebrow}>{["MEET YOUR CREW", "A LITTLE CONTEXT GOES A LONG WAY", "MORE THAN YOUR COMMUTE", "MAKE IT YOURS"][step]}</p>
-            <h2 className={styles.stepTitle} ref={heading} tabIndex={-1}>{["Every line starts\nwith you.", "Find your place\nin the city.", "What’s your\nkind of detour?", "Put a face\nto your name."][step].split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}</h2>
+          <form className={styles.stepBody} onSubmit={next} key={step}>
+            {eyebrows[step] && <p className={styles.eyebrow}>{eyebrows[step]}</p>}
+            <h2 className={styles.stepTitle} ref={heading} tabIndex={-1}>{titles[step].split("\n").map((line, index) => <span key={line}>{index > 0 && <br />}{line}</span>)}</h2>
             {step === 0 && <>
-              <p className={styles.stepIntro}>First, a name. Then, a color to call home.</p>
-              <label htmlFor="tspots-name" className={styles.fieldLabel}>What should we call you?</label>
-              <input id="tspots-name" className={styles.nameInput} autoComplete="given-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={24} required placeholder="Your first name" />
-              <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+              <label htmlFor="tspots-name" className={styles.srOnly}>What should we call you?</label>
+              <input id="tspots-name" className={styles.nameInput} autoComplete="given-name" value={name} onChange={(event) => setName(event.target.value)} maxLength={24} required placeholder="What should we call you?" />
+              <fieldset className={styles.fieldset}>
                 <legend className={styles.fieldLabel}>Pick your home line</legend>
-                <div className={styles.teamGrid}>{TEAM_ROUTE_IDS.map((id) => <button key={id} type="button" aria-pressed={team === id} className={`${styles.teamButton} ${team === id ? styles.teamSelected : ""}`} onClick={() => setTeam(id)} style={{ "--line-color": TEAMS[id].color } as CSSProperties}><span className={styles.teamDot} />{id}<span aria-hidden="true">{team === id ? "✓" : "+"}</span></button>)}</div>
+                <div className={styles.teamGrid}>{TEAM_ROUTE_IDS.map((id) => <button key={id} type="button" aria-pressed={team === id} className={`${styles.teamButton} ${team === id ? styles.teamSelected : ""}`} onClick={() => setTeam(id)} style={{ "--line-color": SOFT_LINE[id] } as CSSProperties}><span className={styles.teamDot} />{id}<span className={styles.chipMark} aria-hidden="true">{team === id ? "✓" : "+"}</span></button>)}</div>
               </fieldset>
             </>}
+            {step === 1 && <>
+              <p className={styles.stepIntro}>Location is needed to verify real rides and award ride points. It also helps find nearby stops and quests.</p>
+              <div className={styles.locationArt} aria-hidden="true"><span>YOU</span><span>◉</span><span>BOSTON</span></div>
+              <div className={styles.locationStatus} role="status" aria-live="polite">
+                {location === "idle" && "Ready when you are."}
+                {location === "loading" && "Finding you… this can take a few seconds."}
+                {location === "granted" && "You’re located. Ready for your first ride."}
+                {location === "denied" && "Location access is blocked. Allow it in your browser’s site settings, then retry, or use a simulated location below."}
+                {location === "unavailable" && "We couldn’t get your location. Check location services and retry, or use a simulated location below."}
+                {location === "demo" && "Simulated location selected: Boston."}
+              </div>
+              {location !== "granted" && location !== "demo" && <div className={styles.locationActions}>
+                <button className={styles.primaryButton} type="button" disabled={location === "loading"} onClick={requestLocation}>{location === "loading" ? "Finding your location…" : location === "idle" ? "Enable location" : "Try location again"}</button>
+                <button className={styles.simButton} type="button" onClick={() => { locationVersion.current += 1; setLocation("demo"); }}>Use simulated location</button>
+              </div>}
+            </>}
             {step === 2 && <>
-              <p className={styles.stepIntro}>The best part might be a stop you haven’t tried yet. Pick a few things you love, or keep an open mind.</p>
-              <fieldset style={{ border: 0, padding: 0, margin: 0 }}><legend className={styles.fieldLabel}>Your interests · pick as many as you like</legend><div className={styles.interestGrid}>{[...interests, ...selected.filter((item) => !interests.includes(item))].map((interest) => <button key={interest} type="button" aria-pressed={selected.includes(interest)} className={`${styles.interestButton} ${selected.includes(interest) ? styles.interestSelected : ""}`} onClick={() => setSelected((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest])}><span aria-hidden="true">{selected.includes(interest) ? "✓" : "+"}</span>{interest}</button>)}
-                {!otherOpen && <button type="button" className={styles.interestButton} onClick={() => setOtherOpen(true)}><span aria-hidden="true">+</span>Other</button>}</div>
-                {otherOpen && <div style={{ display: "flex", gap: 10, marginTop: 12 }}>
+              <fieldset className={styles.fieldset}><legend className={styles.fieldLabel}>Your interests · pick as many as you like</legend><div className={styles.interestGrid}>{[...interests, ...selected.filter((item) => !interests.includes(item))].map((interest) => <button key={interest} type="button" aria-pressed={selected.includes(interest)} className={`${styles.interestButton} ${selected.includes(interest) ? styles.interestSelected : ""}`} onClick={() => setSelected((current) => current.includes(interest) ? current.filter((item) => item !== interest) : [...current, interest])}><span className={styles.chipMark} aria-hidden="true">{selected.includes(interest) ? "✓" : "+"}</span>{interest}</button>)}
+                {!otherOpen && <button type="button" className={styles.interestButton} onClick={() => setOtherOpen(true)}><span className={styles.chipMark} aria-hidden="true">+</span>Other</button>}</div>
+                {otherOpen && <div className={styles.otherRow}>
                   <input className={styles.nameInput} aria-label="Your own interest" placeholder="Something else you love" maxLength={24} autoFocus value={otherText} onChange={(event) => setOtherText(event.target.value)} onKeyDown={(event) => { if (event.key === "Enter") { event.preventDefault(); addOther(); } }} />
                   <button type="button" className={styles.primaryButton} onClick={addOther} disabled={!otherText.trim()}>Add</button>
                 </div>}</fieldset>
-                          </>}
+            </>}
             {step === 3 && <>
               <p className={styles.stepIntro}>A photo for your rider card. Camera shy? Your initial looks pretty good, too.</p>
               <div className={styles.avatarStage}>
@@ -182,20 +218,6 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
               </div>
               {photoLoading && <p role="status" className={styles.locationStatus}>Opening your photo…</p>}
               {photoError && <p role="alert" className={styles.error}>{photoError}</p>}
-            </>}
-            {step === 1 && <>
-              <p className={styles.stepIntro}>Location is needed to verify real rides and award ride points. It also helps find nearby stops and quests.</p>
-              <div className={styles.locationArt} aria-hidden="true"><span>YOU</span><span>◉</span><span>BOSTON</span></div>
-              <div className={styles.locationStatus} role="status" aria-live="polite">
-                {location === "idle" && "Ready when you are."}
-                {location === "loading" && "Finding you… this can take a few seconds."}
-                {location === "granted" && "You’re located. Ready for your first ride."}
-                {location === "denied" && "Location access is blocked. Allow it in your browser’s site settings, then retry, or use a simulated location below."}
-                {location === "unavailable" && "We couldn’t get your location. Check location services and retry, or use a simulated location below."}
-                {location === "demo" && "Simulated location selected: Boston."}
-              </div>
-              {location !== "granted" && location !== "demo" && <button className={styles.primaryButton} type="button" disabled={location === "loading"} onClick={requestLocation}>{location === "loading" ? "Finding your location…" : location === "idle" ? "Enable location" : "Try location again"}</button>}
-              {location !== "granted" && location !== "demo" && <button className={styles.textButton} type="button" onClick={() => { locationVersion.current += 1; setLocation("demo"); }}>Use simulated location</button>}
             </>}
             <div className={styles.flowActions}>
               <button className={styles.textButton} type="button" onClick={() => step === 0 ? onClose() : setStep(step - 1)}>Back</button>
