@@ -10,6 +10,10 @@ import { drawNavMap, type MapColors } from "./drawNavMap";
 import { distanceM } from "./geo";
 import { LocationDot } from "./LocationDot";
 import type { Fix } from "./useRiderPosition";
+import { LANDMARK_ART } from "../paper/origami";
+import { LANDMARK_SITES, type LandmarkSprite } from "./paperCity";
+
+const SPRITE_KINDS = Array.from(new Set(LANDMARK_SITES.map((s) => s.kind)));
 
 export type MapMode = "idle" | "riding" | "onboarding";
 
@@ -58,10 +62,40 @@ export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reduc
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dotRef = useRef<HTMLDivElement>(null);
+  const artRef = useRef<HTMLDivElement>(null);
+  const spritesRef = useRef<LandmarkSprite[]>([]);
   const propsRef = useRef({ getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion, labelMinY });
   useEffect(() => {
     propsRef.current = { getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion, labelMinY };
   });
+
+  // Rasterize the shared origami kit once so the canvas can stand the same landmarks up as billboards.
+  useEffect(() => {
+    const host = artRef.current;
+    if (!host) return;
+    let cancelled = false;
+    const ser = new XMLSerializer();
+    const loaded: Record<string, { img: HTMLImageElement; aspect: number }> = {};
+    let pending = 0;
+    host.querySelectorAll<SVGSVGElement>("span[data-kind] > svg").forEach((svg) => {
+      const kind = svg.parentElement!.getAttribute("data-kind")!;
+      const w = Number(svg.getAttribute("width")) || 1;
+      const h = Number(svg.getAttribute("height")) || 1;
+      const img = new Image();
+      pending++;
+      img.onload = img.onerror = () => {
+        if (cancelled) return;
+        if (img.naturalWidth) loaded[kind] = { img, aspect: w / h };
+        if (--pending === 0) {
+          spritesRef.current = LANDMARK_SITES.filter((s) => loaded[s.kind]).map((s) => ({ ...loaded[s.kind], lat: s.lat, lng: s.lng, h: s.h }));
+        }
+      };
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(ser.serializeToString(svg))}`;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -131,6 +165,7 @@ export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reduc
         labelMinY: p.labelMinY,
         labelMaxY: size.h * Math.min(0.9, cyFrac + 0.2),
         phase: p.reducedMotion ? 0 : (now / 1800) % 1,
+        landmarks: spritesRef.current,
       });
       if (dotRef.current) dotRef.current.style.transform = `translate3d(${cam.cx}px, ${cam.cy}px, 0)`;
     };
@@ -145,6 +180,17 @@ export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reduc
   return (
     <div ref={wrapRef} aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", background: "var(--bg)" }}>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }} />
+      {/* Hidden source art for the canvas landmark sprites (serialized once on mount). */}
+      <div ref={artRef} style={{ display: "none" }}>
+        {SPRITE_KINDS.map((k) => {
+          const Art = LANDMARK_ART[k];
+          return (
+            <span key={k} data-kind={k}>
+              <Art height={240} />
+            </span>
+          );
+        })}
+      </div>
       <div ref={dotRef} style={{ position: "absolute", left: 0, top: 0, transform: "translate3d(50vw, 50vh, 0)", willChange: "transform" }}>
         <LocationDot />
       </div>

@@ -36,6 +36,8 @@ export interface View {
   ground: (lat: number, lng: number) => [number, number];
   /** Ground meters to screen, or null when behind the near plane. */
   project: (x: number, f: number) => Projected | null;
+  /** Like project, but for a point `h` meters above the ground (buildings, landmarks). */
+  project3: (x: number, f: number, h: number) => Projected | null;
   /** Smallest forward distance still in front of the near plane. */
   fNear: number;
   /** Depth -> 0..1 fade so the far field dissolves into fog. */
@@ -63,6 +65,12 @@ export function makeView(cam: CameraState): View {
       const depth = cam.dist + f * ct;
       if (depth < NEAR_DEPTH) return null;
       return { x: cam.cx + (focal * x) / depth, y: cam.cy - (focal * f * st) / depth, k: focal / depth };
+    },
+    project3(x, f, h) {
+      // World "up" in camera space is (up: cos tilt, depth: -sin tilt).
+      const depth = cam.dist + f * ct - h * st;
+      if (depth < NEAR_DEPTH) return null;
+      return { x: cam.cx + (focal * x) / depth, y: cam.cy - (focal * (f * st + h * ct)) / depth, k: focal / depth };
     },
     fade(k) {
       const rel = k / cam.zoom; // 1 at the rider, -> 0 toward the horizon

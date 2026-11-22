@@ -4,6 +4,7 @@ import { LINE_IDS, TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
 import { LINES, STATIONS, type GeoStation } from "@/components/map/mbta-geo";
 import { clipSegment, type Projected, type View } from "./navCamera";
 import { densify, type LatLng } from "./geo";
+import { drawBlocks, drawFolds, drawGrain, drawLandmarks, setWater, type LandmarkSprite } from "./paperCity";
 
 export interface MapColors {
   bg: string;
@@ -39,6 +40,8 @@ export interface DrawOptions {
   labelMaxY: number;
   /** 0..1 pulse phase for subtle ambient motion (vehicle glow). */
   phase: number;
+  /** Origami landmark billboards (loaded by NavMap from the shared paper kit). */
+  landmarks?: LandmarkSprite[];
 }
 
 // ---------- Static geometry, densified once ----------
@@ -457,6 +460,7 @@ export function drawNavMap(ctx: CanvasRenderingContext2D, view: View, o: DrawOpt
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, w, h);
 
+  drawFolds(ctx, view);
   drawGrid(ctx, view, colors);
 
   ctx.lineCap = "round";
@@ -469,7 +473,10 @@ export function drawNavMap(ctx: CanvasRenderingContext2D, view: View, o: DrawOpt
   for (const wt of waterG) strokeGround(ctx, view, wt.g, wt.widthM, 1, 2, Infinity, "butt");
   ctx.globalAlpha = 1;
 
+  setWater(WATER);
+  drawBlocks(ctx, view);
   drawLines(ctx, view, colors, o.team);
+  if (o.landmarks?.length) drawLandmarks(ctx, view, o.landmarks, o.labelMinY);
   drawStations(ctx, view, colors, o.team);
   drawVehicles(ctx, view, colors, o.vehicles, o.phase);
   drawRiderGround(ctx, view, colors, o.accuracy, o.coneAngle);
@@ -481,6 +488,7 @@ export function drawNavMap(ctx: CanvasRenderingContext2D, view: View, o: DrawOpt
   fog.addColorStop(1, "rgba(233,220,196,0)");
   ctx.fillStyle = fog;
   ctx.fillRect(0, 0, w, h * 0.42);
+  drawGrain(ctx, w, h);
 
   drawLabels(ctx, view, o);
 }
