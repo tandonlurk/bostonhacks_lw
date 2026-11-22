@@ -1,96 +1,42 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import { OnboardingFlow } from "./OnboardingFlow";
 import styles from "./welcome.module.css";
+import { BackBayTowers, Brownstone, Citgo, CustomHouse, Fenway, PaperCloud, PaperElm, PaperTree, PaperWaves, StateHouse, SeaportCrane, SwanBoat, TripleDecker, Zakim } from "../paper/origami";
 
-function AsciiCity() {
-  const canvasRef = useRef<HTMLCanvasElement>(null);
-
-  useEffect(() => {
-    const canvas = canvasRef.current;
-    const context = canvas?.getContext("2d");
-    if (!canvas || !context) return;
-    const motion = window.matchMedia("(prefers-reduced-motion: reduce)");
-    let frame = 0;
-    let animation = 0;
-    let lastDraw = 0;
-    let width = 0;
-    let height = 0;
-
-    const draw = () => {
-      context.clearRect(0, 0, width, height);
-      const cell = width / 118;
-      const row = cell * 1.45;
-      context.font = `${cell * 1.15}px ui-monospace, SFMono-Regular, Menlo, monospace`;
-      context.textBaseline = "top";
-      const put = (character: string, x: number, y: number, alpha = 0.8) => {
-        context.fillStyle = `rgba(255,255,255,${alpha})`;
-        context.fillText(character, x * cell, y * row);
-      };
-      // A city assembled from characters, with a train stitching it together.
-      const buildings = [
-        [8, 5, 7], [15, 8, 11], [25, 5, 16], [32, 9, 22], [43, 6, 13],
-        [51, 10, 28], [63, 6, 19], [71, 9, 14], [82, 6, 23], [90, 10, 11], [102, 7, 8],
-      ];
-      const base = 39;
-      buildings.forEach(([start, span, tall], index) => {
-        for (let x = start; x < start + span; x++) {
-          for (let y = base - tall; y < base; y++) {
-            const edge = x === start || x === start + span - 1;
-            const roof = y === base - tall;
-            const lit = (x + y + index) % 3 === 0;
-            put(roof ? "_" : edge ? ":" : lit ? "+" : ".", x, y, roof || edge ? 0.95 : lit ? 0.78 : 0.28);
-          }
-        }
-        if (tall > 20) {
-          for (let y = base - tall - 4; y < base - tall; y++) put("|", start + Math.floor(span / 2), y);
-          put("+", start + Math.floor(span / 2), base - tall - 5);
-        }
-      });
-      for (let x = 0; x < 118; x++) {
-        put("=", x, 41, 0.75);
-        put(x % 4 === 0 ? "+" : "-", x, 44, 0.6);
-        if (x % 2 === 0) put("~", x, 47 + Math.sin(x / 11) * 0.35, 0.25);
-        if (x % 3 === 0) put("~", x, 50 + Math.cos(x / 12) * 0.35, 0.2);
-      }
-      for (let x = 12; x < 108; x++) {
-        const y = 8 + Math.sin((x - 12) / 96 * Math.PI) * 9;
-        if (x % 2 === 0) put("·", x, y, 0.55);
-        if (x === 28 || x === 60 || x === 92) put("O", x, y, 0.9);
-      }
-      const trainX = motion.matches ? 61 : (frame * 0.5) % 150 - 25;
-      ["_______________________", "| [] [] | [] [] | [] [] |", "'--O--O---O--O---O--O--'"]
-        .forEach((line, i) => [...line].forEach((character, j) => put(character, trainX + j, 38.2 + i, 1)));
-      [[19, 7], [39, 4], [77, 7], [101, 15], [5, 23]].forEach(([x, y], index) => {
-        put("+", x, y, 0.35 + Math.sin(frame / 14 + index) * 0.18);
-      });
-    };
-    const resize = () => {
-      const rect = canvas.getBoundingClientRect();
-      width = rect.width;
-      height = rect.height;
-      const dpr = window.devicePixelRatio || 1;
-      canvas.width = width * dpr;
-      canvas.height = height * dpr;
-      context.setTransform(dpr, 0, 0, dpr, 0, 0);
-      draw();
-    };
-    const tick = (time: number) => {
-      if (time - lastDraw > 90 && !motion.matches) {
-        frame++;
-        draw();
-        lastDraw = time;
-      }
-      animation = requestAnimationFrame(tick);
-    };
-    const observer = new ResizeObserver(resize);
-    observer.observe(canvas);
-    animation = requestAnimationFrame(tick);
-    return () => { observer.disconnect(); cancelAnimationFrame(animation); };
-  }, []);
-
-  return <canvas className={styles.city} ref={canvasRef} aria-hidden="true" />;
+/** Origami Boston skyline for the landing hero (decorative). Built from the shared paper kit. */
+function OrigamiSkyline() {
+  return (
+    <div className={styles.city} aria-hidden="true">
+      <div className={styles.skyClouds}>
+        <PaperCloud height={22} />
+        <PaperCloud height={14} style={{ marginTop: 30 }} />
+        <PaperCloud height={18} />
+      </div>
+      <div className={styles.skyline}>
+        <PaperElm height={34} />
+        <TripleDecker height={78} tint="#8aa6b8" />
+        <Brownstone height={92} />
+        <Brownstone height={86} tint="#93503a" />
+        <StateHouse height={98} />
+        <PaperTree height={40} />
+        <CustomHouse height={150} />
+        <BackBayTowers height={190} />
+        <Citgo height={80} />
+        <Fenway height={84} />
+        <PaperElm height={30} tint="#4f8a5b" />
+        <Zakim height={84} />
+        <SeaportCrane height={120} />
+      </div>
+      <div className={styles.harbor}>
+        <PaperWaves height={12} />
+        <PaperWaves height={12} />
+        <PaperWaves height={12} />
+        <SwanBoat height={26} style={{ position: "absolute", left: "38%", top: -14 }} />
+      </div>
+    </div>
+  );
 }
 
 export function WelcomeExperience() {
@@ -108,7 +54,7 @@ export function WelcomeExperience() {
         </div>
       </header>
 
-      <div className={styles.art}><AsciiCity /></div>
+      <div className={styles.art}><OrigamiSkyline /></div>
 
       <main className={styles.hero}>
         <h1>tspots<span className={styles.period}>.</span></h1>

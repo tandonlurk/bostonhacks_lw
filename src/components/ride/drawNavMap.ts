@@ -1,15 +1,22 @@
 // Canvas painter for the tilted navigation map. Pure functions: everything comes in through args.
 import type { Vehicle } from "@/contracts";
-import { TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
+import { LINE_IDS, TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
 import { LINES, STATIONS, type GeoStation } from "@/components/map/mbta-geo";
 import { clipSegment, type Projected, type View } from "./navCamera";
 import { densify, type LatLng } from "./geo";
+import { drawBlocks, drawFolds, drawGrain, drawLandmarks, setWater, type LandmarkSprite } from "./paperCity";
 
 export interface MapColors {
   bg: string;
+  /** Cream card stock (labels, station rings). */
+  paper: string;
   ground: string;
   grid: string;
   water: string;
+  /** Darker cut edge under the water layer. */
+  waterEdge: string;
+  /** Contact shadow under paper strips. */
+  shadow: string;
   ink: string;
   muted: string;
   dot: string;
@@ -33,11 +40,13 @@ export interface DrawOptions {
   labelMaxY: number;
   /** 0..1 pulse phase for subtle ambient motion (vehicle glow). */
   phase: number;
+  /** Origami landmark billboards (loaded by NavMap from the shared paper kit). */
+  landmarks?: LandmarkSprite[];
 }
 
 // ---------- Static geometry, densified once ----------
 const LINE_GEOM: Record<TeamRouteId, LatLng[][]> = Object.fromEntries(
-  TEAM_ROUTE_IDS.map((t) => [t, LINES[t].map((branch) => densify(branch.map((id) => STATIONS[id]), 90))]),
+  LINE_IDS.map((t) => [t, LINES[t].map((branch) => densify(branch.filter((id) => STATIONS[id]).map((id) => STATIONS[id]), 90))]),
 ) as Record<TeamRouteId, LatLng[][]>;
 
 const ALL_STATIONS: GeoStation[] = Object.values(STATIONS);
@@ -207,19 +216,28 @@ function drawGrid(ctx: CanvasRenderingContext2D, view: View, colors: MapColors) 
   }
 }
 
+/** Each line is a strip of colored card stock laid on the map: contact shadow, cream cut edge, color. */
 function drawLines(ctx: CanvasRenderingContext2D, view: View, colors: MapColors, team: TeamRouteId | null) {
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
   const order = TEAM_ROUTE_IDS.filter((t) => t !== team).concat(team ? [team] : []);
-  for (const t of order) {
+  // Silver isn't a team but is still drawn, under everything else.
+  const all: TeamRouteId[] = ["Silver" as TeamRouteId, ...order.filter((t) => t !== "Silver")];
+  for (const t of all) {
     const mine = t === team;
-    const dim = team && !mine ? 0.6 : 1;
-    ctx.strokeStyle = colors.team[t];
-    for (const branch of LINE_GEOM[t]) {
+    const dim = team && !mine ? 0.75 : 1;
+    const w = mine ? 26 : 18;
+    for (const branch of LINE_GEOM[t] ?? []) {
       const g = toGround(view, branch);
-      strokeGround(ctx, view, g, mine ? 90 : 70, 0.14 * dim, 4, Infinity, "butt");
-      strokeGround(ctx, view, g, mine ? 36 : 28, 0.35 * dim, 2.5, Infinity, "butt");
-      strokeGround(ctx, view, g, mine ? 15 : 11, 0.95 * dim, 1.2, 9);
+      ctx.save();
+      ctx.translate(0, mine ? 2.5 : 1.5);
+      ctx.strokeStyle = colors.shadow;
+      strokeGround(ctx, view, g, w, 0.9 * dim, 2.6, 13);
+      ctx.restore();
+      ctx.strokeStyle = colors.paper;
+      strokeGround(ctx, view, g, w + 8, dim, 3, 15);
+      ctx.strokeStyle = colors.team[t];
+      strokeGround(ctx, view, g, w, dim, 1.6, 10);
     }
   }
   ctx.globalAlpha = 1;
@@ -235,13 +253,19 @@ function drawStations(ctx: CanvasRenderingContext2D, view: View, colors: MapColo
     if (a <= 0.02) continue;
     const interchange = s.teams.length > 1;
     const r = Math.min(8, Math.max(2, (interchange ? 17 : 12) * p.k));
+    // Paper ring: shadow, cream disc, ink or line-colored rim.
+    ctx.globalAlpha = a * 0.8;
+    ctx.fillStyle = colors.shadow;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y + 1.5, r + 1, 0, Math.PI * 2);
+    ctx.fill();
     ctx.globalAlpha = a;
     ctx.beginPath();
     ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
-    ctx.fillStyle = interchange ? colors.ink : colors.bg;
+    ctx.fillStyle = colors.paper;
     ctx.fill();
-    ctx.lineWidth = Math.max(1.2, r * 0.45);
-    ctx.strokeStyle = interchange ? colors.bg : colors.team[team && s.teams.includes(team) ? team : s.teams[0]];
+    ctx.lineWidth = Math.max(1.2, r * (interchange ? 0.5 : 0.4));
+    ctx.strokeStyle = interchange ? colors.ink : colors.team[team && s.teams.includes(team) ? team : s.teams[0]];
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
@@ -257,18 +281,24 @@ function drawVehicles(ctx: CanvasRenderingContext2D, view: View, colors: MapColo
     if (a <= 0.02) continue;
     const r = Math.min(9, Math.max(3, 20 * p.k));
     const c = colors.team[v.teamRouteId];
-    ctx.fillStyle = c;
-    ctx.globalAlpha = a * (0.18 + 0.12 * Math.sin(phase * Math.PI * 2));
+    // Paper token that gently bobs: contact shadow, line-colored disc, cream rim and center.
+    const lift = 1.5 + 1.2 * Math.sin(phase * Math.PI * 2);
+    ctx.globalAlpha = a * 0.9;
+    ctx.fillStyle = colors.shadow;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, r * 2.4, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y + 2, r, 0, Math.PI * 2);
     ctx.fill();
     ctx.globalAlpha = a;
+    ctx.fillStyle = c;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, r, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y - lift, r, 0, Math.PI * 2);
     ctx.fill();
-    ctx.fillStyle = colors.ink;
+    ctx.lineWidth = Math.max(1, r * 0.28);
+    ctx.strokeStyle = colors.paper;
+    ctx.stroke();
+    ctx.fillStyle = colors.paper;
     ctx.beginPath();
-    ctx.arc(p.x, p.y, r * 0.38, 0, Math.PI * 2);
+    ctx.arc(p.x, p.y - lift, r * 0.34, 0, Math.PI * 2);
     ctx.fill();
   }
   ctx.globalAlpha = 1;
@@ -307,7 +337,7 @@ function drawRiderGround(ctx: CanvasRenderingContext2D, view: View, colors: MapC
   const radius = tip ? Math.hypot(tip.x - center.x, tip.y - center.y) : 60;
   const grad = ctx.createRadialGradient(center.x, center.y, 4, center.x, center.y, Math.max(20, radius));
   grad.addColorStop(0, colors.dot);
-  grad.addColorStop(1, "rgba(61,139,255,0)");
+  grad.addColorStop(1, "rgba(47,93,124,0)");
   ctx.beginPath();
   ctx.moveTo(center.x, center.y);
   for (let i = 0; i <= 12; i++) {
@@ -375,9 +405,13 @@ function drawLabels(ctx: CanvasRenderingContext2D, view: View, o: DrawOptions) {
       const box = { x: bx, y: by, w, h: h + 16 };
       if (by < o.labelMinY - 12 || (!onRider && overlaps(box))) continue;
       placed.push(box);
-      ctx.globalAlpha = 0.92;
-      ctx.fillStyle = colors.bg;
-      roundRect(ctx, bx, by, w, h, h / 2);
+      ctx.globalAlpha = 0.9;
+      ctx.fillStyle = colors.shadow;
+      roundRect(ctx, bx, by + 2, w, h, 5);
+      ctx.fill();
+      ctx.globalAlpha = 1;
+      ctx.fillStyle = colors.paper;
+      roundRect(ctx, bx, by, w, h, 5);
       ctx.fill();
       ctx.globalAlpha = 1;
       ctx.lineWidth = 1.5;
@@ -404,7 +438,7 @@ function drawLabels(ctx: CanvasRenderingContext2D, view: View, o: DrawOptions) {
     ctx.textAlign = "left";
     ctx.globalAlpha = Math.min(1, view.fade(p.k) + 0.15);
     ctx.lineWidth = 3.5;
-    ctx.strokeStyle = colors.bg;
+    ctx.strokeStyle = colors.paper;
     ctx.strokeText(c.s.name, lx, p.y);
     ctx.fillStyle = rel > 0.75 ? colors.ink : colors.muted;
     ctx.fillText(c.s.name, lx, p.y);
@@ -419,33 +453,42 @@ export function drawNavMap(ctx: CanvasRenderingContext2D, view: View, o: DrawOpt
   ctx.fillStyle = colors.ground;
   ctx.fillRect(0, 0, w, h);
 
-  // Faint pool of light around the rider.
-  const glow = ctx.createRadialGradient(view.cam.cx, view.cam.cy, 0, view.cam.cx, view.cam.cy, Math.max(w, h) * 0.7);
-  glow.addColorStop(0, "rgba(61,139,255,0.10)");
-  glow.addColorStop(1, "rgba(61,139,255,0)");
+  // Warm pool of light on the card stock around the rider, darkening toward the kraft edges.
+  const glow = ctx.createRadialGradient(view.cam.cx, view.cam.cy, 0, view.cam.cx, view.cam.cy, Math.max(w, h) * 0.75);
+  glow.addColorStop(0, "rgba(255,250,240,0.55)");
+  glow.addColorStop(1, "rgba(160,128,84,0.10)");
   ctx.fillStyle = glow;
   ctx.fillRect(0, 0, w, h);
 
+  drawFolds(ctx, view);
   drawGrid(ctx, view, colors);
 
   ctx.lineCap = "round";
   ctx.lineJoin = "round";
+  // Harbor water cut from blue card stock: a darker cut edge, then the water sheet.
+  const waterG = WATER.map((wt) => ({ widthM: wt.widthM, g: toGround(view, wt.pts) }));
+  ctx.strokeStyle = colors.waterEdge;
+  for (const wt of waterG) strokeGround(ctx, view, wt.g, wt.widthM + 40, 1, 3, Infinity, "butt");
   ctx.strokeStyle = colors.water;
-  for (const water of WATER) strokeGround(ctx, view, toGround(view, water.pts), water.widthM, 1, 2, Infinity, "butt");
+  for (const wt of waterG) strokeGround(ctx, view, wt.g, wt.widthM, 1, 2, Infinity, "butt");
   ctx.globalAlpha = 1;
 
+  setWater(WATER);
+  drawBlocks(ctx, view);
   drawLines(ctx, view, colors, o.team);
+  if (o.landmarks?.length) drawLandmarks(ctx, view, o.landmarks, o.labelMinY);
   drawStations(ctx, view, colors, o.team);
   drawVehicles(ctx, view, colors, o.vehicles, o.phase);
   drawRiderGround(ctx, view, colors, o.accuracy, o.coneAngle);
 
-  // Horizon fog: the far field melts into the night sky.
+  // Horizon: the far field fades into the kraft table.
   const fog = ctx.createLinearGradient(0, 0, 0, h * 0.42);
   fog.addColorStop(0, colors.bg);
-  fog.addColorStop(0.35, "rgba(255,255,255,0.75)");
-  fog.addColorStop(1, "rgba(255,255,255,0)");
+  fog.addColorStop(0.35, "rgba(233,220,196,0.8)");
+  fog.addColorStop(1, "rgba(233,220,196,0)");
   ctx.fillStyle = fog;
   ctx.fillRect(0, 0, w, h * 0.42);
+  drawGrain(ctx, w, h);
 
   drawLabels(ctx, view, o);
 }

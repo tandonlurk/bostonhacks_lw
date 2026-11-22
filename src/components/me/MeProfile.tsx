@@ -11,13 +11,14 @@ import { EmptyHint, Highlights } from "./Highlights";
 import { InterestsSection, InterestsSheet } from "./Interests";
 import { ProfileHero } from "./ProfileHero";
 import { SectionTitle } from "./SectionTitle";
-import { glowVar } from "./team";
+import { PassportStamps } from "./PassportStamps";
+import { lineVar } from "./team";
 import s from "./me.module.css";
 import { FriendsSection } from "@/components/friends/FriendsScreen";
 
 type MeSheet = "edit" | "interests" | null;
 
-/** The joined rider's Instagram-style profile. */
+/** The joined rider's profile as a rider passport: identity page, stamps, logbook, interests, friends, receipt. */
 export function MeProfile({ rider }: { rider: Rider }) {
   const tokens = useTokens(rider.riderId);
   const landmarks = useLandmarks(rider.riderId);
@@ -37,12 +38,14 @@ export function MeProfile({ rider }: { rider: Rider }) {
   const close = useCallback(() => setSheet(null), []);
   const ledger = tokens.data?.ledger ?? [];
   const handle = rider.displayName.toLowerCase().replace(/[^a-z0-9]+/g, "");
+  // Passport "issued" date = the rider's earliest ledger entry (real data); null until they earn one.
+  const issuedAt = ledger.reduce<string | null>((min, e) => (min === null || Date.parse(e.createdAt) < Date.parse(min) ? e.createdAt : min), null);
 
   return (
     <div style={{ display: "flex", flexDirection: "column" }}>
       <header className="screen-header" style={{ display: "flex", alignItems: "center", gap: 8, minHeight: 56, background: "transparent" }}>
-        <span aria-hidden="true" style={{ width: 9, height: 9, borderRadius: "50%", background: glowVar(rider.homeTeamRouteId), boxShadow: `0 0 10px ${glowVar(rider.homeTeamRouteId)}` }} />
-        <h1 style={{ fontSize: 20, fontWeight: 800 }}>
+        <span aria-hidden="true" style={{ width: 16, height: 6, borderRadius: 1, background: lineVar(rider.homeTeamRouteId), boxShadow: "0 1px 0 var(--paper-edge)" }} />
+        <h1 style={{ fontFamily: "var(--font-display)", fontSize: 20, fontWeight: 800 }}>
           <span className="visually-hidden">Profile of </span>@{handle || "rider"}
         </h1>
       </header>
@@ -50,7 +53,7 @@ export function MeProfile({ rider }: { rider: Rider }) {
       {toast ? (
         <p
           role="alert"
-          className="glass"
+          className="paper"
           style={{
             position: "fixed",
             left: 16,
@@ -58,10 +61,11 @@ export function MeProfile({ rider }: { rider: Rider }) {
             top: "calc(env(safe-area-inset-top, 0px) + var(--banner-space) + 12px)",
             zIndex: 70,
             padding: "12px 16px",
-            borderRadius: 16,
+            borderRadius: 4,
             fontSize: 14,
             fontWeight: 600,
-            borderColor: "color-mix(in srgb, var(--hot) 50%, transparent)",
+            color: "var(--ink)",
+            boxShadow: "inset 5px 0 0 var(--hot), var(--shadow-float)",
             animation: "fade-in 200ms",
           }}
         >
@@ -69,9 +73,11 @@ export function MeProfile({ rider }: { rider: Rider }) {
         </p>
       ) : null}
 
-      <ProfileHero rider={rider} bio={bio} onEdit={() => setSheet("edit")} onError={showError} />
+      <ProfileHero rider={rider} bio={bio} issuedAt={issuedAt} onEdit={() => setSheet("edit")} onError={showError} />
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 26, marginTop: 24 }}>
+      <div style={{ display: "flex", flexDirection: "column", gap: 26, marginTop: 24, paddingBottom: 24 }}>
+        <PassportStamps ledger={ledger} landmarks={landmarks.data} team={rider.homeTeamRouteId} streakDays={rider.streakDays} />
+
         <Highlights ledger={ledger} landmarks={landmarks.data} team={rider.homeTeamRouteId} now={now} />
 
         <InterestsSection selected={interests} onEdit={() => setSheet("interests")} />
@@ -83,7 +89,7 @@ export function MeProfile({ rider }: { rider: Rider }) {
           {tokens.loading && !tokens.data ? (
             <div aria-busy="true" style={{ display: "flex", flexDirection: "column", gap: 12 }}>
               {[0, 1, 2].map((i) => (
-                <span key={i} className={s.skel} style={{ display: "block", height: 52, borderRadius: 14 }} />
+                <span key={i} className={s.skel} style={{ display: "block", height: 52, borderRadius: 4 }} />
               ))}
             </div>
           ) : (

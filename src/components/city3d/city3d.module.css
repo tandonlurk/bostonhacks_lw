@@ -1,4 +1,4 @@
-/* U05 City tab: 3D Boston. Keyframes local to this screen so globals.css stays untouched. */
+/* City tab: origami Boston on a kraft table. Keyframes local to this screen so globals.css stays untouched. */
 
 .stage {
   position: absolute;
@@ -7,34 +7,16 @@
   touch-action: none;
   user-select: none;
   -webkit-user-select: none;
-  background:
-    radial-gradient(120% 70% at 50% 42%, rgba(61, 123, 255, 0.10), transparent 60%),
-    radial-gradient(90% 50% at 50% 100%, rgba(63,122,0, 0.05), transparent 70%),
-    var(--bg);
+  background-color: var(--kraft);
+  background-image:
+    radial-gradient(120% 80% at 50% 45%, rgba(255, 250, 240, 0.35), transparent 65%),
+    radial-gradient(140% 90% at 50% 50%, transparent 60%, rgba(92, 66, 32, 0.12)),
+    var(--grain);
   cursor: grab;
 }
 
 .stage:active {
   cursor: grabbing;
-}
-
-/* Faint starfield above the skyline */
-.stars {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  opacity: 0.55;
-  background-image:
-    radial-gradient(1px 1px at 12% 14%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 33% 8%, #fff 50%, transparent 51%),
-    radial-gradient(1.4px 1.4px at 71% 11%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 86% 22%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 55% 19%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 22% 27%, #fff 50%, transparent 51%),
-    radial-gradient(1.2px 1.2px at 93% 6%, #fff 50%, transparent 51%),
-    radial-gradient(1px 1px at 6% 33%, #fff 50%, transparent 51%);
-  mask-image: linear-gradient(#000, transparent 45%);
-  -webkit-mask-image: linear-gradient(#000, transparent 45%);
 }
 
 .camera {
@@ -48,8 +30,24 @@
   transition: transform 650ms var(--ease-out);
 }
 
+/* Quarter-turn: the diorama folds edge-on, swaps views, and springs back open. */
+.turn {
+  transform-origin: var(--turn-x, 50%) var(--turn-y, 50%);
+}
+
+.turn[data-phase="out"] {
+  transform: scaleX(0.04) skewY(-4deg);
+  transition: transform 170ms cubic-bezier(0.5, 0, 0.9, 0.5);
+}
+
+.turn[data-phase="in"] {
+  transform: none;
+  transition: transform 420ms var(--ease-fold);
+}
+
 .drift {
-  animation: drift 22s ease-in-out infinite alternate;
+  position: relative;
+  animation: drift 24s ease-in-out infinite alternate;
 }
 
 .drift[data-paused="true"] {
@@ -58,14 +56,81 @@
 
 @keyframes drift {
   0% {
-    transform: translate(0, 0) scale(1);
+    transform: translate(0, 0);
   }
   50% {
-    transform: translate(-9px, 5px) scale(1.012);
+    transform: translate(-8px, 5px);
   }
   100% {
-    transform: translate(7px, -4px) scale(1.004);
+    transform: translate(6px, -4px);
   }
+}
+
+.layer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: block;
+  overflow: visible;
+}
+
+/* ---------- scene detail ---------- */
+
+.line {
+  transition: opacity 200ms var(--ease-out);
+}
+
+.stage[data-zoom="far"] .streets,
+.stage[data-zoom="far"] .streetTree {
+  display: none;
+}
+
+/* Buildings unfold out of the table like a pop-up book: from their old height (or flat) to the new one. */
+.bld {
+  cursor: pointer;
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: unfold 640ms var(--ease-fold) both;
+  transition: opacity 200ms var(--ease-out);
+}
+
+.stage[data-intro] .bld {
+  animation-delay: var(--d, 0ms);
+}
+
+@keyframes unfold {
+  0% {
+    transform: scaleY(var(--from, 0.02));
+  }
+  100% {
+    transform: none;
+  }
+}
+
+/* Selection dims everything but the chosen team (CSS only, no scene re-render). */
+.stage[data-sel] .line {
+  opacity: 0.3;
+}
+
+.stage[data-sel] .bld {
+  opacity: 0.28;
+}
+
+.stage[data-sel="Red"] .line[data-line="Red"],
+.stage[data-sel="Orange"] .line[data-line="Orange"],
+.stage[data-sel="Blue"] .line[data-line="Blue"],
+.stage[data-sel="Green"] .line[data-line="Green"],
+.stage[data-sel="Silver"] .line[data-line="Silver"],
+.stage[data-sel="Red"] .bld[data-team="Red"],
+.stage[data-sel="Orange"] .bld[data-team="Orange"],
+.stage[data-sel="Blue"] .bld[data-team="Blue"],
+.stage[data-sel="Green"] .bld[data-team="Green"],
+.stage[data-sel="Silver"] .bld[data-team="Silver"] {
+  opacity: 1;
+}
+
+.labels {
+  pointer-events: none;
 }
 
 .labels text {
@@ -73,72 +138,205 @@
   font-size: 8.5px;
   font-weight: 700;
   letter-spacing: 0.22em;
-  fill: rgba(18, 22, 29, 0.55);
+  fill: var(--muted);
   paint-order: stroke;
-  stroke: rgba(255,255,255,0.9);
+  stroke: rgba(251, 246, 236, 0.92);
   stroke-width: 3px;
   stroke-linejoin: round;
+}
+
+.labels text.waterLabel {
+  font-style: italic;
+  fill: #2f5d7c;
+  stroke: rgba(233, 243, 248, 0.9);
+}
+
+.labels text.lmLabel {
+  display: none;
+  font-family: var(--font-hand);
+  font-size: 9px;
+  letter-spacing: 0.02em;
+  fill: var(--ink);
+}
+
+.stage[data-zoom="near"] .labels text.lmLabel {
+  display: inline;
+}
+
+/* ---------- HTML paper tags in scene space ---------- */
+
+.markers {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 0;
+  height: 0;
   pointer-events: none;
 }
 
-.roofGlow {
-  animation: roof 3.2s ease-in-out infinite alternate;
+.marker {
+  position: absolute;
+  width: 0;
+  height: 0;
 }
 
-@keyframes roof {
-  from {
-    opacity: 0.55;
-  }
-  to {
-    opacity: 1;
-  }
+.marker > span {
+  position: absolute;
+  left: 0;
+  bottom: 6px;
+  transform-origin: 50% 100%;
+  translate: -50% 0;
+  scale: var(--inv, 1);
+  white-space: nowrap;
 }
 
-.beacon {
-  transform-box: fill-box;
-  transform-origin: bottom;
-  animation: beacon 2.4s ease-in-out infinite alternate;
-}
-
-@keyframes beacon {
-  from {
-    opacity: 0.35;
-    transform: scaleY(0.75);
-  }
-  to {
-    opacity: 0.9;
-    transform: scaleY(1);
-  }
-}
-
-.burst {
+/* Leader pennant: a folded ribbon in the team color with a notched tail. */
+.ribbon {
+  display: inline-block;
+  padding: 3px 12px 4px 9px;
+  background: #fffaf0;
+  color: var(--ink);
+  border-left: 5px solid var(--team);
   font-family: var(--font-display);
-  font-size: 22px;
+  font-size: 12px;
   font-weight: 800;
-  paint-order: stroke;
-  stroke: #ffffff;
-  stroke-width: 4px;
-  animation: burst 1.8s var(--ease-out) forwards;
+  letter-spacing: 0.04em;
+  clip-path: polygon(0 0, 100% 0, calc(100% - 7px) 50%, 100% 100%, 0 100%);
+  box-shadow: 0 1px 0 var(--paper-edge), 0 3px 6px -2px var(--paper-lift-2);
+  animation: paper-bob 2.8s ease-in-out infinite;
 }
 
-@keyframes burst {
+/* +N: a small paper luggage tag that floats up and fades. */
+.burstTag {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  padding: 4px 9px 4px 13px;
+  background: #fffaf0;
+  border-left: 4px solid var(--team);
+  border-radius: 3px;
+  color: var(--ink);
+  box-shadow: 0 1px 0 var(--paper-edge), 0 4px 8px -3px var(--paper-lift-2);
+  animation: tag-float 1.9s var(--ease-out) forwards;
+}
+
+.burstTag::before {
+  content: "";
+  position: absolute;
+  left: 5px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--kraft-deep);
+}
+
+.burstNum {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 800;
+  color: var(--accent);
+}
+
+.burstTeam {
+  font-size: 10px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+@keyframes tag-float {
   0% {
     opacity: 0;
-    transform: translateY(8px) scale(0.7);
+    transform: translateY(10px) rotate(-6deg) scaleY(0.4);
   }
-  15% {
+  18% {
     opacity: 1;
-    transform: translateY(0) scale(1.1);
+    transform: translateY(0) rotate(-3deg) scaleY(1);
+  }
+  75% {
+    opacity: 1;
   }
   100% {
     opacity: 0;
-    transform: translateY(-34px) scale(1);
+    transform: translateY(-30px) rotate(2deg);
   }
 }
 
-.burst {
-  transform-box: fill-box;
-  transform-origin: center;
+/* Tier-up: a rubber stamp that thumps down, holds, then lifts away. */
+.tierStamp {
+  display: inline-block;
+  padding: 3px 8px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  background: rgba(255, 250, 240, 0.94);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  margin-bottom: 26px;
+  animation: stamp 2.5s var(--ease-fold) forwards;
+}
+
+@keyframes stamp {
+  0% {
+    opacity: 0;
+    transform: scale(1.8) rotate(-12deg);
+  }
+  14% {
+    opacity: 1;
+    transform: scale(1) rotate(-5deg);
+  }
+  80% {
+    opacity: 1;
+    transform: scale(1) rotate(-5deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(-12px) rotate(-5deg);
+  }
+}
+
+/* ---------- overlay cards ---------- */
+
+.header {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 14px 10px 16px;
+}
+
+.title {
+  font-size: 26px;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.meta {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+}
+
+.eyebrowSmall {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  color: var(--muted);
+  margin-top: 4px;
 }
 
 .livePulse {
@@ -171,69 +369,201 @@
 }
 
 .fab {
-  display: grid;
-  place-items: center;
   width: var(--tap-min);
   height: var(--tap-min);
+  padding: 0;
   border-radius: 50%;
-  color: var(--ink);
-  box-shadow: var(--shadow-float);
-  transition: transform 160ms var(--ease-out);
 }
 
-.fab:active {
-  transform: scale(0.9);
+/* Team swatch tag: exact line color, short code for non-color identification. */
+.swatch {
+  display: inline-grid;
+  place-items: center;
+  min-width: 24px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 2px;
+  font-size: 9.5px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  clip-path: polygon(4px 0, 100% 0, 100% 100%, 4px 100%, 0 50%);
+  padding-left: 7px;
+}
+
+.dock {
+  position: absolute;
+  /* Leaves room for the demo SimTrigger button at the bottom-left. */
+  left: 64px;
+  right: 12px;
+  z-index: 5;
+  display: flex;
+  align-items: stretch;
+  gap: 2px;
+  padding: 5px;
+}
+
+.dockOpen {
+  flex: none;
+  width: 46px;
+  min-height: 52px;
+  padding: 0;
+  flex-direction: column;
+  gap: 0;
 }
 
 .pill {
+  position: relative;
   flex: 1 1 0;
   min-width: 0;
-  min-height: var(--tap-min);
+  min-height: 52px;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 2px;
-  border-radius: 14px;
+  gap: 3px;
+  border-radius: 5px;
   border: 1px solid transparent;
   background: transparent;
-  padding: 4px 2px;
+  padding: 4px 1px;
   transition: background 160ms var(--ease-out), transform 160ms var(--ease-out);
 }
 
 .pill:active {
-  transform: scale(0.94);
+  transform: translateY(1px);
 }
 
 .pill[aria-pressed="true"] {
-  background: var(--surface-2);
-  border-color: var(--glass-border);
+  background: var(--cream-2);
+  border-color: var(--paper-edge);
+  box-shadow: inset 0 -2px 0 var(--fold-shadow);
 }
 
+.rankNo {
+  font-family: var(--font-display);
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--muted);
+  line-height: 1;
+}
+
+.mineMark {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* Progress as a strip of folded card: track in kraft, fill in the line color. */
 .bar {
-  height: 6px;
-  border-radius: 3px;
-  background: var(--surface-3);
+  height: 7px;
+  border-radius: 1px;
+  background: var(--cream-3);
+  box-shadow: inset 0 1px 0 var(--paper-edge);
   overflow: hidden;
 }
 
 .barFill {
   height: 100%;
-  border-radius: 3px;
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.28) 0 50%, rgba(0, 0, 0, 0.08) 50% 100%);
   transition: width 700ms var(--ease-out);
 }
 
+/* Rank seals: 1st gets a gold rosette, the rest an inked circle stamp. */
+.seal {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid var(--muted);
+  color: var(--muted);
+  font-family: var(--font-display);
+  font-size: 16px;
+  font-weight: 800;
+  transform: rotate(-6deg);
+}
+
+.sealGold {
+  border: none;
+  color: #3b2a07;
+  background:
+    radial-gradient(circle, transparent 58%, rgba(133, 96, 15, 0.45) 60%, transparent 63%),
+    conic-gradient(from 0deg, #e3b347, #c9962b, #e3b347, #c9962b, #e3b347, #c9962b, #e3b347, #c9962b, #e3b347);
+  clip-path: polygon(50% 0, 61% 9%, 75% 4%, 80% 18%, 95% 21%, 92% 36%, 100% 50%, 92% 64%, 95% 79%, 80% 82%, 75% 96%, 61% 91%, 50% 100%, 39% 91%, 25% 96%, 20% 82%, 5% 79%, 8% 64%, 0 50%, 8% 36%, 5% 21%, 20% 18%, 25% 4%, 39% 9%);
+}
+
+.row {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 40px 1fr auto;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 12px 12px 8px;
+  text-align: left;
+  border-radius: var(--radius-card);
+}
+
+.rowMine {
+  border-color: var(--accent);
+  box-shadow: var(--shadow-card), inset 4px 0 0 var(--accent);
+}
+
+/* Tier pips: little folded houses, filled up to the current tier (shape + text, not color alone). */
+.pips {
+  display: inline-flex;
+  gap: 2px;
+  vertical-align: middle;
+}
+
+.pip {
+  width: 8px;
+  height: 9px;
+  clip-path: polygon(50% 0, 100% 40%, 100% 100%, 0 100%, 0 40%);
+  background: var(--cream-3);
+  box-shadow: inset 0 0 0 1px var(--paper-edge);
+}
+
+.pipOn {
+  background: var(--ink);
+}
+
 .card {
-  animation: card-in 260ms var(--ease-out);
+  animation: card-in 320ms var(--ease-fold) both;
+  transform-origin: bottom center;
 }
 
 @keyframes card-in {
   from {
     opacity: 0;
-    transform: translateY(12px) scale(0.98);
+    transform: perspective(600px) rotateX(18deg) translateY(10px);
   }
   to {
     opacity: 1;
     transform: none;
+  }
+}
+
+.teamFlap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 7px;
+  box-shadow: inset -2px 0 0 rgba(0, 0, 0, 0.12);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bld,
+  .ribbon,
+  .drift,
+  .card {
+    animation: none;
+  }
+
+  .turn[data-phase] {
+    transition: none;
   }
 }

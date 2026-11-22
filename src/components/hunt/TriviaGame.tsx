@@ -6,7 +6,7 @@ import { triviaRoundFixture } from "@/contracts/game-fixtures";
 import { USE_MOCKS } from "@/hooks/useMocks";
 import { CheckIcon, StarIcon } from "@/components/icons";
 import type { StationGame } from "./placeholderGames";
-import { primaryButton, secondaryButton } from "./styles";
+import { kraftWell, paperCard, primaryButton, secondaryButton } from "./styles";
 
 async function request<T>(url: string, body: unknown): Promise<T> {
   const res=await fetch(url,{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
@@ -48,29 +48,29 @@ export function TriviaGame({stopId,game,onExit,riderId,onEarned}: {stopId:string
   }
   const q=round?.questions[index];
   return <div style={{display:"grid",gap:18,padding:"8px 0"}}>
-    {error&&<p role="alert" style={{padding:14,borderRadius:14,background:"rgba(255,77,61,.12)",fontSize:16,lineHeight:1.5}}>{error}</p>}
+    {error&&<p role="alert" style={{...paperCard,padding:14,borderLeft:"4px solid var(--brick)",fontSize:16,lineHeight:1.5}}>{error}</p>}
     {!round?<>
-      <div style={{padding:22,borderRadius:22,background:"linear-gradient(135deg,#7cc4ff24,#e4ff3a12)",border:"1px solid var(--border)"}}>
+      <div className="paper paper--fold paper--crease" style={{padding:22,borderRadius:6}}>
         <p style={{fontSize:14,color:"var(--muted)"}}>{game.title}</p>
-        <h3 ref={title} tabIndex={-1} style={{fontSize:32,lineHeight:1.1,marginTop:10}}>Know your T.<br/>Grow your city.</h3>
+        <h3 ref={title} tabIndex={-1} style={{fontSize:30,lineHeight:1.1,marginTop:10}}>Know your T.<br/>Grow your city.</h3>
         <p style={{fontSize:16,lineHeight:1.55,color:"var(--muted)",marginTop:16}}>Three questions. Take your time. Earn up to 15 points during a delay on this line, once per station each day.</p>
         <p style={{fontSize:14,lineHeight:1.5,color:"var(--muted)",marginTop:12}}>No delay? Play a practice round. Tokens come from your total points: one for every ten.</p>
       </div>
       {riderId?<button type="button" disabled={busy} onClick={start} style={{...primaryButton,minHeight:52,fontSize:16}}>{busy?"Preparing round…":"Start round"}</button>:<p style={{fontSize:16}}>Join a line on the Ride tab to play.</p>}
     </>:result?<>
       <div style={{display:"grid",justifyItems:"center",gap:12,padding:18,textAlign:"center"}}>
-        <StarIcon size={40} style={{color:"var(--accent)"}}/>
+        <StarIcon size={40} style={{color:"var(--gold-ink)"}}/>
         <h3 ref={title} tabIndex={-1} style={{fontSize:46}}>{result.correct}/{result.total}</h3>
         <p style={{fontSize:22,fontWeight:750}}>{result.correct===3?"Conductor energy.":"Another stop, a little wiser."}</p>
         <p role="status" style={{fontSize:18,color:"var(--accent)",fontWeight:700}}>{result.pointsAwarded>0?`+${result.pointsAwarded} points · +${result.tokensAwarded} tokens`:USE_MOCKS?"Practice round":result.alreadyDone?"Reward already banked today":"Practice round · no points awarded"}</p>
       </div>
-      <div style={{display:"grid",gap:10}}>{round.questions.map((question,i)=><div key={question.id} style={{padding:14,borderRadius:14,background:"var(--surface-2)",fontSize:16,lineHeight:1.4}}><p>{question.prompt}</p><p style={{color:answers[i]===result.correctAnswers[i]?"var(--glow-green)":"var(--muted)",marginTop:7}}>{answers[i]===result.correctAnswers[i]?"✓ ":"Answer: "}{result.correctAnswers[i]}</p></div>)}</div>
+      <div style={{display:"grid",gap:10}}>{round.questions.map((question,i)=><div key={question.id} style={{...kraftWell,padding:14,fontSize:16,lineHeight:1.4}}><p>{question.prompt}</p><p style={{color:answers[i]===result.correctAnswers[i]?"var(--glow-green)":"var(--muted)",marginTop:7}}>{answers[i]===result.correctAnswers[i]?"✓ ":"Answer: "}{result.correctAnswers[i]}</p></div>)}</div>
       <div style={{display:"flex",gap:10}}><button style={{...secondaryButton,flex:1}} type="button" onClick={onExit}>Other games</button><button style={{...primaryButton,flex:1}} type="button" disabled={busy} onClick={start}>{busy?"Preparing…":"Play again"}</button></div>
     </>:q?<>
       <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,fontSize:14,color:"var(--muted)"}}><span>QUESTION {index+1} OF {round.questions.length}</span><span>{round.rewardAvailable?"Up to +15 points":"Practice round"}</span></div>
-      <div style={{display:"flex",gap:6}} aria-hidden="true">{round.questions.map((_,i)=><span key={i} style={{height:4,flex:1,borderRadius:3,background:i<=index?"var(--accent)":"var(--surface-3)"}}/>)}</div>
+      <div style={{display:"flex",gap:6}} aria-hidden="true">{round.questions.map((_,i)=><span key={i} style={{height:4,flex:1,borderRadius:3,background:i<=index?"var(--accent)":"var(--cream-3)"}}/>)}</div>
       <h3 ref={title} tabIndex={-1} style={{fontSize:26,lineHeight:1.2,minHeight:64}}>{q.prompt}</h3>
-      <div role="group" aria-label="Answer choices" style={{display:"grid",gap:10}}>{q.options.map(option=><button type="button" key={option} aria-pressed={answers[index]===option} onClick={()=>setAnswers(prev=>prev.map((a,i)=>i===index?option:a))} style={{display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,minHeight:56,borderRadius:16,padding:"14px 16px",textAlign:"left",fontSize:16,border:answers[index]===option?"2px solid var(--accent)":"2px solid var(--border)",background:answers[index]===option?"#e4ff3a16":"var(--surface-2)"}}>{option}{answers[index]===option&&<CheckIcon size={20}/>}</button>)}</div>
+      <div role="group" aria-label="Answer choices" style={{display:"grid",gap:10}}>{q.options.map(option=><button type="button" key={option} aria-pressed={answers[index]===option} onClick={()=>setAnswers(prev=>prev.map((a,i)=>i===index?option:a))} style={{...paperCard,display:"flex",justifyContent:"space-between",alignItems:"center",gap:12,minHeight:56,padding:"14px 16px",textAlign:"left",fontSize:16,border:answers[index]===option?"2px solid var(--accent)":"1px solid var(--paper-edge)",background:answers[index]===option?"var(--accent-soft)":"var(--cream)",transform:answers[index]===option?"translateY(-2px)":"none",boxShadow:answers[index]===option?"var(--shadow-float)":"var(--shadow-card)"}}>{option}{answers[index]===option&&<CheckIcon size={20}/>}</button>)}</div>
       <div style={{display:"flex",gap:10}}>{index>0&&<button type="button" disabled={busy} onClick={()=>setIndex(i=>i-1)} style={secondaryButton}>Back</button>}<button type="button" disabled={busy||!answers[index]} onClick={()=>index<round.questions.length-1?setIndex(i=>i+1):submit()} style={{...primaryButton,flex:1,minHeight:52,fontSize:16,opacity:busy||!answers[index]?0.55:1}}>{busy?"Banking your round…":index<round.questions.length-1?"Next question":"Finish round"}</button></div>
       <p style={{fontSize:14,color:"var(--muted)",lineHeight:1.5}}>Your answers are checked together at the end. Round expires after ten minutes.</p>
     </>:null}

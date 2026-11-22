@@ -1,16 +1,20 @@
 "use client";
 
 import { BountyIcon, CheckIcon, PinIcon, TradeIcon, StarIcon } from "@/components/icons";
+import { PaperButton, Pin, Tape } from "@/components/paper/Paper";
+import { StationArt } from "@/components/paper/origami";
 import type { BoardItem } from "./boardStore";
 import type { BoardPost } from "./types";
-import { KIND_INK, KIND_LABEL, TEAM_SHORT, teamFill, teamGlow, tiltFor, timeAgo } from "./format";
-import { Avatar, Coin, Stamp, Thumbtack } from "./bits";
+import { KIND_INK, KIND_LABEL, TEAM_SHORT, teamFill, tiltFor, timeAgo } from "./format";
+import { Avatar, Coin, Stamp } from "./bits";
 import s from "./market.module.css";
 
-const PAPER_INK = "#1d1b16";
-const PAPER_MUTED = "#5a5345";
-const STAMP_RED = "#c0261b";
-const STAMP_GREEN = "#1d7a3e";
+const PAPER_INK = "var(--ink)";
+const PAPER_MUTED = "var(--muted)";
+// Offer sticky notes are yellow stock; use a darker warm muted there to keep >= 4.5:1.
+const NOTE_MUTED = "#5a4a33";
+const STAMP_RED = "var(--glow-red)";
+const STAMP_GREEN = "var(--accent)";
 
 interface NoticeProps {
   item: BoardItem;
@@ -32,12 +36,14 @@ function Seal({ post }: { post: BoardPost }) {
   const top = post.kind === "bounty" ? "Reward" : post.kind === "trade" ? "Bonus" : "Asks";
   const free = post.kind === "offer" && post.reward <= 0;
   return (
-    <div className={s.seal} aria-label={free ? "Free" : `${top} ${post.reward} tokens`}>
-      <span style={{ fontSize: 8.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", lineHeight: 1 }}>
-        {free ? "No" : top}
-      </span>
-      <span className="num" style={{ fontSize: free ? 17 : 24, fontWeight: 800, lineHeight: 1 }}>
-        {free ? "COST" : post.reward}
+    <div className={s.seal} role="img" aria-label={free ? "Free" : `${top} ${post.reward} tokens`}>
+      <span className={s.sealFace}>
+        <span aria-hidden="true" style={{ fontSize: 7, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", lineHeight: 1 }}>
+          {free ? "Free" : top}
+        </span>
+        <span aria-hidden="true" className="num" style={{ fontSize: free ? 13 : 19, fontWeight: 800, lineHeight: 1.05 }}>
+          {free ? "0" : post.reward}
+        </span>
       </span>
     </div>
   );
@@ -60,10 +66,12 @@ function primaryLabel(item: BoardItem): { text: string; done: boolean; disabled:
 export function BountyNotice({ item, now, preview, onPrimary, onCancel }: NoticeProps) {
   const { post, status, action } = item;
   const ink = KIND_INK[post.kind];
+  const muted = post.kind === "offer" ? NOTE_MUTED : PAPER_MUTED;
   const tilt = preview ? 0 : tiltFor(post.id);
   const label = primaryLabel(item);
   const byYou = !!action;
   const completed = item.server?.status === "completed";
+  const takenByOther = status === "claimed" && !byYou && !post.mine;
 
   return (
     <article
@@ -71,15 +79,15 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
       style={{ ["--rot" as string]: `${tilt}deg` }}
       aria-label={`${KIND_LABEL[post.kind]}: ${post.title}`}
     >
-      <div className={`${s.paper} ${s[post.kind]}`} style={{ opacity: status === "claimed" && !byYou && !post.mine ? 0.86 : 1 }}>
-        {post.kind === "bounty" ? <Thumbtack color={teamGlow(post.author.team)} /> : null}
+      <div className={`${s.paper} ${s[post.kind]}`} style={{ filter: takenByOther ? "saturate(0.75)" : undefined }}>
+        {post.kind === "bounty" ? <Pin color={teamFill(post.author.team)} style={{ top: -7, width: 16, height: 16, marginLeft: -8 }} /> : null}
         {post.kind === "trade" ? (
           <>
-            <span className={`${s.tape} ${s.tapeLeft}`} aria-hidden="true" />
-            <span className={`${s.tape} ${s.tapeRight}`} aria-hidden="true" />
+            <Tape rotate={-32} style={{ top: 2, left: -14, marginLeft: 0, width: 54 }} />
+            <Tape rotate={28} style={{ top: 2, left: "auto", right: -14, marginLeft: 0, width: 54 }} />
           </>
         ) : null}
-        {post.kind === "offer" ? <span className={`${s.tape} ${s.tapeCenter}`} aria-hidden="true" /> : null}
+        {post.kind === "offer" ? <Tape rotate={-3} /> : null}
         <Seal post={post} />
 
         <div
@@ -104,9 +112,9 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
               style={{
                 marginLeft: 2,
                 padding: "1px 6px",
-                borderRadius: 4,
+                borderRadius: 3,
                 background: ink,
-                color: "#f6f0de",
+                color: "var(--cream)",
                 fontSize: 9.5,
                 letterSpacing: "0.12em",
               }}
@@ -120,9 +128,10 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
           style={{
             marginTop: 8,
             paddingRight: post.kind === "trade" && post.reward <= 0 ? 0 : 44,
+            fontFamily: "var(--font-display)",
             fontSize: 21,
-            fontWeight: 800,
-            lineHeight: 1.08,
+            fontWeight: 750,
+            lineHeight: 1.12,
             color: PAPER_INK,
             overflowWrap: "anywhere",
           }}
@@ -131,14 +140,15 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
         </h3>
 
         {post.station ? (
-          <p style={{ display: "flex", alignItems: "center", gap: 4, marginTop: 6, fontSize: 12.5, fontWeight: 700, color: ink }}>
+          <p style={{ display: "flex", alignItems: "center", gap: 6, marginTop: 6, fontSize: 13, fontWeight: 700, color: ink }}>
             <PinIcon size={14} weight={2.3} />
             {post.station}
+            <StationArt name={post.station} height={20} style={{ marginLeft: 2, flex: "none" }} />
           </p>
         ) : null}
 
         {post.body ? (
-          <p style={{ marginTop: 8, fontSize: 14.5, lineHeight: 1.42, color: "#3a352b", overflowWrap: "anywhere" }}>{post.body}</p>
+          <p style={{ marginTop: 8, fontSize: 14.5, lineHeight: 1.45, color: PAPER_INK, overflowWrap: "anywhere" }}>{post.body}</p>
         ) : null}
 
         {post.kind === "trade" && (post.have || post.want) ? (
@@ -150,9 +160,9 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
               alignItems: "center",
               gap: 8,
               padding: "10px 10px",
-              borderRadius: 8,
-              border: `1.5px dashed ${ink}55`,
-              background: "rgba(255,255,255,0.45)",
+              borderRadius: 4,
+              border: "1.5px dashed rgba(36,71,107,0.4)",
+              background: "rgba(255,250,240,0.7)",
             }}
           >
             <TradeSide label="Has" value={post.have ?? "?"} />
@@ -163,7 +173,17 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
           </div>
         ) : null}
 
-        <div style={{ display: "flex", alignItems: "center", gap: 10, marginTop: 14, minWidth: 0 }}>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 10,
+            marginTop: 14,
+            paddingTop: 12,
+            borderTop: "1px dashed rgba(92,66,32,0.25)",
+            minWidth: 0,
+          }}
+        >
           <Avatar handle={post.author.handle} team={post.author.team} />
           <div style={{ minWidth: 0, flex: 1 }}>
             <p style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
@@ -185,51 +205,49 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
                   display: "inline-flex",
                   alignItems: "center",
                   gap: 4,
-                  fontSize: 11,
+                  fontSize: 11.5,
                   fontWeight: 700,
-                  color: PAPER_MUTED,
+                  color: muted,
                 }}
               >
-                <span aria-hidden="true" style={{ width: 8, height: 8, borderRadius: 2, background: teamFill(post.author.team) }} />
+                <span aria-hidden="true" style={{ width: 12, height: 4, borderRadius: 1, background: teamFill(post.author.team) }} />
                 {TEAM_SHORT[post.author.team]}
               </span>
             </p>
-            <p style={{ fontSize: 12, color: PAPER_MUTED, marginTop: 1 }}>
+            <p style={{ fontSize: 12.5, color: muted, marginTop: 1 }}>
               {timeAgo(post, now)}
               {post.interested > 0 ? ` · ${post.interested} interested` : ""}
             </p>
           </div>
           {status === "claimed" ? (
-            <Stamp key={`c-${action ?? "x"}`} label={completed ? "Delivered" : byYou ? "Yours" : "Reserved"} color={STAMP_RED} size={15} rot={-9} slam={byYou} />
+            <Stamp key={`c-${action ?? "x"}`} label={completed ? "Delivered" : byYou ? "Yours" : "Claimed"} color={STAMP_RED} size={14} rot={-8} slam={byYou} />
           ) : (
-            <Stamp key="open" label={action === "offered" ? "Pending" : "Open"} color={action === "offered" ? KIND_INK.trade : STAMP_GREEN} rot={6} slam={action === "offered"} />
+            <Stamp key="open" label={action === "offered" ? "Pending" : item.fresh ? "New" : "Open"} color={action === "offered" ? KIND_INK.trade : STAMP_GREEN} rot={5} slam={action === "offered"} />
           )}
         </div>
 
-        {!preview && item.server?.status === "reserved" ? <p style={{ fontSize: 14, lineHeight: 1.5, color: PAPER_MUTED, marginTop: 12 }}>
-          Reserved by <strong>{item.server.claimantName}</strong>. {post.mine ? "Confirm only after delivery; this transfers the held tokens." : byYou ? "Arrange delivery with the author, who confirms the transfer." : "This task is already being handled."}
+        {!preview && item.server?.status === "reserved" ? <p style={{ fontSize: 14, lineHeight: 1.5, color: muted, marginTop: 12 }}>
+          Reserved by <strong style={{ color: PAPER_INK }}>{item.server.claimantName}</strong>. {post.mine ? "Confirm only after delivery; this transfers the held tokens." : byYou ? "Arrange delivery with the author, who confirms the transfer." : "This task is already being handled."}
         </p> : null}
-        {!preview && completed ? <p style={{ fontSize: 14, lineHeight: 1.5, color: PAPER_MUTED, marginTop: 12 }}>Delivery confirmed. {post.reward} CitiTokens transferred.</p> : null}
+        {!preview && completed ? <p style={{ fontSize: 14, lineHeight: 1.5, color: muted, marginTop: 12 }}>Delivery confirmed. {post.reward} CitiTokens transferred.</p> : null}
         {!preview ? (
-          <button
-            type="button"
-            className={s.inkBtn}
+          <PaperButton
+            variant={label.done ? "default" : "primary"}
+            className={s.block}
             disabled={label.disabled}
             onClick={() => onPrimary?.(item)}
-            style={{
-              marginTop: 12,
-              background: label.done ? "transparent" : PAPER_INK,
-              color: label.done ? PAPER_INK : "#f6f0de",
-              boxShadow: label.done ? `inset 0 0 0 2px ${PAPER_INK}${label.disabled ? "44" : "cc"}` : "0 3px 0 rgba(0,0,0,0.35)",
-              opacity: label.disabled ? 0.55 : 1,
-            }}
+            style={{ marginTop: 12, minHeight: 46 }}
           >
             {label.done && !label.disabled && !post.mine ? <CheckIcon size={18} weight={2.6} /> : null}
             {label.text}
             {!label.done && post.kind !== "trade" && post.reward > 0 ? <Coin size={20} /> : null}
-          </button>
+          </PaperButton>
         ) : null}
-        {!preview && post.mine && item.server?.status === "reserved" ? <button type="button" disabled={item.pending} onClick={() => onCancel?.(item)} style={{ width: "100%", minHeight: 44, marginTop: 8, border: `1px solid ${PAPER_MUTED}66`, borderRadius: 10, background: "transparent", color: PAPER_INK, fontSize: 14, fontWeight: 700 }}>Cancel reservation & refund</button> : null}
+        {!preview && post.mine && item.server?.status === "reserved" ? (
+          <PaperButton variant="ghost" className={s.block} disabled={item.pending} onClick={() => onCancel?.(item)} style={{ marginTop: 8, fontSize: 14 }}>
+            Cancel reservation & refund
+          </PaperButton>
+        ) : null}
       </div>
     </article>
   );
@@ -238,7 +256,7 @@ export function BountyNotice({ item, now, preview, onPrimary, onCancel }: Notice
 function TradeSide({ label, value }: { label: string; value: string }) {
   return (
     <div style={{ minWidth: 0 }}>
-      <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: PAPER_MUTED }}>{label}</p>
+      <p style={{ fontSize: 9.5, fontWeight: 800, letterSpacing: "0.14em", textTransform: "uppercase", color: "#5a4a33" }}>{label}</p>
       <p style={{ fontSize: 13.5, fontWeight: 800, lineHeight: 1.2, color: PAPER_INK, overflowWrap: "anywhere" }}>{value}</p>
     </div>
   );

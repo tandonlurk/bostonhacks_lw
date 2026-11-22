@@ -15,6 +15,12 @@ export interface DemoSpot {
   stationId: string;
   name: string;
   heading: number | null;
+  /** Line and branch stops the stepper is walking (for the Living Route Card). */
+  team: TeamRouteId;
+  branchStops: string[];
+  /** Position in branchStops, and the last step direction (+1 = toward the end of branchStops). */
+  index: number;
+  dir: 1 | -1;
 }
 
 const BRANCHES: { team: TeamRouteId; stops: string[] }[] = (Object.keys(LINES) as TeamRouteId[])
@@ -29,6 +35,7 @@ let award: DemoAward | null = null;
 let awardSeq = 0;
 let branch = 0;
 let index = 0;
+let dir: 1 | -1 = 1;
 const listeners = new Set<() => void>();
 const emit = () => listeners.forEach((l) => l());
 
@@ -56,14 +63,28 @@ function awardHop(fromStationId: string, toStationId: string) {
 }
 
 function moveTo(nextBranch: number, nextIndex: number) {
-  branch = (nextBranch + BRANCHES.length) % BRANCHES.length;
+  const nb = (nextBranch + BRANCHES.length) % BRANCHES.length;
+  const sameBranch = nb === branch;
+  branch = nb;
   const stops = BRANCHES[branch].stops;
   const prevId = spot?.stationId;
-  index = Math.max(0, Math.min(stops.length - 1, nextIndex));
+  const clamped = Math.max(0, Math.min(stops.length - 1, nextIndex));
+  if (sameBranch && prevId && clamped !== index) dir = clamped > index ? 1 : -1;
+  index = clamped;
   const s = STATIONS[stops[index]];
   const prev = prevId ? STATIONS[prevId] : null;
   const heading = prev && prev.id !== s.id ? (Math.atan2(s.lng - prev.lng, s.lat - prev.lat) * 180) / Math.PI : (spot?.heading ?? null);
-  spot = { lat: s.lat, lng: s.lng, stationId: s.id, name: s.name, heading: heading === null ? null : (heading + 360) % 360 };
+  spot = {
+    lat: s.lat,
+    lng: s.lng,
+    stationId: s.id,
+    name: s.name,
+    heading: heading === null ? null : (heading + 360) % 360,
+    team: BRANCHES[branch].team,
+    branchStops: stops,
+    index,
+    dir,
+  };
   emit();
 }
 

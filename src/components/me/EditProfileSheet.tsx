@@ -6,7 +6,7 @@ import { CameraIcon, CloseIcon } from "@/components/icons";
 import { Sheet } from "@/components/ui/Sheet";
 import { useProfileAvatar, useProfileBio } from "@/hooks/useProfileLocal";
 import { AvatarFace, AvatarFileInput, AvatarRing } from "./ProfileAvatar";
-import s from "./me.module.css";
+import { PaperButton } from "@/components/paper/Paper";
 
 const BIO_MAX = 80;
 
@@ -45,15 +45,15 @@ function EditProfileBody({ rider, onClose, onError }: Omit<EditProfileSheetProps
           <AvatarFace avatar={avatar} name={rider.displayName} team={rider.homeTeamRouteId} size={76} />
         </AvatarRing>
         <div style={{ display: "flex", flexDirection: "column", gap: 8, flex: 1, minWidth: 0 }}>
-          <button type="button" onClick={() => inputRef.current?.click()} className={s.press} style={pillBtn("var(--accent)", "var(--accent-ink)")}>
+          <PaperButton variant="primary" onClick={() => inputRef.current?.click()}>
             <CameraIcon size={18} />
             {avatar ? "Change photo" : "Add a photo"}
-          </button>
+          </PaperButton>
           {avatar ? (
-            <button type="button" onClick={() => setAvatar(null)} className={s.press} style={pillBtn("var(--surface-2)", "var(--ink)")}>
+            <PaperButton onClick={() => setAvatar(null)}>
               <CloseIcon size={16} />
               Use doodle instead
-            </button>
+            </PaperButton>
           ) : null}
         </div>
         <AvatarFileInput inputRef={inputRef} onError={onError} />
@@ -75,9 +75,11 @@ function EditProfileBody({ rider, onClose, onError }: Omit<EditProfileSheetProps
           style={{
             resize: "none",
             padding: "12px 14px",
-            borderRadius: 16,
-            border: "1.5px solid var(--border)",
-            background: "var(--surface-2)",
+            borderRadius: 6,
+            border: "1px solid var(--border)",
+            backgroundColor: "var(--cream)",
+            backgroundImage: "var(--grain)",
+            boxShadow: "inset 0 1px 2px rgba(74,52,22,0.1)",
             color: "var(--ink)",
             font: "inherit",
             fontSize: 16, // 16px stops iOS from zooming on focus
@@ -88,31 +90,9 @@ function EditProfileBody({ rider, onClose, onError }: Omit<EditProfileSheetProps
 
       <p style={{ fontSize: 12, color: "var(--muted)", marginTop: -8 }}>Photo and bio stay on this phone.</p>
 
-      <button
-        type="button"
-        onClick={save}
-        className={s.press}
-        style={{ ...pillBtn("var(--ink)", "var(--bg)"), minHeight: 52, fontSize: 16, fontWeight: 800, justifyContent: "center" }}
-      >
+      <PaperButton variant="primary" onClick={save} style={{ minHeight: 52, fontSize: 16, fontWeight: 800 }}>
         Save
-      </button>
+      </PaperButton>
     </div>
   );
-}
-
-function pillBtn(bg: string, fg: string): React.CSSProperties {
-  return {
-    display: "inline-flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-    minHeight: "var(--tap-min)",
-    padding: "0 16px",
-    border: "none",
-    borderRadius: "var(--radius-pill)",
-    background: bg,
-    color: fg,
-    fontWeight: 700,
-    fontSize: 15,
-  };
 }

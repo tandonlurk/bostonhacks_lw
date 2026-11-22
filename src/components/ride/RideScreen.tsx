@@ -1,10 +1,12 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useVehicles } from "@/hooks/useVehicles";
 import { USE_MOCKS } from "@/hooks/useMocks";
 import { BoltIcon, CloseIcon } from "@/components/icons";
+import { PaperButton } from "@/components/paper/Paper";
+import { useHotspots } from "@/components/hunt/useHotspots";
 import { useRideContext, type RideContextValue } from "./RideSessionProvider";
 import { NavMap, type MapMode } from "./NavMap";
 import { TopCard } from "./TopCard";
@@ -17,56 +19,63 @@ import { useRiderPosition } from "./useRiderPosition";
 import { useNearbyStation } from "./useNearbyStation";
 import { useDemoSpot, useDemoStepper } from "./demoLocation";
 import { NextTrainTimer } from "./NextTrainTimer";
+import { LivingRouteCard } from "./LivingRouteCard";
+import { deriveRouteStrip } from "./routeStrip";
 import { DemoAwardPop } from "./DemoAwardPop";
 import { previewNearby, usePreview, usePreviewContext } from "./preview";
-import { distanceM, nearestPlace } from "./geo";
+import { nearestPlace } from "./geo";
 import { useHydrated, useReducedMotion } from "./util";
 import styles from "./ride.module.css";
 
 type Phase = "loading" | "join" | "idle" | "live" | "summary";
 
-const ANCHOR: Record<Phase, number> = { loading: 0.45, join: 0.2, idle: 0.43, live: 0.33, summary: 0.33 };
+const ANCHOR: Record<Phase, number> = { loading: 0.45, join: 0.2, idle: 0.45, live: 0.42, summary: 0.33 };
+/** Rough height the bottom controls take (px above the screen bottom), for centering the rider dot. */
+const BOTTOM_PX: Partial<Record<Phase, number>> = { idle: 330, live: 410 };
+
 const MAP_MODE: Record<Phase, MapMode> = { loading: "idle", join: "onboarding", idle: "idle", live: "riding", summary: "idle" };
+
+/** Measures where the floating top cards end so the map can keep the rider dot and labels below them. */
+function useStackBottom(el: HTMLElement | null) {
+  const [m, setM] = useState({ bottom: 0, height: 0 });
+  useEffect(() => {
+    if (!el) return;
+    const measure = () => {
+      const bottom = Math.round(el.getBoundingClientRect().bottom);
+      const height = window.innerHeight;
+      setM((prev) => (prev.bottom === bottom && prev.height === height ? prev : { bottom, height }));
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, [el]);
+  return m;
+}
 
 function ErrorToast({ message, onDismiss, onPickStop }: { message: string; onDismiss: () => void; onPickStop?: () => void }) {
   return (
     <div
       role="alert"
-      className={`glass ${styles.rise}`}
-      style={{
-        position: "absolute",
-        top: "calc(env(safe-area-inset-top, 0px) + var(--banner-space) + 128px)",
-        left: 12,
-        right: 12,
-        maxWidth: 520,
-        margin: "0 auto",
-        zIndex: 7,
-        display: "flex",
-        alignItems: "center",
-        gap: 10,
-        padding: "8px 6px 8px 12px",
-        borderRadius: 20,
-        border: "1px solid rgba(255,61,127,0.45)",
-        boxShadow: "var(--shadow-float)",
-      }}
+      className={`paper ${styles.rise}`}
+      style={{ display: "flex", alignItems: "center", gap: 10, padding: "6px 4px 6px 12px", borderLeft: "4px solid var(--brick)" }}
     >
-      <BoltIcon size={20} weight={2.2} style={{ color: "var(--hot)", flexShrink: 0 }} />
+      <BoltIcon size={20} weight={2.2} style={{ color: "var(--brick)", flexShrink: 0 }} />
       <p style={{ flex: 1, minWidth: 0, fontSize: 13.5, lineHeight: 1.35 }}>{message}</p>
       {onPickStop ? (
-        <button
-          type="button"
-          onClick={onPickStop}
-          className={styles.press}
-          style={{ minHeight: 44, padding: "0 12px", borderRadius: "var(--radius-pill)", border: "none", background: "rgba(18,22,29,0.08)", fontWeight: 700, fontSize: 13, flexShrink: 0 }}
-        >
+        <PaperButton size="sm" onClick={onPickStop} style={{ minHeight: 44, flexShrink: 0 }}>
           Pick stop
-        </button>
+        </PaperButton>
       ) : null}
       <button
         type="button"
         aria-label="Dismiss"
         onClick={onDismiss}
-        style={{ display: "grid", placeItems: "center", width: 44, height: 44, border: "none", background: "none", flexShrink: 0 }}
+        style={{ display: "grid", placeItems: "center", width: 44, height: 44, border: "none", background: "none", flexShrink: 0, color: "var(--muted)" }}
       >
         <CloseIcon size={18} />
       </button>
@@ -95,6 +104,8 @@ export function RideScreen() {
   const fixNow = demoSpot ? { lat: demoSpot.lat, lng: demoSpot.lng, heading: demoSpot.heading, accuracy: 10 } : pos.snapshot;
   const nearby = previewNearby(preview, useNearbyStation(fixNow, pos.gpsState === "on" || demoSpot !== null));
 
+  const [stackEl, setStackEl] = useState<HTMLDivElement | null>(null);
+  const stack = useStackBottom(stackEl);
   const [manualOpen, setManualOpen] = useState(false);
   const [ending, setEnding] = useState(false);
   const [dismissedResult, setDismissedResult] = useState<object | null>(null);
@@ -103,10 +114,27 @@ export function RideScreen() {
   const team = rider?.homeTeamRouteId ?? null;
   const teamStats = leaderboard?.teams.find((t) => t.teamRouteId === team) ?? null;
   const nearest = nearestPlace(fixNow);
+  const { data: hotspotData } = useHotspots(rider?.riderId ?? null);
+  const fixKey = `${fixNow.lat.toFixed(5)},${fixNow.lng.toFixed(5)},${fixNow.heading == null ? "" : Math.round(fixNow.heading / 15)}`;
+  const rideLine = session.active ? (session.teamRouteId ?? null) : null;
+  const nextStopId = session.active ? (session.nextStopId ?? null) : null;
+  const strip = useMemo(
+    () => deriveRouteStrip({ fix: fixNow, demo: demoSpot, rideLine, nextStopId, homeTeam: rider?.homeTeamRouteId ?? null }),
+    // fixNow is bucketed through fixKey so the strip only re-derives when the rider actually moves.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [fixKey, demoSpot, rideLine, nextStopId, rider?.homeTeamRouteId],
+  );
   const showSummary = !session.active && session.lastResult !== null && session.lastResult !== dismissedResult;
 
   const phase: Phase = !hydrated || riderLoading ? "loading" : !rider ? "join" : session.active ? "live" : showSummary ? "summary" : "idle";
   const error = session.error && session.error !== dismissedError ? session.error : null;
+
+  // Keep the rider dot in the open map between the top cards and the bottom controls.
+  const bottomPx = BOTTOM_PX[phase];
+  const anchorY =
+    bottomPx && stack.height && stack.bottom
+      ? Math.min(0.72, Math.max(ANCHOR[phase], (stack.bottom + (stack.height - bottomPx)) / 2 / stack.height))
+      : ANCHOR[phase];
 
   const end = async () => {
     setEnding(true);
@@ -125,10 +153,11 @@ export function RideScreen() {
         getFix={pos.getFix}
         team={team}
         mode={MAP_MODE[phase]}
-        anchorY={ANCHOR[phase]}
+        anchorY={anchorY}
         vehicles={vehicles?.vehicles ?? []}
         nearestId={nearest?.id ?? null}
         reducedMotion={reducedMotion}
+        labelMinY={phase === "join" ? 60 : stack.bottom ? stack.bottom + 8 : 190}
       />
       {/* Legibility scrim behind the floating controls. */}
       <div
@@ -139,39 +168,43 @@ export function RideScreen() {
           right: 0,
           bottom: 0,
           height: phase === "idle" ? "48%" : "34%",
-          background: "linear-gradient(to top, rgba(255,255,255,0.94) 18%, rgba(255,255,255,0))",
+          background: "linear-gradient(to top, rgba(233,220,196,0.96) 16%, rgba(233,220,196,0))",
           pointerEvents: "none",
           transition: "height 400ms var(--ease-out)",
         }}
       />
 
       {phase !== "join" ? (
-        <TopCard
-          name={rider?.displayName ?? (phase === "loading" ? "…" : null)}
-          team={team}
-          active={session.active}
-          state={session.state}
-          nearestName={nearest?.name ?? null}
-          nearestDistance={nearest ? distanceM(fixNow, nearest) : null}
-          gpsState={pos.gpsState}
-          accuracy={pos.snapshot.accuracy}
-          onRequestGps={pos.requestGps}
-          canRequestGps={!USE_MOCKS && (pos.gpsState === "off" || pos.gpsState === "locating")}
-        />
-      ) : null}
-
-      {error ? (
-        <ErrorToast
-          message={error}
-          onDismiss={() => setDismissedError(error)}
-          onPickStop={session.active || !rider ? undefined : () => setManualOpen(true)}
-        />
+        <div className={styles.topStack} ref={setStackEl}>
+          <TopCard
+            name={rider?.displayName ?? (phase === "loading" ? "…" : null)}
+            team={team}
+            teamStats={teamStats}
+            active={session.active}
+            state={session.state}
+            gpsState={pos.gpsState}
+            accuracy={pos.snapshot.accuracy}
+            simulated={demoSpot !== null}
+            onRequestGps={pos.requestGps}
+            canRequestGps={!USE_MOCKS && (pos.gpsState === "off" || pos.gpsState === "locating")}
+          />
+          {error ? (
+            <ErrorToast
+              message={error}
+              onDismiss={() => setDismissedError(error)}
+              onPickStop={session.active || !rider ? undefined : () => setManualOpen(true)}
+            />
+          ) : null}
+          {strip && (phase === "idle" || phase === "live") ? (
+            <LivingRouteCard strip={strip} hotspots={hotspotData?.hotspots ?? []} riding={session.active} />
+          ) : null}
+        </div>
       ) : null}
 
       {phase === "join" ? <JoinCard onJoin={join} loading={riderLoading} error={riderError} /> : null}
 
       {phase === "idle" ? (
-        <IdleDock team={team} teamStats={teamStats} nearby={nearby} onStart={startGeo} onPickStop={() => setManualOpen(true)}>
+        <IdleDock team={team} nearby={nearby} onStart={startGeo} onPickStop={() => setManualOpen(true)}>
           <NextTrainTimer stopId={nearest?.id ?? null} />
         </IdleDock>
       ) : null}

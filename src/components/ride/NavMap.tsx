@@ -4,12 +4,16 @@
 // perspective camera, centered on the rider, rotated heading-up. No route line, just the T.
 import { useEffect, useRef } from "react";
 import type { Vehicle } from "@/contracts";
-import { TEAM_ROUTE_IDS, type TeamRouteId } from "@/contracts/routes";
+import { LINE_IDS, type TeamRouteId } from "@/contracts/routes";
 import { angleDelta, makeView, type CameraState } from "./navCamera";
 import { drawNavMap, type MapColors } from "./drawNavMap";
 import { distanceM } from "./geo";
 import { LocationDot } from "./LocationDot";
 import type { Fix } from "./useRiderPosition";
+import { LANDMARK_ART } from "../paper/origami";
+import { LANDMARK_SITES, type LandmarkSprite } from "./paperCity";
+
+const SPRITE_KINDS = Array.from(new Set(LANDMARK_SITES.map((s) => s.kind)));
 
 export type MapMode = "idle" | "riding" | "onboarding";
 
@@ -22,6 +26,8 @@ interface NavMapProps {
   vehicles: Vehicle[];
   nearestId: string | null;
   reducedMotion: boolean;
+  /** Station labels above this y (CSS px) are skipped so they don't hide under the top cards. */
+  labelMinY: number;
 }
 
 const MODE_CAMERA: Record<MapMode, { tilt: number; dist: number; zoom: number }> = {
@@ -34,28 +40,62 @@ function readColors(el: Element): MapColors {
   const cs = getComputedStyle(el);
   const v = (name: string, fallback: string) => cs.getPropertyValue(name).trim() || fallback;
   const team = Object.fromEntries(
-    TEAM_ROUTE_IDS.map((t) => [t, v(`--glow-${t.toLowerCase()}`, "#ffffff")]),
+    LINE_IDS.map((t) => [t, v(`--line-${t.toLowerCase()}`, "#7c878e")]),
   ) as Record<TeamRouteId, string>;
+  // Paper palette: kraft table, cream land, harbor water cut from blue card stock.
   return {
-    bg: v("--bg", "#07090d"),
-    ground: "#f3f5f8",
-    grid: "#8a96a8",
-    water: "#cfe3f5",
-    ink: v("--ink", "#f4f5f2"),
-    muted: v("--muted", "#98a0ab"),
-    dot: "#3d8bff",
+    bg: v("--kraft", "#e9dcc4"),
+    paper: v("--cream", "#fbf6ec"),
+    ground: "#f1e7d4",
+    grid: "#a48d68",
+    water: "#a9c3d1",
+    waterEdge: "#7fa2b7",
+    shadow: "rgba(74,52,22,0.28)",
+    ink: v("--ink", "#2a241d"),
+    muted: v("--muted", "#6a5d4c"),
+    dot: v("--harbor", "#2f5d7c"),
     team,
   };
 }
 
-export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion }: NavMapProps) {
+export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion, labelMinY }: NavMapProps) {
   const wrapRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const dotRef = useRef<HTMLDivElement>(null);
-  const propsRef = useRef({ getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion });
+  const artRef = useRef<HTMLDivElement>(null);
+  const spritesRef = useRef<LandmarkSprite[]>([]);
+  const propsRef = useRef({ getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion, labelMinY });
   useEffect(() => {
-    propsRef.current = { getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion };
+    propsRef.current = { getFix, team, mode, anchorY, vehicles, nearestId, reducedMotion, labelMinY };
   });
+
+  // Rasterize the shared origami kit once so the canvas can stand the same landmarks up as billboards.
+  useEffect(() => {
+    const host = artRef.current;
+    if (!host) return;
+    let cancelled = false;
+    const ser = new XMLSerializer();
+    const loaded: Record<string, { img: HTMLImageElement; aspect: number }> = {};
+    let pending = 0;
+    host.querySelectorAll<SVGSVGElement>("span[data-kind] > svg").forEach((svg) => {
+      const kind = svg.parentElement!.getAttribute("data-kind")!;
+      const w = Number(svg.getAttribute("width")) || 1;
+      const h = Number(svg.getAttribute("height")) || 1;
+      const img = new Image();
+      pending++;
+      img.onload = img.onerror = () => {
+        if (cancelled) return;
+        if (img.naturalWidth) loaded[kind] = { img, aspect: w / h };
+        if (--pending === 0) {
+          spritesRef.current = LANDMARK_SITES.filter((s) => loaded[s.kind]).map((s) => ({ ...loaded[s.kind], lat: s.lat, lng: s.lng, h: s.h }));
+        }
+      };
+      img.src = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(ser.serializeToString(svg))}`;
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   useEffect(() => {
     const wrap = wrapRef.current;
@@ -122,9 +162,10 @@ export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reduc
         accuracy: fix.accuracy,
         coneAngle: fix.heading == null ? null : angleDelta(cam.bearing, fix.heading),
         nearestId: p.nearestId,
-        labelMinY: p.mode === "onboarding" ? 60 : 190,
+        labelMinY: p.labelMinY,
         labelMaxY: size.h * Math.min(0.9, cyFrac + 0.2),
         phase: p.reducedMotion ? 0 : (now / 1800) % 1,
+        landmarks: spritesRef.current,
       });
       if (dotRef.current) dotRef.current.style.transform = `translate3d(${cam.cx}px, ${cam.cy}px, 0)`;
     };
@@ -139,6 +180,17 @@ export function NavMap({ getFix, team, mode, anchorY, vehicles, nearestId, reduc
   return (
     <div ref={wrapRef} aria-hidden="true" style={{ position: "absolute", inset: 0, overflow: "hidden", background: "var(--bg)" }}>
       <canvas ref={canvasRef} style={{ position: "absolute", inset: 0, width: "100%", height: "100%", display: "block" }} />
+      {/* Hidden source art for the canvas landmark sprites (serialized once on mount). */}
+      <div ref={artRef} style={{ display: "none" }}>
+        {SPRITE_KINDS.map((k) => {
+          const Art = LANDMARK_ART[k];
+          return (
+            <span key={k} data-kind={k}>
+              <Art height={240} />
+            </span>
+          );
+        })}
+      </div>
       <div ref={dotRef} style={{ position: "absolute", left: 0, top: 0, transform: "translate3d(50vw, 50vh, 0)", willChange: "transform" }}>
         <LocationDot />
       </div>

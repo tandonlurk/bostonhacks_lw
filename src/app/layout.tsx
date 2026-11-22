@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Bricolage_Grotesque, Geist, Geist_Mono } from "next/font/google";
+import { Caveat, Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { AppShell } from "@/components/AppShell";
 import "./globals.css";
 
@@ -8,10 +8,18 @@ const geistSans = Geist({
   subsets: ["latin"],
 });
 
-const bricolage = Bricolage_Grotesque({
-  variable: "--font-bricolage",
+// Display: Fraunces (soft, slightly wonky serif, reads like letterpress on card stock).
+const fraunces = Fraunces({
+  variable: "--font-fraunces",
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  axes: ["SOFT", "WONK", "opsz"],
+});
+
+// Hand: Caveat for pinned notes, stamps and margin scribbles. Decorative only, never body copy.
+const caveat = Caveat({
+  variable: "--font-caveat",
+  subsets: ["latin"],
+  weight: ["500", "700"],
 });
 
 const geistMono = Geist_Mono({
@@ -28,12 +36,12 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
-  themeColor: "#ffffff",
+  themeColor: "#e9dcc4",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${bricolage.variable}`}>
+    <html lang="en" className={`${geistSans.variable} ${geistMono.variable} ${fraunces.variable} ${caveat.variable}`}>
       <body>
         <AppShell>{children}</AppShell>
       </body>

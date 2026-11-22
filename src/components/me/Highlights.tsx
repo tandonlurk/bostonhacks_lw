@@ -5,8 +5,10 @@ import type { Landmark, TokenLedgerEntry } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import { StarIcon } from "@/components/icons";
 import { Sheet } from "@/components/ui/Sheet";
+import { StationArt } from "@/components/paper/origami";
 import { KIND_COPY, countByKind, kindOf, type ActivityKind } from "./activity";
 import { ActivityList, kindVisual } from "./ActivityFeed";
+import { SectionTitle } from "./SectionTitle";
 import s from "./me.module.css";
 
 type HighlightKind = Extract<ActivityKind, "ride" | "hunt" | "landmark" | "perk">;
@@ -26,7 +28,7 @@ interface HighlightsProps {
   now: number;
 }
 
-/** Instagram-style story highlight bubbles; tapping one opens that slice of your history. */
+/** Logbook: four paper index cards with counts; tapping one opens that slice of your history. */
 export function Highlights({ ledger, landmarks, team, now }: HighlightsProps) {
   const [open, setOpen] = useState<HighlightKind | null>(null);
   const counts = countByKind(ledger);
@@ -36,10 +38,8 @@ export function Highlights({ ledger, landmarks, team, now }: HighlightsProps) {
 
   return (
     <section aria-labelledby="me-highlights" style={{ padding: "0 var(--space-4)" }}>
-      <h3 id="me-highlights" className="visually-hidden">
-        Highlights
-      </h3>
-      <div className={s.scrollRow} style={{ justifyContent: "space-between" }}>
+      <SectionTitle id="me-highlights" title="Logbook" />
+      <div className={s.logbook}>
         {ORDER.map((k) => {
           const n = countFor(k);
           const { Icon, color } = kindVisual(k, team);
@@ -50,14 +50,16 @@ export function Highlights({ ledger, landmarks, team, now }: HighlightsProps) {
               className={s.highlight}
               data-empty={n === 0}
               onClick={() => setOpen(k)}
-              aria-label={`${KIND_COPY[k].plural}: ${n}`}
+              aria-label={`${KIND_COPY[k].plural}: ${n}. Open history`}
               style={{ ["--hl" as string]: color }}
             >
-              <span className={s.highlightRing}>
-                <Icon size={28} />
-                {n > 0 ? <span className={`${s.badge} num`}>{n}</span> : null}
+              <span className={s.highlightIcon} aria-hidden="true">
+                <Icon size={22} />
               </span>
-              {KIND_COPY[k].plural}
+              <span className="num" aria-hidden="true" style={{ fontSize: 22, fontWeight: 800, lineHeight: 1 }}>
+                {n}
+              </span>
+              <span aria-hidden="true">{KIND_COPY[k].plural}</span>
             </button>
           );
         })}
@@ -92,16 +94,19 @@ function LandmarkList({ claimed }: { claimed: Landmark[] }) {
             gap: 12,
             minHeight: 60,
             padding: "8px 12px",
-            borderRadius: 16,
-            background: "var(--surface-2)",
+            borderRadius: 6,
+            backgroundColor: "var(--cream)",
+            backgroundImage: "var(--grain)",
+            border: "1px solid var(--paper-edge)",
+            boxShadow: "var(--shadow-card)",
           }}
         >
-          <span style={{ display: "grid", placeItems: "center", width: 40, height: 40, borderRadius: 12, background: "var(--accent)", color: "var(--accent-ink)" }}>
-            <StarIcon size={20} />
+          <span aria-hidden="true" style={{ display: "grid", placeItems: "center", width: 44, height: 44 }}>
+            <StationArt name={l.name} height={34} />
           </span>
           <span style={{ flex: 1, fontWeight: 700 }}>{l.name}</span>
-          <span className="num" style={{ color: "var(--accent)", fontWeight: 800 }}>
-            +{l.bonusPoints} pts
+          <span className="num" style={{ color: "var(--accent)", fontWeight: 800, display: "inline-flex", alignItems: "center", gap: 4 }}>
+            <StarIcon size={14} />+{l.bonusPoints} pts
           </span>
         </li>
       ))}
