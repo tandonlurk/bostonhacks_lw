@@ -14,13 +14,24 @@ export interface Sizes {
   badgeIcon: number;
 }
 
+/** Route strip width in screen px at zoom z. */
+export function lineWidthFor(z: number) {
+  return Math.min(10, Math.max(3, 4.6 * Math.sqrt(z)));
+}
+
+/** Detail tier for a zoom: 0 lines + major stations, 1 key stops + water, 2 all stops + landmarks, 3 street scenery. */
+export function lodFor(z: number): 0 | 1 | 2 | 3 {
+  return z < 0.75 ? 0 : z < 1.3 ? 1 : z < 2.2 ? 2 : 3;
+}
+
 export function sizesFor(z: number): Sizes {
-  const line = Math.min(10, Math.max(3, 4.6 * Math.sqrt(z)));
+  const line = lineWidthFor(z);
   return {
     line,
     casing: line + 3,
-    stop: Math.max(2.2, line * 0.42),
-    transfer: Math.max(3.6, line * 0.78),
+    // Paper rings: these match the drawn radius of the station markers in TransitMap (base 3.1 / 5.2 at line 4.6).
+    stop: line * 0.68,
+    transfer: line * 1.13,
     font: Math.min(14, Math.max(10, 9.5 + z * 1.2)),
     badgeIcon: 15,
   };

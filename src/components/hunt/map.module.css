@@ -1,0 +1,320 @@
+/* Hunt map: layered-paper Boston on a kraft table (docs/design.md section 6).
+   Zoom-dependent sizing is driven by CSS custom properties written straight onto the <svg> by usePanZoom's
+   onBucket callback (no React render):
+     --inv  1 / zoom bucket: keeps markers, labels and flags a constant screen size
+     --st   station marker scale (grows gently with the line width)
+     --lw   route strip width in screen px (strips use non-scaling strokes)
+   and data-lod="0..3" on the <svg> reveals labels, scenery and minor stops as you zoom in. */
+
+.wrap {
+  --map-water: #a9c6d3;
+  --map-water-deep: #8fb2c4;
+  --map-shore: #c6dae1;
+  --map-land: #f4ecdb;
+  --map-land-edge: rgba(92, 66, 32, 0.32);
+  --map-park: #c9d9ae;
+  --map-park-edge: #9fb57f;
+  --map-shadow: rgba(74, 52, 22, 0.2);
+  --map-shadow-soft: rgba(74, 52, 22, 0.1);
+  --map-hole: #cdb994;
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  background-color: var(--kraft);
+  background-image: var(--grain);
+}
+
+.svg {
+  --inv: 1;
+  --st: 1;
+  --lw: 4.6px;
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grab;
+  /* One composited layer for the map so the kraft table and floating chrome are never repainted while panning. */
+  will-change: transform;
+}
+
+.svg:active {
+  cursor: grabbing;
+}
+
+.svg:focus-visible {
+  outline: 3px solid var(--accent);
+  outline-offset: -3px;
+}
+
+/* ---------- constant-screen-size groups ---------- */
+.inv {
+  transform: scale(var(--inv));
+}
+
+.st {
+  transform: scale(var(--st));
+}
+
+/* Paper drop shadows: a fixed screen-px offset regardless of zoom. */
+.dropSm {
+  transform: translate(calc(var(--inv) * 1px), calc(var(--inv) * 1.8px));
+}
+
+.dropLg {
+  transform: translate(calc(var(--inv) * 3px), calc(var(--inv) * 5px));
+}
+
+.creaseUp {
+  transform: translate(0, calc(var(--inv) * -0.8px));
+}
+
+/* ---------- paper geography ---------- */
+.water {
+  fill: var(--map-water);
+}
+
+.shore {
+  fill: none;
+  stroke: var(--map-shore);
+  stroke-width: 16px;
+  stroke-linejoin: round;
+}
+
+.landShadow {
+  fill: var(--map-shadow);
+}
+
+.landShadowSoft {
+  fill: var(--map-shadow-soft);
+}
+
+.land {
+  fill: var(--map-land);
+  stroke: var(--map-land-edge);
+  stroke-width: 1px;
+  stroke-linejoin: round;
+}
+
+.sheetShadow {
+  fill: rgba(74, 52, 22, 0.16);
+}
+
+.park {
+  fill: var(--map-park);
+  stroke: var(--map-park-edge);
+  stroke-width: 0.8px;
+  stroke-linejoin: round;
+}
+
+.riverRim {
+  fill: none;
+  stroke: var(--map-water-deep);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.river {
+  fill: none;
+  stroke: var(--map-water);
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.pond {
+  fill: var(--map-water);
+  stroke: var(--map-water-deep);
+  stroke-width: 1px;
+}
+
+.hood {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  fill: var(--muted);
+  paint-order: stroke;
+  stroke: var(--map-land);
+  stroke-width: 3px;
+  stroke-linejoin: round;
+}
+
+/* ---------- route strips (raised strips of colored paper) ---------- */
+.strip {
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.stripShadow {
+  stroke: rgba(60, 40, 18, 0.3);
+  stroke-width: calc(var(--w) + 1.6px);
+}
+
+.stripEdge {
+  stroke-width: calc(var(--w) + 1.4px);
+}
+
+.stripFace {
+  stroke-width: var(--w);
+}
+
+.stripCrease {
+  stroke: rgba(255, 250, 240, 0.42);
+  stroke-width: calc(var(--w) * 0.24);
+}
+
+.stripGlow {
+  stroke: var(--hot);
+  stroke-opacity: 0.22;
+  stroke-width: calc(var(--w) * 2.8);
+}
+
+.crawl {
+  fill: none;
+  stroke: var(--hot);
+  stroke-linecap: round;
+  stroke-width: calc(var(--lw) * 0.36 + 0.5px);
+  stroke-dasharray: 5 11;
+  /* Stop-motion (8 steps) instead of 60fps: reads as hand-animated paper and repaints the map ~8x less often. */
+  animation: crawl 1.1s steps(8) infinite;
+}
+
+@keyframes crawl {
+  to {
+    stroke-dashoffset: -16;
+  }
+}
+
+.route {
+  fill: none;
+  stroke: var(--accent);
+  stroke-width: calc(var(--lw) * 0.9);
+  stroke-dasharray: 9 6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---------- stop-motion pulses ---------- */
+.pulse {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: pulse 2.2s steps(9) infinite;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(0.6);
+    opacity: 0.75;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+/* ---------- markers ---------- */
+.label {
+  font-family: var(--font-body);
+  paint-order: stroke;
+  stroke: var(--map-land);
+  stroke-width: 3.4px;
+  stroke-linejoin: round;
+}
+
+.note {
+  transition: transform 220ms var(--ease-fold);
+}
+
+.noteSelected {
+  transform: translateY(-4px) scale(1.12);
+}
+
+.hotspot {
+  cursor: pointer;
+  outline: none;
+}
+
+.focusRing {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 2px;
+  stroke-dasharray: 4 3;
+  opacity: 0;
+}
+
+.hotspot:focus-visible .focusRing {
+  opacity: 1;
+}
+
+/* ---------- progressive detail ---------- */
+.lod1,
+.lod2,
+.lod3,
+.upTo2 {
+  animation: fade 240ms var(--ease-out);
+}
+
+@keyframes fade {
+  from {
+    opacity: 0;
+  }
+}
+
+.svg[data-lod="0"] .lod1,
+.svg[data-lod="0"] .lod2,
+.svg[data-lod="0"] .lod3,
+.svg[data-lod="1"] .lod2,
+.svg[data-lod="1"] .lod3,
+.svg[data-lod="2"] .lod3,
+.svg[data-lod="3"] .upTo2 {
+  display: none;
+}
+
+/* ---------- HTML chrome over the map ---------- */
+.fade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(233, 220, 196, 0.92) 0, rgba(233, 220, 196, 0) calc(var(--banner-space) + 110px)),
+    linear-gradient(rgba(233, 220, 196, 0) 72%, rgba(233, 220, 196, 0.85) 100%);
+}
+
+.controls {
+  position: absolute;
+  right: 12px;
+  display: flex;
+  flex-direction: column;
+  padding: 0;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.controls button {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border: none;
+  background: transparent;
+  color: var(--ink);
+}
+
+.controls button + button {
+  border-top: 1px dashed var(--paper-edge);
+}
+
+.controls button:active {
+  background: var(--cream-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .crawl,
+  .pulse {
+    animation: none;
+  }
+
+  .note {
+    transition: none;
+  }
+}
