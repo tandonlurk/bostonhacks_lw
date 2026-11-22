@@ -52,7 +52,7 @@
   .headerActions { justify-content: space-between; width: 100%; gap: 18px; }
   .logo { font-size: 18px; }
   .start { padding: 10px 19px; }
-  .art { width: 155vw; right: -43%; top: 12%; opacity: .85; }
+  .art { width: 150vw; right: -40%; top: 2%; opacity: .95; }
   .artCaption { display: none; }
   .hero { padding-top: clamp(180px, 29vh, 270px); padding-bottom: 52px; }
   .hero h1 { font-size: clamp(88px, 23vw, 152px); }
