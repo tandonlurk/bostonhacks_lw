@@ -34,12 +34,15 @@ export function LineChip({ teamRouteId, size = "md", label = "full" }: LineChipP
         display: "inline-flex",
         alignItems: "center",
         gap: 6,
-        padding: size === "sm" ? "2px 10px" : "4px 14px",
-        borderRadius: "var(--radius-pill)",
+        padding: size === "sm" ? "1px 8px" : "3px 12px",
+        borderRadius: "var(--radius-chip)",
         background: team.color,
+        // Folded card-stock tab: shaded bottom edge + soft contact shadow.
+        boxShadow: "inset 0 -2px 0 rgba(0,0,0,0.18), 0 1px 1px var(--paper-lift)",
         color: CHIP_TEXT[teamRouteId],
         fontSize: size === "sm" ? 12 : 14,
-        fontWeight: 600,
+        fontWeight: 750,
+        letterSpacing: "0.02em",
         lineHeight: 1.6,
         whiteSpace: "nowrap",
       }}

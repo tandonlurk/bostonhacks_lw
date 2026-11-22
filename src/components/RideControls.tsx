@@ -45,9 +45,10 @@ export function RideControls({
         flexDirection: "column",
         gap: "var(--space-2)",
         padding: "var(--space-4)",
-        border: "1px solid var(--border)",
+        border: "1px solid var(--paper-edge)",
         borderRadius: "var(--radius-card)",
-        background: "var(--surface)",
+        background: "var(--cream)",
+        boxShadow: "var(--shadow-card)",
         margin: "0 var(--space-4) var(--space-4)",
       }}
     >
@@ -58,7 +59,7 @@ export function RideControls({
 
       {message ? <p style={{ fontSize: 13, color: "var(--muted)" }}>{message}</p> : null}
       {active ? <p style={{ fontSize: 13 }}>{stopsCredited} stop(s) credited this ride.</p> : null}
-      {error ? <p style={{ fontSize: 13, color: "var(--line-red)" }}>{error}</p> : null}
+      {error ? <p role="alert" style={{ fontSize: 13, color: "var(--glow-red)" }}>{error}</p> : null}
       {!active && lastResult ? (
         <p style={{ fontSize: 13, color: "var(--muted)" }}>
           Last ride: {lastResult.stopsCredited} stops, +{lastResult.pointsAwarded} points.
@@ -109,6 +110,6 @@ const baseBtn: React.CSSProperties = {
   fontSize: 15,
 };
 
-const primaryBtn: React.CSSProperties = { ...baseBtn, background: "var(--ink)", color: "var(--paper)" };
-const dangerBtn: React.CSSProperties = { ...baseBtn, background: "var(--line-red)", color: "#fff" };
-const ghostBtn: React.CSSProperties = { ...baseBtn, background: "none", color: "var(--ink)", border: "1px solid var(--border)", fontWeight: 600, fontSize: 13 };
+const primaryBtn: React.CSSProperties = { ...baseBtn, background: "var(--accent)", color: "var(--accent-ink)", boxShadow: "0 2px 0 #1f4a2f" };
+const dangerBtn: React.CSSProperties = { ...baseBtn, background: "var(--brick)", color: "#fffaf0", boxShadow: "0 2px 0 #7e3920" };
+const ghostBtn: React.CSSProperties = { ...baseBtn, background: "none", color: "var(--ink)", border: "1px dashed var(--paper-edge)", fontWeight: 600, fontSize: 13 };

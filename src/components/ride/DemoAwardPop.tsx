@@ -3,7 +3,9 @@
 // Brief "+5 pts" pop when a demo hop (arrow keys) earns points.
 import { useEffect, useState } from "react";
 import { TEAMS } from "@/contracts/routes";
+import { Stamp } from "@/components/paper/Paper";
 import { useDemoAward } from "./demoLocation";
+import styles from "./ride.module.css";
 
 export function DemoAwardPop() {
   const award = useDemoAward();
@@ -18,14 +20,18 @@ export function DemoAwardPop() {
     <div
       key={award.id}
       role="status"
+      className={`paper ${styles.awardPop}`}
       style={{
-        position: "absolute", left: "50%", top: "30%", transform: "translateX(-50%)", zIndex: 30,
-        padding: "8px 16px", borderRadius: 999, background: "var(--bg)", boxShadow: "var(--shadow-float)",
-        border: `1px solid ${TEAMS[award.teamRouteId]?.color ?? "#fff"}`, color: "var(--accent)",
-        fontWeight: 800, fontSize: 18, pointerEvents: "none", whiteSpace: "nowrap",
+        position: "absolute", left: "50%", top: "34%", zIndex: 30,
+        display: "flex", alignItems: "center", gap: 10, padding: "6px 14px 6px 8px",
+        borderLeft: `6px solid ${TEAMS[award.teamRouteId]?.color ?? "#7c878e"}`,
+        boxShadow: "var(--shadow-float)", pointerEvents: "none", whiteSpace: "nowrap",
       }}
     >
-      +{award.points} pts <span style={{ color: "var(--ink)", fontWeight: 500, fontSize: 13 }}>· {award.stationName}</span>
+      <Stamp color="var(--accent)" rotate={-6} style={{ fontSize: 15, padding: "3px 8px" }}>
+        +{award.points} pts
+      </Stamp>
+      <span style={{ color: "var(--ink)", fontWeight: 650, fontSize: 13.5 }}>{award.stationName}</span>
     </div>
   );
 }

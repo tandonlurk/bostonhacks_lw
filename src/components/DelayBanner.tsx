@@ -10,7 +10,7 @@ export function DelayBanner({ delay }: { delay: DelayResponse }) {
   return (
     <Link
       href="/hunt"
-      className="glass"
+      className="paper"
       style={{
         position: "fixed",
         top: "calc(env(safe-area-inset-top, 0px) + 10px)",
@@ -22,8 +22,8 @@ export function DelayBanner({ delay }: { delay: DelayResponse }) {
         alignItems: "center",
         gap: 10,
         minHeight: 48,
-        padding: "6px 8px 6px 6px",
-        borderRadius: "var(--radius-pill)",
+        padding: "6px 10px 6px 6px",
+        borderLeft: "5px solid var(--hot)",
         boxShadow: "var(--shadow-float)",
         animation: "fade-in 240ms var(--ease-out)",
       }}
@@ -36,9 +36,10 @@ export function DelayBanner({ delay }: { delay: DelayResponse }) {
           width: 36,
           height: 36,
           flexShrink: 0,
-          borderRadius: "50%",
+          borderRadius: "var(--radius-chip)",
           background: "var(--hot)",
-          color: "#fff",
+          color: "#fffaf0",
+          boxShadow: "inset 0 -3px 0 rgba(0,0,0,0.2)",
         }}
       >
         <BoltIcon size={20} weight={2.2} />
@@ -51,7 +52,7 @@ export function DelayBanner({ delay }: { delay: DelayResponse }) {
           {delay.message ?? "Delay in progress"}
         </span>
       </span>
-      <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 13, fontWeight: 700, color: "var(--accent)", whiteSpace: "nowrap" }}>
+      <span style={{ display: "flex", alignItems: "center", gap: 2, fontSize: 13, fontWeight: 800, color: "var(--accent)", whiteSpace: "nowrap", textTransform: "uppercase", letterSpacing: "0.08em", fontFamily: "var(--font-display)" }}>
         Play
         <ChevronIcon size={16} weight={2.4} />
       </span>
