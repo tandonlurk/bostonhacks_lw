@@ -53,8 +53,211 @@ function waterTank(x: number, y: number, z: number, a: number): Solid[] {
   return [frustum(x, y, a * 0.16, a * 0.16, z + FLOOR * 0.15, z + FLOOR * 0.75, "#a98b62", 6), pyramid(x, y, a * 0.15, a * 0.15, z + FLOOR * 0.75, FLOOR * 0.35, "#6b5a49")];
 }
 
+// ---------- extra variants (more variety inside each neighborhood and tier) ----------
+// A second hash of the lot seed decides whether a lot uses one of these instead of the zone's classic
+// archetype, so the skyline mixes brownstones with Victorians, garages, rotundas, twin towers and so on.
+
+const CONCRETE = "#cfc6b6";
+const STUCCO = "#e8dcc4";
+const COPPER = "#6f9e8a";
+const AWNINGS = ["#2f6b45", "#b4532f", "#2f5d7c", "#c9962b"];
+
+const RESIDENTIAL_LOW = ["cape", "duplex", "corner", "church", "classic", "classic"] as const;
+const CITY_LOW = ["corner", "rowPair", "classic", "classic"] as const;
+const MID_RES = ["victorian", "warehouse", "firehouse", "classic", "classic"] as const;
+const MID_CITY = ["rowPair", "warehouse", "classic", "classic"] as const;
+const T3_ALL = ["lshape", "garage", "stepped", "loft", "classic", "classic"] as const;
+const T3_CIVIC = ["rotunda", "lshape", "stepped", "garage", "classic"] as const;
+const TOWER_BY_ZONE: Record<Zone, readonly string[]> = {
+  downtown: ["crown", "twin", "cylinder", "classic"],
+  backbay: ["tapered", "cylinder", "podium", "classic"],
+  seaport: ["tapered", "twin", "podium", "classic"],
+  cambridge: ["podium", "cylinder", "classic"],
+  fenway: ["podium", "crown", "classic"],
+  harbor: ["podium", "cylinder", "classic"],
+  neighborhood: ["podium", "crown", "cylinder", "classic"],
+};
+
+function variant(zone: Zone, tier: number, x: number, y: number, a: number, H: number, seed: number, roof: string): Parts | null {
+  const v = (seed * 9.7317 + tier * 0.3711) % 1;
+  const cityish = zone === "downtown" || zone === "backbay" || zone === "seaport";
+  const kind =
+    tier <= 1
+      ? pick(cityish ? CITY_LOW : RESIDENTIAL_LOW, v)
+      : tier === 2
+        ? pick(cityish ? MID_CITY : MID_RES, v)
+        : tier === 3
+          ? pick(zone === "cambridge" || zone === "downtown" ? T3_CIVIC : T3_ALL, v)
+          : pick(TOWER_BY_ZONE[zone], v);
+  if (kind === "classic") return null;
+  const s: Solid[] = [];
+  const m: Mark[] = [];
+  const clap = pick(CLAPBOARD, (seed * 3.17) % 1);
+  const sky = tier >= 5;
+
+  switch (kind) {
+    case "cape": {
+      // Cape Cod: low and wide, steep roof, one dormer.
+      const h = Math.max(H * 0.8, FLOOR * 0.9);
+      s.push(box(x, y, a * 0.85, a * 0.55, 0, h, clap, clap, false, { win: WIN_DARK, crease: true }));
+      s.push(gable(x, y, a * 0.9, a * 0.6, h, FLOOR * 0.9, roof, clap, true));
+      s.push(box(x + a * 0.2, y - a * 0.28, a * 0.16, a * 0.14, h, h + FLOOR * 0.45, clap), gable(x + a * 0.2, y - a * 0.28, a * 0.18, a * 0.16, h + FLOOR * 0.45, FLOOR * 0.25, roof, clap, false));
+      s.push(box(x - a * 0.55, y + a * 0.25, a * 0.08, a * 0.08, h, h + FLOOR * 1.1, PAPER.brick));
+      return { solids: s, marks: m, top: [x, y, h + FLOOR * 0.9] };
+    }
+    case "duplex": {
+      // Two-family side-by-side: two gables, two paint colors.
+      const clap2 = pick(CLAPBOARD, (seed * 5.91) % 1);
+      const h = Math.max(H, FLOOR * 1.4);
+      s.push(box(x - a * 0.4, y, a * 0.4, a * 0.7, 0, h, clap, clap, false, { win: WIN_DARK, crease: true }), gable(x - a * 0.4, y, a * 0.43, a * 0.74, h, FLOOR * 0.65, roof, clap, false));
+      s.push(box(x + a * 0.4, y, a * 0.4, a * 0.7, 0, h * 0.92, clap2, clap2, false, { win: WIN_DARK }), gable(x + a * 0.4, y, a * 0.43, a * 0.74, h * 0.92, FLOOR * 0.6, roof, clap2, false));
+      return { solids: s, marks: m, top: [x, y, h + FLOOR * 0.65] };
+    }
+    case "corner": {
+      // Corner store: flat roof in team color, colored awning stripe, rooftop sign.
+      const h = Math.max(H, FLOOR * 1.2);
+      const aw = pick(AWNINGS, (seed * 7.7) % 1);
+      s.push(box(x, y, a * 0.82, a * 0.82, 0, h, STUCCO, roof, true, { win: tier ? WIN_DARK : undefined, crease: true }));
+      m.push({ a: [x - a * 0.82, y - a * 0.84, FLOOR * 0.75], b: [x + a * 0.82, y - a * 0.84, FLOOR * 0.75], color: aw, w: 2.4, n: [0, -1, 0] });
+      m.push({ a: [x - a * 0.84, y - a * 0.82, FLOOR * 0.75], b: [x - a * 0.84, y + a * 0.82, FLOOR * 0.75], color: aw, w: 2.4, n: [-1, 0, 0] });
+      s.push(box(x, y + a * 0.3, a * 0.4, a * 0.04, h, h + FLOOR * 0.4, "#fbf6ec"));
+      return { solids: s, marks: m, top: [x, y, h + FLOOR * 0.4] };
+    }
+    case "church": {
+      // Small white-clapboard meeting house with a steeple.
+      const h = Math.max(H, FLOOR * 1.5);
+      s.push(box(x, y + a * 0.15, a * 0.5, a * 0.7, 0, h, "#f6f0e4", "#f6f0e4", false, { win: WIN_DARK, crease: true }), gable(x, y + a * 0.15, a * 0.54, a * 0.74, h, FLOOR * 0.8, roof, "#f6f0e4", false));
+      const st = h + FLOOR * 1.4;
+      s.push(box(x, y - a * 0.65, a * 0.2, a * 0.2, 0, st, "#fbf6ec", "#fbf6ec", false, { crease: true }), pyramid(x, y - a * 0.65, a * 0.2, a * 0.2, st, FLOOR * 1.6, "#fbf6ec"));
+      return { solids: s, marks: m, top: [x, y - a * 0.65, st + FLOOR * 1.6] };
+    }
+    case "rowPair": {
+      // Two narrow row houses of different heights with mansard caps.
+      const w1 = pick([PAPER.brick, PAPER.brownstone], v);
+      const w2 = pick([PAPER.brownstone, PAPER.brick, STUCCO], (seed * 4.3) % 1);
+      const h2 = H * 0.82;
+      s.push(box(x - a * 0.42, y, a * 0.4, a * 0.8, 0, H, w1, w1, false, { win: WIN_BRICK, crease: true }), pyramid(x - a * 0.42, y, a * 0.42, a * 0.82, H, FLOOR * 0.45, PAPER.slate, 0.55, roof));
+      s.push(box(x + a * 0.42, y, a * 0.4, a * 0.8, 0, h2, w2, w2, false, { win: WIN_BRICK, crease: true }), pyramid(x + a * 0.42, y, a * 0.42, a * 0.82, h2, FLOOR * 0.45, PAPER.slate, 0.55, roof));
+      return { solids: s, marks: m, top: [x, y, H + FLOOR * 0.45] };
+    }
+    case "victorian": {
+      // Queen Anne: hipped roof plus a round corner turret with a cone cap.
+      s.push(box(x, y, a * 0.72, a * 0.72, 0, H, clap, clap, false, { win: WIN_DARK, crease: true }), pyramid(x, y, a * 0.76, a * 0.76, H, FLOOR * 0.8, PAPER.slate, 0.2, roof));
+      const tx = x - a * 0.62;
+      const ty = y - a * 0.62;
+      s.push(frustum(tx, ty, a * 0.24, a * 0.24, 0, H + FLOOR * 0.5, clap, 8), frustum(tx, ty, a * 0.28, 0, H + FLOOR * 0.5, H + FLOOR * 1.6, roof, 8));
+      return { solids: s, marks: m, top: [tx, ty, H + FLOOR * 1.6] };
+    }
+    case "warehouse": {
+      // Brick warehouse with a sawtooth roof.
+      const h = H * 0.85;
+      s.push(box(x, y, a * 0.92, a * 0.8, 0, h, PAPER.brick, PAPER.brick, true, { win: WIN_BRICK, crease: true }));
+      for (const k of [-0.6, 0, 0.6]) s.push(gable(x + a * k, y, a * 0.3, a * 0.78, h, FLOOR * 0.45, k === 0 ? roof : PAPER.slate, PAPER.brick, false));
+      return { solids: s, marks: m, top: [x, y, h + FLOOR * 0.45] };
+    }
+    case "firehouse": {
+      // Brick firehouse with a tall hose-drying tower.
+      s.push(box(x + a * 0.15, y, a * 0.7, a * 0.8, 0, H, PAPER.brick, roof, true, { win: WIN_BRICK, crease: true }));
+      m.push({ a: [x - a * 0.4, y - a * 0.82, FLOOR * 0.1], b: [x + a * 0.7, y - a * 0.82, FLOOR * 0.1], color: "#da291c", w: 1.2, n: [0, -1, 0] });
+      const tt = H + FLOOR * 1.8;
+      s.push(box(x - a * 0.65, y + a * 0.4, a * 0.22, a * 0.22, 0, tt, PAPER.brick, PAPER.brick, false, { crease: true }), pyramid(x - a * 0.65, y + a * 0.4, a * 0.25, a * 0.25, tt, FLOOR * 0.5, roof));
+      return { solids: s, marks: m, top: [x - a * 0.65, y + a * 0.4, tt + FLOOR * 0.5] };
+    }
+    case "lshape": {
+      // L-shaped courtyard block.
+      const w = pick([PAPER.brick, PAPER.stone, STUCCO], v);
+      s.push(extrude([[x - a * 0.9, y - a * 0.9], [x + a * 0.9, y - a * 0.9], [x + a * 0.9, y - a * 0.2], [x - a * 0.2, y - a * 0.2], [x - a * 0.2, y + a * 0.9], [x - a * 0.9, y + a * 0.9]], 0, H, w, roof, true, { win: w === PAPER.brick ? WIN_BRICK : WIN_DARK, crease: true }));
+      s.push(...waterTank(x - a * 0.55, y + a * 0.5, H, a));
+      return { solids: s, marks: m, top: [x, y, H] };
+    }
+    case "garage": {
+      // Concrete parking garage: open floors as white stripes.
+      const h = H * 0.75;
+      s.push(box(x, y, a * 0.9, a * 0.85, 0, h, CONCRETE, roof, true, { crease: true }));
+      for (let z = FLOOR * 0.55; z < h; z += FLOOR * 0.9) {
+        m.push({ a: [x - a * 0.9, y - a * 0.86, z], b: [x + a * 0.9, y - a * 0.86, z], color: "#5a4e40", w: 1.5, n: [0, -1, 0] });
+        m.push({ a: [x - a * 0.91, y - a * 0.85, z], b: [x - a * 0.91, y + a * 0.85, z], color: "#5a4e40", w: 1.5, n: [-1, 0, 0] });
+        m.push({ a: [x + a * 0.91, y + a * 0.85, z], b: [x + a * 0.91, y - a * 0.85, z], color: "#5a4e40", w: 1.5, n: [1, 0, 0] });
+        m.push({ a: [x + a * 0.9, y + a * 0.86, z], b: [x - a * 0.9, y + a * 0.86, z], color: "#5a4e40", w: 1.5, n: [0, 1, 0] });
+      }
+      return { solids: s, marks: m, top: [x, y, h] };
+    }
+    case "stepped": {
+      // Wedding-cake setback block.
+      const w = pick([PAPER.stone, STUCCO, PAPER.brownstone], v);
+      s.push(box(x, y, a * 0.9, a * 0.9, 0, H * 0.55, w, w, false, { win: WIN_DARK, crease: true }));
+      s.push(box(x, y, a * 0.65, a * 0.65, H * 0.55, H * 0.85, w, w, false, { win: WIN_DARK, crease: true }));
+      s.push(box(x, y, a * 0.4, a * 0.4, H * 0.85, H, PAPER.cream, roof, true));
+      return { solids: s, marks: m, top: [x, y, H] };
+    }
+    case "loft": {
+      // Tall brick loft with arched-window rhythm and a water tank.
+      s.push(box(x, y, a * 0.75, a * 0.9, 0, H, PAPER.brownstone, PAPER.brownstone, true, { win: WIN_BRICK, crease: true }), cornice(x, y, a * 0.75, a * 0.9, H, roof));
+      s.push(...waterTank(x + a * 0.3, y - a * 0.35, H, a));
+      return { solids: s, marks: m, top: [x, y, H] };
+    }
+    case "rotunda": {
+      // Round library / hall with a green copper dome.
+      const r = a * 0.78;
+      s.push(frustum(x, y, r, r, 0, H * 0.8, PAPER.stone, 12));
+      for (const k of [0, 1, 2, 3, 4]) {
+        const ang = -Math.PI / 2 + (k - 2) * 0.32;
+        m.push({ a: [x + Math.cos(ang) * r * 1.01, y + Math.sin(ang) * r * 1.01, FLOOR * 0.2], b: [x + Math.cos(ang) * r * 1.01, y + Math.sin(ang) * r * 1.01, H * 0.75], color: "#fffaf0", w: 0.9 });
+      }
+      s.push(...dome(x, y, r * 0.75, H * 0.8, COPPER, PAPER.stone));
+      const dt = H * 0.8 + r * 0.75 * 0.55 * 2.25;
+      return { solids: s, marks: m, top: [x, y, dt] };
+    }
+    case "crown": {
+      // Art-deco tower: shaft, two setbacks, pyramid crown in team color.
+      s.push(box(x, y, a * 0.72, a * 0.72, 0, H * 0.7, PAPER.stone, PAPER.stone, false, { win: WIN_DARK, crease: true }));
+      s.push(box(x, y, a * 0.55, a * 0.55, H * 0.7, H * 0.9, PAPER.stone, PAPER.stone, false, { win: WIN_DARK, crease: true }));
+      s.push(box(x, y, a * 0.38, a * 0.38, H * 0.9, H, PAPER.cream, PAPER.cream, false, { crease: true }));
+      s.push(pyramid(x, y, a * 0.4, a * 0.4, H, FLOOR * 1.8, roof));
+      const top = H + FLOOR * 1.8;
+      return { solids: s, marks: m, top: [x, y, top + (sky ? FLOOR * 1.2 : 0)], flag: sky ? [x, y, top] : undefined };
+    }
+    case "twin": {
+      // Twin glass towers joined by a sky bridge.
+      const g = pick([PAPER.glass, PAPER.glassLight], v);
+      const h2 = H * 0.86;
+      s.push(box(x - a * 0.48, y, a * 0.36, a * 0.5, 0, H, g, roof, true, { win: WIN_GLASS, crease: true }));
+      s.push(box(x + a * 0.48, y, a * 0.36, a * 0.5, 0, h2, g, roof, true, { win: WIN_GLASS, crease: true }));
+      s.push(box(x, y, a * 0.14, a * 0.22, h2 * 0.6, h2 * 0.6 + FLOOR * 0.8, PAPER.cream));
+      return { solids: s, marks: m, top: [x - a * 0.48, y, H], flag: sky ? [x - a * 0.48, y, H] : undefined };
+    }
+    case "cylinder": {
+      // Round glass tower (Harbor Towers / Millennium-ish).
+      const g = pick([PAPER.glassLight, PAPER.glass, CONCRETE], v);
+      s.push(frustum(x, y, a * 0.62, a * 0.62, 0, H, g, 12));
+      s.push(frustum(x, y, a * 0.66, a * 0.66, H, H + FLOOR * 0.2, roof, 12));
+      for (let z = FLOOR; z < H; z += FLOOR * 1.6) {
+        m.push({ a: [x - a * 0.62, y, z], b: [x, y - a * 0.62, z], color: "#fffaf0", w: 0.7 });
+        m.push({ a: [x, y - a * 0.62, z], b: [x + a * 0.62, y, z], color: "#fffaf0", w: 0.7 });
+      }
+      return { solids: s, marks: m, top: [x, y, H + FLOOR * 0.2], flag: sky ? [x, y, H + FLOOR * 0.2] : undefined };
+    }
+    case "tapered": {
+      // Tapered glass needle with a crease.
+      s.push(frustum(x, y, a * 0.75, a * 0.42, 0, H, PAPER.glass, 4));
+      s.push(frustum(x, y, a * 0.42, 0, H, H + FLOOR * 1.4, roof, 4));
+      return { solids: s, marks: m, top: [x, y, H + FLOOR * 1.4], flag: sky ? [x, y, H + FLOOR * 1.4] : undefined };
+    }
+    case "podium": {
+      // Wide stone podium with a slim slab tower and a mechanical penthouse.
+      s.push(box(x, y, a * 0.95, a * 0.9, 0, FLOOR * 2, PAPER.stone, PAPER.stone, true, { win: WIN_DARK, crease: true }));
+      s.push(box(x + a * 0.2, y, a * 0.45, a * 0.7, FLOOR * 2, H, PAPER.glassLight, PAPER.glassLight, false, { win: WIN_GLASS, crease: true }));
+      s.push(box(x + a * 0.2, y, a * 0.25, a * 0.35, H, H + FLOOR * 0.7, CONCRETE, roof, true));
+      return { solids: s, marks: m, top: [x + a * 0.2, y, H + FLOOR * 0.7], flag: sky ? [x + a * 0.2, y, H + FLOOR * 0.7] : undefined };
+    }
+  }
+  return null;
+}
+
 /** Regular (non-landmark) building for a zone and tier. */
 function archetype(zone: Zone, tier: number, x: number, y: number, a: number, H: number, seed: number, roof: string): Parts {
+  const alt = variant(zone, tier, x, y, a, H, seed, roof);
+  if (alt) return alt;
   const s: Solid[] = [];
   const m: Mark[] = [];
   const clap = pick(CLAPBOARD, seed);
