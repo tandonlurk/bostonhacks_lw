@@ -37,8 +37,17 @@ export function useCamera(
       el.dataset.animating = animate ? "true" : "false";
       const { x, y, s } = cam.current;
       el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) scale(${s.toFixed(4)})`;
+      // Progressive detail: CSS reveals street trees, pencil streets and landmark names as you zoom in.
+      // Only written when the bucket changes, so pans never touch styles inside the scene.
+      const zoom = s < 0.85 ? "far" : s >= 1.75 ? "near" : "mid";
+      const stage = stageRef.current;
+      if (stage && stage.dataset.zoom !== zoom) stage.dataset.zoom = zoom;
+      // Paper tags keep a constant on-screen size (the variable lives on the small marker layer only).
+      const inv = (1 / s).toFixed(3);
+      const markers = el.querySelector<HTMLElement>("[data-markers]");
+      if (markers && markers.style.getPropertyValue("--inv") !== inv) markers.style.setProperty("--inv", inv);
     },
-    [cameraRef],
+    [cameraRef, stageRef],
   );
 
   const clamp = useCallback(() => {
