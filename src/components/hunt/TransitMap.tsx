@@ -5,9 +5,9 @@ import type { Hotspot, Vehicle } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import { PlusIcon } from "@/components/icons";
 import { BOSTON_BOUNDS } from "@/components/map/projection";
-import { GAME_META, HEAT, heatLevel } from "./gameMeta";
-import { FrameIcon, MinusIcon } from "./huntIcons";
-import { layoutFor, sizesFor, type PlacedBadge, type Sizes } from "./mapLayout";
+import { GAME_META, HEAT, HOTSPOT_COLOR, heatLevel } from "./gameMeta";
+import { FrameIcon, MinusIcon, wobbleRing } from "./huntIcons";
+import { HOT_TAG_W, layoutFor, sizesFor, type PlacedBadge, type Sizes } from "./mapLayout";
 import {
   DRAW_ORDER,
   GLOW,
@@ -25,12 +25,14 @@ import type { StationGames } from "./placeholderGames";
 import { prefersReducedMotion, usePanZoom, type View } from "./usePanZoom";
 
 interface TransitMapProps {
-  hotspots?: Hotspot[];
-  hotspotRoute?: Hotspot | null;
   delayedTeams: TeamRouteId[];
   /** stopId -> slowShare (0-1) from the delay heatmap. */
   heat: Map<string, number>;
   games: Map<string, StationGames>;
+  /** Live hotspots: hand-drawn markers with a multiplier tag; the selected one's alternate path is drawn too. */
+  hotspots: Hotspot[];
+  /** A hotspot picked with "Show on map" in the hotspot list; its path draws even without a selected station. */
+  hotspotRoute?: Hotspot | null;
   vehicles: Vehicle[];
   selectedId: string | null;
   onSelect: (stopId: string) => void;
@@ -58,7 +60,7 @@ function subscribeReducedMotion(cb: () => void) {
   return () => mq.removeEventListener("change", cb);
 }
 
-export function TransitMap({ hotspots = [], hotspotRoute, delayedTeams, heat, games, vehicles, selectedId, onSelect, insetTop, insetBottom }: TransitMapProps) {
+export function TransitMap({ delayedTeams, heat, games, hotspots, hotspotRoute, vehicles, selectedId, onSelect, insetTop, insetBottom }: TransitMapProps) {
   const layoutRef = useRef<{ badges: PlacedBadge[]; sizes: Sizes }>({ badges: [], sizes: sizesFor(1) });
 
   const onTap = useCallback(
@@ -94,7 +96,15 @@ export function TransitMap({ hotspots = [], hotspotRoute, delayedTeams, heat, ga
 
   const reduced = useSyncExternalStore(subscribeReducedMotion, prefersReducedMotion, () => false);
   const sizes = useMemo(() => sizesFor(zoom), [zoom]);
-  const layout = useMemo(() => layoutFor(zoom, sizes, games, selectedId), [zoom, sizes, games, selectedId]);
+  const hot = useMemo(() => new Map(hotspots.map((h) => [h.stationId, h.multiplier])), [hotspots]);
+  const layout = useMemo(() => layoutFor(zoom, sizes, games, selectedId, hot), [zoom, sizes, games, selectedId, hot]);
+  // The selected hotspot's alternate path, as map points (keyed by id so 60 s refreshes don't re-fit the map).
+  const route = hotspots.find((h) => h.stationId === selectedId) ?? hotspotRoute ?? null;
+  const routeKey = route ? `${route.id}|${route.path.join(",")}` : "";
+  const routePts = useMemo(
+    () => (routeKey ? routeKey.split("|")[1].split(",").map((id) => STATION_BY_ID.get(id)).filter((s): s is MapStation => !!s) : []),
+    [routeKey],
+  );
 
   useEffect(() => {
     layoutRef.current = { badges: layout.badges, sizes };
@@ -107,13 +117,25 @@ export function TransitMap({ hotspots = [], hotspotRoute, delayedTeams, heat, ga
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ready]);
 
-  // Fly to the selected station, parking it above the sheet.
+  // Fly to the selected station, parking it above the sheet. A hotspot frames its whole alternate path instead.
   useEffect(() => {
     if (!selectedId) return;
     const s = STATION_BY_ID.get(selectedId);
     if (!s) return;
+    if (routePts.length > 1) {
+      const xs = [s.x, ...routePts.map((p) => p.x)];
+      const ys = [s.y, ...routePts.map((p) => p.y)];
+      const x0 = Math.min(...xs);
+      const y0 = Math.min(...ys);
+      const { h } = getSize();
+      const pad = 6;
+      fit({ x: x0 - pad, y: y0 - pad, w: Math.max(...xs) - x0 + pad * 2, h: Math.max(...ys) - y0 + pad * 2 }, { top: insetTop - 30, bottom: h * 0.56, side: 36 }, true);
+      return;
+    }
     focus(s.x, s.y, Math.max(getView().k, 2.6), 0.26);
-  }, [selectedId, focus, getView]);
+    // insetTop only matters at the moment of selection.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, routePts, focus, fit, getView, getSize]);
 
   const zoomCenter = (f: number) => {
     const { w, h } = getSize();
@@ -143,13 +165,13 @@ export function TransitMap({ hotspots = [], hotspotRoute, delayedTeams, heat, ga
           <rect x={-FULL.w} y={-FULL.h} width={FULL.w * 3} height={FULL.h * 3} fill="url(#hunt-dots)" />
           <StaticLines inv={inv} sizes={sizes} delayed={delayed} anyDelay={anyDelay} />
           {anyDelay ? <DelayCrawl inv={inv} sizes={sizes} delayed={delayed} animate={!reduced} /> : null}
-          {hotspotRoute && <path d={hotspotRoute.path.map(id=>STATION_BY_ID.get(id)).filter((p):p is MapStation=>!!p).map((p,i)=>`${i?"L":"M"}${p.x},${p.y}`).join(" ")} stroke="var(--accent)" strokeWidth={6*inv} fill="none" strokeDasharray={`${9*inv} ${6*inv}`} strokeLinecap="round" opacity={0.9}/>}
+          {routePts.length > 1 ? <HotspotRoute inv={inv} sizes={sizes} points={routePts} animate={!reduced} /> : null}
           <Stations inv={inv} sizes={sizes} heat={heat} games={games} delayed={delayed} anyDelay={anyDelay} zoom={zoom} />
+          <HotspotMarkers inv={inv} hotspots={hotspots} animate={!reduced} />
           {zoom >= 0.7 ? <Vehicles inv={inv} vehicles={vehicles} /> : null}
           <Termini inv={inv} />
           <Labels inv={inv} sizes={sizes} labels={layout.labels} />
-          <Badges inv={inv} sizes={sizes} badges={layout.badges} games={games} selectedId={selectedId} />
-          {hotspots.map(h=>{const point=projectLatLng(h.lat,h.lng);return <g key={h.id} role="button" tabIndex={0} aria-label={`${h.name} hotspot, ${h.multiplier} times meeting bonus`} onClick={()=>onSelect(h.stationId)} onKeyDown={e=>{if(e.key==="Enter"||e.key===" "){e.preventDefault();onSelect(h.stationId);}}} transform={`translate(${point.x},${point.y}) scale(${inv})`} style={{cursor:"pointer"}}><circle r={22} fill="var(--surface)" stroke="var(--accent)" strokeWidth={2}/><text textAnchor="middle" dominantBaseline="central" fontSize={15} fontWeight={800} fill="var(--accent)">{h.multiplier}×</text></g>;})}
+          <Badges inv={inv} sizes={sizes} badges={layout.badges} games={games} hot={hot} selectedId={selectedId} />
           {selectedId ? <Selection inv={inv} id={selectedId} /> : null}
         </g>
       </svg>
@@ -399,12 +421,14 @@ function Badges({
   sizes,
   badges,
   games,
+  hot,
   selectedId,
 }: {
   inv: number;
   sizes: Sizes;
   badges: PlacedBadge[];
   games: Map<string, StationGames>;
+  hot: ReadonlyMap<string, number>;
   selectedId: string | null;
 }) {
   const icon = sizes.badgeIcon;
@@ -417,7 +441,9 @@ function Badges({
         const shown = g.games.slice(0, 3);
         const extra = g.games.length - shown.length;
         const selected = b.id === selectedId;
-        const border = selected ? "var(--accent)" : g.live ? "var(--hot)" : "rgba(18,22,29,0.22)";
+        const mult = hot.get(b.id);
+        const border = selected ? "var(--accent)" : mult != null ? HOTSPOT_COLOR : g.live ? "var(--hot)" : "rgba(18,22,29,0.22)";
+        const tagW = mult != null ? HOT_TAG_W + 2 : 0;
         return (
           <g key={b.id} transform={`translate(${s.x} ${s.y}) scale(${inv}) translate(0 ${b.dy})`} style={{ animation: "fade-in 240ms" }}>
             <path d={`M-5,${b.h / 2 - 1} L0,${b.h / 2 + 5} L5,${b.h / 2 - 1} Z`} fill={border} />
@@ -428,10 +454,74 @@ function Badges({
               return <Icon key={game.id} x={x} y={-icon / 2} size={icon} weight={2.3} color={color} />;
             })}
             {extra > 0 ? (
-              <text x={b.w / 2 - 10} y={3.5} textAnchor="middle" fontSize={10} fontWeight={800} fill="var(--muted)">
+              <text x={b.w / 2 - tagW - 10} y={3.5} textAnchor="middle" fontSize={10} fontWeight={800} fill="var(--muted)">
                 +{extra}
               </text>
             ) : null}
+            {mult != null ? (
+              <g transform={`translate(${b.w / 2 - HOT_TAG_W / 2 - 4} 0)`}>
+                <rect x={-HOT_TAG_W / 2} y={-b.h / 2 + 4} width={HOT_TAG_W} height={b.h - 8} rx={(b.h - 8) / 2} fill={HOTSPOT_COLOR} />
+                <text
+                  y={4}
+                  textAnchor="middle"
+                  fontSize={11.5}
+                  fontWeight={850}
+                  fill="#fff"
+                  style={{ fontFamily: "var(--font-display)", fontVariantNumeric: "tabular-nums" }}
+                >
+                  {mult}x
+                </text>
+              </g>
+            ) : null}
+          </g>
+        );
+      })}
+    </g>
+  );
+}
+
+/** The selected hotspot's alternate path: a soft violet glow under a marching dashed line, with hollow ends. */
+function HotspotRoute({ inv, sizes, points, animate }: { inv: number; sizes: Sizes; points: MapStation[]; animate: boolean }) {
+  const d = points.map((p, i) => `${i ? "L" : "M"}${p.x},${p.y}`).join("");
+  const dash = 7 * inv;
+  const gap = 6 * inv;
+  const a = points[0];
+  const z = points[points.length - 1];
+  return (
+    <g fill="none" strokeLinecap="round" strokeLinejoin="round" pointerEvents="none" style={{ animation: "fade-in 300ms" }}>
+      <path d={d} stroke={HOTSPOT_COLOR} strokeOpacity={0.22} strokeWidth={sizes.line * 3.2 * inv} />
+      <path d={d} stroke="var(--bg)" strokeWidth={(sizes.line * 0.9 + 2) * inv} strokeOpacity={0.7} />
+      <path d={d} stroke={HOTSPOT_COLOR} strokeWidth={sizes.line * 0.7 * inv} strokeDasharray={`${dash} ${gap}`}>
+        {animate ? <animate attributeName="stroke-dashoffset" from="0" to={-(dash + gap)} dur="0.9s" repeatCount="indefinite" /> : null}
+      </path>
+      {[a, z].map((p, i) => (
+        <circle key={i} cx={p.x} cy={p.y} r={7 * inv} fill="var(--bg)" stroke={HOTSPOT_COLOR} strokeWidth={2.4 * inv} />
+      ))}
+    </g>
+  );
+}
+
+/** Hand-drawn violet rings around hotspot stations, always visible at every zoom. */
+function HotspotMarkers({ inv, hotspots, animate }: { inv: number; hotspots: Hotspot[]; animate: boolean }) {
+  return (
+    <g pointerEvents="none">
+      {hotspots.map((h) => {
+        const s = STATION_BY_ID.get(h.stationId);
+        if (!s) return null;
+        return (
+          <g key={h.id} transform={`translate(${s.x} ${s.y}) scale(${inv})`}>
+            <circle r={17} fill={HOTSPOT_COLOR} opacity={0.16} />
+            {animate ? (
+              <circle
+                r={12}
+                fill="none"
+                stroke={HOTSPOT_COLOR}
+                strokeWidth={1.6}
+                style={{ animation: "pulse-ring 2.4s var(--ease-out) infinite", transformBox: "fill-box", transformOrigin: "center" }}
+              />
+            ) : null}
+            <path d={wobbleRing(12.5)} fill="none" stroke={HOTSPOT_COLOR} strokeWidth={2.6} strokeLinecap="round" />
+            <path d={wobbleRing(15.5)} transform="rotate(140)" fill="none" stroke={HOTSPOT_COLOR} strokeOpacity={0.55} strokeWidth={1.4} strokeLinecap="round" />
           </g>
         );
       })}

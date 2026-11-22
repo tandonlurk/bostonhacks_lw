@@ -1,12 +1,13 @@
 "use client";
 
-import type { ChallengesResponse, Landmark, Perk } from "@/contracts";
+import type { ChallengesResponse, Hotspot, Landmark, Perk } from "@/contracts";
 import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { BoltIcon, ChevronIcon } from "@/components/icons";
 import { LineChip } from "@/components/LineChip";
 import { Sheet } from "@/components/ui/Sheet";
-import { GAME_META, HEAT, heatLevel } from "./gameMeta";
+import { GAME_META, HEAT, HOTSPOT_COLOR, heatLevel } from "./gameMeta";
 import { ChallengeGame } from "./ChallengeGame";
+import { HotspotGame } from "./HotspotGame";
 import { BackIcon } from "./huntIcons";
 import { LandmarkClaim } from "./LandmarkClaim";
 import { STATION_BY_ID } from "./mapModel";
@@ -32,13 +33,16 @@ interface StationSheetProps {
   landmarks: Landmark[];
   /** Live delay photo challenges, or null when unavailable (then the placeholder photo game shows instead). */
   challenges: ChallengesResponse | null;
+  /** Live hotspots (GET /api/hotspots); a station's hotspot game opens the meet flow. */
+  hotspots: Hotspot[];
   onEarned: () => void;
 }
 
 export function StationSheet(props: StationSheetProps) {
   const { stopId, games, activeGameId, onPlay, onClose } = props;
   const station = stopId ? STATION_BY_ID.get(stopId) : undefined;
-  const active = games?.games.find((g) => g.id === activeGameId) ?? null;
+  // Deep links name a kind (place-x:landmark) while some ids carry a suffix (place-x:landmark:lm_1).
+  const active = activeGameId ? (games?.games.find((g) => g.id === activeGameId || g.id.startsWith(`${activeGameId}:`)) ?? null) : null;
 
   return (
     <Sheet open={!!station} onClose={onClose} title={station?.name ?? "Station"} hideTitle>
@@ -86,7 +90,9 @@ function StationOverview({ stopId, games, onPlay, delayedTeams, delayMessage, sl
       {delayedHere.length && delayMessage ? <p style={{ fontSize: 13.5, color: "var(--muted)", marginTop: 10, lineHeight: 1.45 }}>{delayMessage}</p> : null}
 
       <div style={{ display: "flex", alignItems: "baseline", gap: 8, marginTop: 22, marginBottom: 10 }}>
-        <p style={{ ...eyebrow, flex: 1 }}>{games?.live ? "Play while you wait" : list.length ? "Practice rounds" : "Mini-games"}</p>
+        <p style={{ ...eyebrow, flex: 1 }}>
+          {games?.live ? "Play while you wait" : list.length && list.every((g) => g.kind === "hotspot") ? "Hotspot" : list.length ? "Practice rounds" : "Mini-games"}
+        </p>
         {list.length ? <span style={{ fontSize: 12, color: "var(--muted)" }}>{list.length} here</span> : null}
       </div>
 
@@ -112,7 +118,8 @@ function StationOverview({ stopId, games, onPlay, delayedTeams, delayMessage, sl
 function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; onPlay: () => void }) {
   const { Icon, color, blurb } = GAME_META[game.kind];
   // Game availability and maximum rewards come from the server catalog.
-  const real = game.kind === "landmark" || game.kind === "challenge" || game.kind === "trivia" || game.kind === "clue";
+  const real = game.kind === "landmark" || game.kind === "challenge" || game.kind === "trivia" || game.kind === "clue" || game.kind === "hotspot";
+  const hot = game.kind === "hotspot";
   return (
     <button
       type="button"
@@ -125,8 +132,8 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
         minHeight: 76,
         padding: "12px 14px 12px 12px",
         borderRadius: 20,
-        border: `1px solid ${live ? "rgba(255,61,127,0.35)" : "var(--border)"}`,
-        background: "var(--surface-2)",
+        border: `1px solid ${hot ? `color-mix(in srgb, ${HOTSPOT_COLOR} 55%, transparent)` : live ? "rgba(255,61,127,0.35)" : "var(--border)"}`,
+        background: hot ? `linear-gradient(120deg, color-mix(in srgb, ${HOTSPOT_COLOR} 16%, var(--surface-2)), var(--surface-2) 70%)` : "var(--surface-2)",
         textAlign: "left",
       }}
     >
@@ -140,7 +147,7 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
       <span style={{ textAlign: "right", flexShrink: 0 }}>
         <span className="num" style={{ display: "block", fontWeight: 800, fontSize: 18, color: "var(--accent)", lineHeight: 1.1 }}>+{game.rewardPoints}</span>
         <span style={{ display: "block", fontSize: 10, fontWeight: 800, color: "var(--muted)", letterSpacing: "0.06em", marginTop: 2 }}>
-          {game.kind === "challenge" ? "MAX PTS" : game.rewardPoints === 0 ? "PRACTICE" : real ? "PTS" : "PREVIEW"}
+          {game.kind === "challenge" ? "MAX PTS" : hot ? "PTS EACH" : game.rewardPoints === 0 ? "PRACTICE" : real ? "PTS" : "PREVIEW"}
         </span>
       </span>
       <ChevronIcon size={16} weight={2.4} style={{ color: "var(--muted)", flexShrink: 0 }} />
@@ -148,10 +155,11 @@ function GameCard({ game, live, onPlay }: { game: StationGame; live: boolean; on
   );
 }
 
-function GameView({ stopId, game, onBack, riderId, landmarks, challenges, onEarned }: StationSheetProps & { game: StationGame; onBack: () => void }) {
+function GameView({ stopId, game, onBack, riderId, landmarks, challenges, hotspots, onEarned }: StationSheetProps & { game: StationGame; onBack: () => void }) {
   const station = STATION_BY_ID.get(stopId!)!;
   const kind: GameKind = game.kind;
   const landmark = kind === "landmark" ? landmarks.find((l) => game.id.endsWith(`:${l.id}`)) : undefined;
+  const hotspot = kind === "hotspot" ? hotspots.find((h) => h.stationId === station.id) : undefined;
   const { Icon, color, label } = GAME_META[kind];
 
   return (
@@ -181,6 +189,13 @@ function GameView({ stopId, game, onBack, riderId, landmarks, challenges, onEarn
           <ChallengeGame data={challenges} riderId={riderId} onEarned={onEarned} />
         ) : (
           <p style={{ color: "var(--muted)" }}>Photo challenges close when the delay clears.</p>
+        )
+      ) : null}
+      {kind === "hotspot" ? (
+        hotspot ? (
+          <HotspotGame hotspot={hotspot} riderId={riderId} onEarned={onEarned} />
+        ) : (
+          <p style={{ color: "var(--muted)" }}>This hotspot has expired. New ones show up after your next few trips.</p>
         )
       ) : null}
       {kind === "landmark" ? (

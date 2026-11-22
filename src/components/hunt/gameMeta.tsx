@@ -1,6 +1,10 @@
 // Visual vocabulary shared by the map, legend and sheets: mini-game kinds and heat buckets.
 import { CameraIcon, PuzzleIcon, StarIcon, TriviaIcon, type IconProps } from "@/components/icons";
+import { HotspotIcon } from "./huntIcons";
 import type { GameKind } from "./placeholderGames";
+
+/** Hotspot violet: distinct from every line color, the green accent and the delay pink; 5.7:1 on white. */
+export const HOTSPOT_COLOR = "#7c3aed";
 
 export const GAME_META: Record<GameKind, { label: string; blurb: string; color: string; Icon: (p: IconProps) => React.ReactElement }> = {
   clue: { label: "Station hunt", blurb: "Find-it clues on the platform", color: "#3f7a00", Icon: PuzzleIcon },
@@ -8,9 +12,10 @@ export const GAME_META: Record<GameKind, { label: string; blurb: string; color: 
   photo: { label: "Photo snap", blurb: "Snap the thing, AI checks it", color: "#d6338f", Icon: CameraIcon },
   landmark: { label: "Landmark", blurb: "Check in nearby for a bonus", color: "#a87900", Icon: StarIcon },
   challenge: { label: "Photo challenge", blurb: "Delay scavenger hunt, AI graded", color: "#ff3d7f", Icon: CameraIcon },
+  hotspot: { label: "Hotspot meet", blurb: "Meet a rider here and bump phones", color: HOTSPOT_COLOR, Icon: HotspotIcon },
 };
 
-export const GAME_ORDER: GameKind[] = ["clue", "trivia", "photo", "challenge", "landmark"];
+export const GAME_ORDER: GameKind[] = ["clue", "trivia", "photo", "challenge", "landmark", "hotspot"];
 
 export type HeatLevel = "ok" | "slow" | "crawl";
 

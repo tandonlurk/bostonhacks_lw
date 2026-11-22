@@ -14,6 +14,9 @@ export interface Sizes {
   badgeIcon: number;
 }
 
+/** Width of the "5x" multiplier tag inside a hotspot station's badge. */
+export const HOT_TAG_W = 30;
+
 export function sizesFor(z: number): Sizes {
   const line = Math.min(10, Math.max(3, 4.6 * Math.sqrt(z)));
   return {
@@ -88,6 +91,8 @@ export function layoutFor(
   sizes: Sizes,
   games: Map<string, StationGames>,
   selectedId: string | null,
+  /** Hotspot stations: their badges always show (like the selection) and carry the multiplier tag. */
+  hot: ReadonlyMap<string, number> = new Map(),
 ): { labels: PlacedLabel[]; badges: PlacedBadge[] } {
   const taken: Rect[] = [];
   const badges: PlacedBadge[] = [];
@@ -132,24 +137,24 @@ export function layoutFor(
   const badgeMinImportance = z < 0.8 ? 3 : z < 1.7 ? 2 : 1;
   const candidates = MAP_STATIONS.filter((s) => {
     const g = games.get(s.id);
-    return g && (s.id === selectedId || s.importance >= badgeMinImportance);
+    return g && (s.id === selectedId || hot.has(s.id) || s.importance >= badgeMinImportance);
   }).sort((a, b) => score(b) - score(a));
 
   function score(s: MapStation) {
     const g = games.get(s.id);
-    return (s.id === selectedId ? 100 : 0) + (g?.live ? 10 : 0) + s.importance * 2 + (g?.games.length ?? 0) * 0.1;
+    return (s.id === selectedId ? 100 : 0) + (hot.has(s.id) ? 50 : 0) + (g?.live ? 10 : 0) + s.importance * 2 + (g?.games.length ?? 0) * 0.1;
   }
 
   for (const s of candidates) {
     const g = games.get(s.id)!;
     const n = Math.min(3, g.games.length);
-    const w = 10 + n * iconStep + (g.games.length > 3 ? 14 : 0);
+    const w = 10 + n * iconStep + (g.games.length > 3 ? 14 : 0) + (hot.has(s.id) ? HOT_TAG_W + 2 : 0);
     const h = sizes.badgeIcon + 11;
     const lift = (s.transfer ? sizes.transfer : sizes.stop) + 8 + h / 2;
     const cx = s.x * z;
     const cy = s.y * z - lift;
     const r = { x0: cx - w / 2 - 2, x1: cx + w / 2 + 2, y0: cy - h / 2 - 2, y1: cy + h / 2 + 6 };
-    if (s.id !== selectedId && taken.some((t) => overlaps(t, r))) continue;
+    if (s.id !== selectedId && !hot.has(s.id) && taken.some((t) => overlaps(t, r))) continue;
     taken.push(r);
     badges.push({ id: s.id, dy: -lift, w, h });
   }
