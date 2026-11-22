@@ -708,3 +708,26 @@
     animation: none;
   }
 }
+
+.mapActions {
+  position: absolute;
+  inset-inline: 10px;
+  bottom: calc(var(--nav-clearance) - 2px);
+  z-index: 8;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+
+.mapActions .mapAction {
+  pointer-events: auto;
+  width: 46px;
+  height: 46px;
+  padding: 0;
+  flex-direction: column;
+  gap: 1px;
+  border-radius: 12px;
+  font-size: 11px;
+  line-height: 1;
+  text-decoration: none;
+}

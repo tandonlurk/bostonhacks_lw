@@ -11,10 +11,10 @@ import { usePathname } from "next/navigation";
 export function AppShell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   if (pathname === "/welcome") return <>{children}</>;
-  return <GameShell>{children}</GameShell>;
+  return <GameShell onRide={pathname === "/"}>{children}</GameShell>;
 }
 
-function GameShell({ children }: { children: React.ReactNode }) {
+function GameShell({ children, onRide }: { children: React.ReactNode; onRide: boolean }) {
   const { rider } = useRider();
   const delay = useDelay(rider?.homeTeamRouteId);
 
@@ -24,7 +24,7 @@ function GameShell({ children }: { children: React.ReactNode }) {
       <div className="app-shell" data-delay={delay.active ? "true" : undefined}>
         <DelayBanner delay={delay} />
         <main className="app-main">{children}</main>
-        <SimTrigger />
+        {!onRide && <SimTrigger />}
         <BottomNav />
       </div>
     </RideSessionProvider>

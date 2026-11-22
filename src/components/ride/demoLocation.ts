@@ -5,7 +5,7 @@
 //   Up / Down     switch line branch (Red, Red Braintree, Orange, Blue, Green B/C/D/E...)
 // While an override is set, the map dot and the ride session's GPS samples use it instead of
 // real GPS. Press Escape to go back to real GPS.
-import { useEffect, useSyncExternalStore } from "react";
+import { useEffect, useState, useSyncExternalStore } from "react";
 import { LINES, STATIONS } from "@/components/map/mbta-geo";
 import type { TeamRouteId } from "@/contracts/routes";
 
@@ -104,25 +104,51 @@ function start(team: TeamRouteId | null, here: { lat: number; lng: number } | nu
   moveTo(best.b, best.i);
 }
 
+function step(direction: 1 | -1) {
+  if (!spot) return;
+  const from = spot.stationId;
+  moveTo(branch, index + direction);
+  if (spot.stationId !== from) awardHop(from, spot.stationId);
+}
+
+function clearSpot() {
+  spot = null;
+  emit();
+}
+
 /** Mount once (Ride screen). Listens for arrow keys; ignores typing in inputs. */
 export function useDemoStepper(team: TeamRouteId | null, here: () => { lat: number; lng: number } | null = () => null) {
+  const [playing, setPlaying] = useState(false);
+
+  useEffect(() => {
+    if (!playing) return;
+    if (!spot) start(team, here());
+    const timer = window.setInterval(() => {
+      if (!spot) return;
+      const last = spot.branchStops.length - 1;
+      step(index === last ? -1 : index === 0 ? 1 : dir);
+    }, 4000);
+    return () => {
+      window.clearInterval(timer);
+      clearSpot();
+    };
+  }, [playing, team, here]);
+
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       const el = e.target as HTMLElement | null;
       if (el && (el.isContentEditable || ["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName))) return;
       if (e.metaKey || e.ctrlKey || e.altKey) return;
       if (e.key === "Escape" && spot) {
-        spot = null;
-        emit();
+        setPlaying(false);
+        clearSpot();
         return;
       }
       if (!["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(e.key)) return;
       e.preventDefault();
       if (!spot) return start(team, here());
       if (e.key === "ArrowRight" || e.key === "ArrowLeft") {
-        const from = spot.stationId;
-        moveTo(branch, index + (e.key === "ArrowRight" ? 1 : -1));
-        if (spot.stationId !== from) awardHop(from, spot.stationId);
+        step(e.key === "ArrowRight" ? 1 : -1);
       }
       if (e.key === "ArrowUp" || e.key === "ArrowDown") {
         // Switch branch, landing on the nearest station of the new branch.
@@ -142,6 +168,8 @@ export function useDemoStepper(team: TeamRouteId | null, here: () => { lat: numb
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [team, here]);
+
+  return { playing, togglePlayback: () => setPlaying(value => !value) };
 }
 
 /** React subscription to the override (re-renders when it moves). */

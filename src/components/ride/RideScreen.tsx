@@ -1,10 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useLeaderboard } from "@/hooks/useLeaderboard";
 import { useVehicles } from "@/hooks/useVehicles";
 import { USE_MOCKS } from "@/hooks/useMocks";
-import { BoltIcon, CloseIcon } from "@/components/icons";
+import { BoltIcon, CloseIcon, StarIcon, StopIcon } from "@/components/icons";
 import { PaperButton } from "@/components/paper/Paper";
 import { useHotspots } from "@/components/hunt/useHotspots";
 import { useRideContext, type RideContextValue } from "./RideSessionProvider";
@@ -98,7 +99,7 @@ export function RideScreen() {
     snapshotRef.current = pos.snapshot;
   }, [pos.snapshot]);
   const hereForDemo = useCallback(() => snapshotRef.current, []);
-  useDemoStepper(rider?.homeTeamRouteId ?? null, hereForDemo);
+  const { playing, togglePlayback } = useDemoStepper(rider?.homeTeamRouteId ?? null, hereForDemo);
   const demoSpot = useDemoSpot();
   // The pinned demo spot counts as a real fix, and updates immediately instead of at the 1 Hz snapshot.
   const fixNow = demoSpot ? { lat: demoSpot.lat, lng: demoSpot.lng, heading: demoSpot.heading, accuracy: 10 } : pos.snapshot;
@@ -149,6 +150,16 @@ export function RideScreen() {
     <div className="screen-bleed" style={{ overflow: "hidden" }}>
       <h1 className="visually-hidden">Ride</h1>
       <DemoAwardPop />
+      <div className={styles.mapActions}>
+        <PaperButton variant="primary" className={styles.mapAction} onClick={togglePlayback}
+          aria-label={playing ? "Stop simulation" : "Play simulation"} title={playing ? "Stop simulation" : "Play simulation"}>
+          {playing ? <StopIcon size={19} /> : <svg width="19" height="19" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path d="M5 3.5v13l11-6.5z" /></svg>}
+          <span>{playing ? "Stop" : "Play"}</span>
+        </PaperButton>
+        <Link href="/hunt?goals=1" className={`paper-btn ${styles.mapAction}`} aria-label="Map goals">
+          <StarIcon size={19} /><span>Goals</span>
+        </Link>
+      </div>
       <NavMap
         getFix={pos.getFix}
         team={team}

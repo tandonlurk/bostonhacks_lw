@@ -64,7 +64,8 @@ export function HuntScreen() {
   const {data: stationCatalog, error: catalogError, refresh: refreshGames} = useStationGames();
   const [hotspots,setHotspots] = useState<Hotspot[]>([]);
   const [route,setRoute] = useState<Hotspot|null>(null);
-  const [questsOpen,setQuestsOpen] = useState(false);
+  const [goalsVisible, setGoalsVisible] = useState<boolean | undefined>(undefined);
+  const goalsOpen = goalsVisible ?? params.get("goals") === "1";
   const challengeMax = challenges?.challenges.length ? Math.max(...challenges.challenges.map((c) => c.points)) : null;
   const games = useMemo(
     () => stationCatalog && !forceClear
@@ -114,6 +115,13 @@ export function HuntScreen() {
     refreshGames();
   }, [refreshTokens, refreshLandmarks, refreshChallenges, refreshGames]);
 
+  const landmarkGoal = landmarks.find(l => !l.claimed && games.get(l.stopId)?.games.some(g => g.id === `${l.stopId}:landmark:${l.id}`));
+  const openGoal = (stopId: string, gameId: string) => {
+    setGoalsVisible(false);
+    select(stopId);
+    setActiveGame(gameId);
+  };
+
   const balance = tokens?.balance ?? null;
   const bannerPx = delay.active ? 64 : 0;
 
@@ -141,11 +149,19 @@ export function HuntScreen() {
       />
       <div style={{position:"absolute",left:16,top:"calc(env(safe-area-inset-top, 0px) + var(--banner-space) + 96px)",zIndex:12,display:"flex",gap:8,flexWrap:"wrap",maxWidth:"calc(100% - 80px)"}}>
         <HotspotPanel riderId={riderId} onHotspots={setHotspots} onEarned={earned} onSelect={hotspot=>{setRoute(hotspot);close();}} />
-        <button type="button" className="paper-btn" onClick={()=>setQuestsOpen(true)} style={{minHeight:48,padding:"0 14px",fontSize:14,fontWeight:700}}><StarIcon size={18} weight={2.2} style={{color:"var(--gold-ink)"}}/>Daily quest · +25</button>
+        <button type="button" className="paper-btn" onClick={()=>setGoalsVisible(true)} style={{minHeight:48,padding:"0 14px",fontSize:14,fontWeight:700}}><StarIcon size={18} weight={2.2} style={{color:"var(--gold-ink)"}}/>Map goals</button>
       </div>
       {catalogError && <p role="status" className="paper" style={{position:"absolute",left:16,top:"calc(env(safe-area-inset-top, 0px) + var(--banner-space) + 154px)",zIndex:12,padding:"4px 10px",fontSize:12,color:"var(--muted)"}}>Game catalog offline · showing previews</p>}
       {route && <div className="paper paper--stack paper-unfold" style={{position:"absolute",left:16,right:16,bottom:"calc(var(--nav-clearance) + 162px)",padding:"12px 12px 12px 14px",borderRadius:6,display:"flex",gap:12,alignItems:"center",zIndex:10}}><Pin style={{left:14,top:-6,marginLeft:0}}/><span aria-hidden="true" style={{flexShrink:0}}><PaperFlag height={30} tint="#2f6b45"/></span><div style={{flex:1,minWidth:0}}><p style={{fontFamily:"var(--font-display)",fontSize:15,fontWeight:700,color:"var(--accent)"}}>Your alternate route</p><p style={{fontSize:14,marginTop:4}}>{route.reason}</p></div><button type="button" className="paper-btn" aria-label="Clear alternate route" onClick={()=>setRoute(null)} style={{width:44,height:44,padding:0,flexShrink:0}}><CloseIcon size={18}/></button></div>}
-      <Sheet open={questsOpen} onClose={()=>setQuestsOpen(false)} title="A little extra for your team">
+      <Sheet open={goalsOpen} onClose={() => setGoalsVisible(false)} title="Map goals">
+        <div style={{display:"grid",gap:8,marginBottom:16}}>
+          <button type="button" className="paper-btn" onClick={() => openGoal("place-sstat", "place-sstat:trivia")}>
+            Play three trivia questions at South Station
+          </button>
+          {landmarkGoal && <button type="button" className="paper-btn" onClick={() => openGoal(landmarkGoal.stopId, `${landmarkGoal.stopId}:landmark:${landmarkGoal.id}`)}>
+            Visit {landmarkGoal.name} · +{landmarkGoal.bonusPoints} points
+          </button>}
+        </div>
         {sideQuests.length ? sideQuests.map(quest=><SideQuestCard key={quest.id} quest={quest} homeTeam={rider?.homeTeamRouteId}/>) : <p style={{fontSize:16,lineHeight:1.6}}>Ride the Silver Line for three verified minutes in one ride to earn +25 points for your home team. Progress appears here when the quest service is available.</p>}
       </Sheet>
       {legendOpen ? <Legend heatAvailable={!!heatData?.available} /> : null}
