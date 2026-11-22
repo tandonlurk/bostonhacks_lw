@@ -38,7 +38,7 @@ function Seal({ post }: { post: BoardPost }) {
   return (
     <div className={s.seal} role="img" aria-label={free ? "Free" : `${top} ${post.reward} tokens`}>
       <span className={s.sealFace}>
-        <span aria-hidden="true" style={{ fontSize: 7.5, fontWeight: 800, letterSpacing: "0.12em", textTransform: "uppercase", lineHeight: 1 }}>
+        <span aria-hidden="true" style={{ fontSize: 7, fontWeight: 800, letterSpacing: "0.04em", textTransform: "uppercase", lineHeight: 1 }}>
           {free ? "Free" : top}
         </span>
         <span aria-hidden="true" className="num" style={{ fontSize: free ? 13 : 19, fontWeight: 800, lineHeight: 1.05 }}>

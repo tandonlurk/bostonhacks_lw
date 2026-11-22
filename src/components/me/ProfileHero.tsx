@@ -51,7 +51,7 @@ export function ProfileHero({ rider, bio, issuedAt, onEdit, onError }: ProfileHe
             </span>
             <span style={{ fontFamily: "var(--font-display)", fontSize: 17, fontWeight: 800, letterSpacing: "0.04em" }}>Rider Passport</span>
           </span>
-          <PaperT height={30} tint="#fbf6ec" />
+          <PaperT height={30} />
         </div>
 
         <div style={{ position: "relative", padding: "16px 14px 0" }}>
