@@ -3,6 +3,7 @@
 import { BottomNav } from "./BottomNav";
 import { DelayBanner } from "./DelayBanner";
 import { RideSessionProvider } from "./ride/RideSessionProvider";
+import { SimTrigger } from "./paper/SimTrigger";
 import { useRider } from "@/hooks/useRider";
 import { useDelay } from "@/hooks/useDelay";
 import { usePathname } from "next/navigation";
@@ -23,6 +24,7 @@ function GameShell({ children }: { children: React.ReactNode }) {
       <div className="app-shell" data-delay={delay.active ? "true" : undefined}>
         <DelayBanner delay={delay} />
         <main className="app-main">{children}</main>
+        <SimTrigger />
         <BottomNav />
       </div>
     </RideSessionProvider>

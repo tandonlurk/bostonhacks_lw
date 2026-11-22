@@ -16,7 +16,8 @@ body {
   display: flex;
   flex-direction: column;
   color: var(--ink);
-  background: var(--bg);
+  background-color: var(--bg);
+  background-image: var(--grain);
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
@@ -49,7 +50,9 @@ h1,
 h2,
 h3 {
   font-family: var(--font-display);
-  letter-spacing: -0.02em;
+  font-variation-settings: "SOFT" 60, "WONK" 0;
+  font-weight: 650;
+  letter-spacing: -0.015em;
 }
 
 /* Screens add var(--banner-space) to their top padding so the floating delay pill never covers a title. */
@@ -95,10 +98,10 @@ h3 {
   background: linear-gradient(var(--bg) 70%, transparent);
 }
 
+/* "glass" is now a sheet of cream card stock (kept as a class name so older screens restyle for free). */
 .glass {
-  background: var(--glass);
-  -webkit-backdrop-filter: blur(18px) saturate(160%);
-  backdrop-filter: blur(18px) saturate(160%);
+  background-color: var(--glass);
+  background-image: var(--grain);
   border: 1px solid var(--glass-border);
 }
 
@@ -175,7 +178,7 @@ h3 {
   animation: tier-up 220ms ease-out;
 }
 
-/* ---------- Bottom nav ---------- */
+/* ---------- Bottom nav: a folded strip of card stock ---------- */
 .nav {
   position: fixed;
   left: 50%;
@@ -186,7 +189,14 @@ h3 {
   display: grid;
   grid-template-columns: 1fr 1fr 84px 1fr 1fr;
   align-items: center;
-  border-radius: var(--radius-pill);
+  border-radius: 10px;
+  /* Two panels with a soft center crease, like a strip folded once. */
+  background-color: var(--cream);
+  background-image:
+    linear-gradient(90deg, transparent 49.6%, rgba(92, 66, 32, 0.08) 50%, transparent 50.4%),
+    linear-gradient(180deg, rgba(255, 255, 255, 0.6), rgba(217, 201, 171, 0.25)),
+    var(--grain);
+  border: 1px solid var(--paper-edge);
   box-shadow: var(--shadow-float);
   z-index: 40;
 }
@@ -194,65 +204,70 @@ h3 {
 .nav-item {
   position: relative;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
+  gap: 2px;
   height: 100%;
   min-width: var(--tap-min);
   color: var(--muted);
-  transition: color 160ms var(--ease-out), transform 160ms var(--ease-out);
+  transition: color var(--dur-quick) var(--ease-out), transform var(--dur-quick) var(--ease-out);
 }
 
 .nav-item:active {
-  transform: scale(0.9);
+  transform: translateY(1px) scale(0.94);
 }
 
 .nav-item[aria-current="page"] {
   color: var(--ink);
 }
 
+/* Active tab: a little folded paper flag tucked under the icon. */
 .nav-item[aria-current="page"]::after {
   content: "";
   position: absolute;
-  bottom: 10px;
-  width: 5px;
-  height: 5px;
-  border-radius: 50%;
+  bottom: 8px;
+  width: 16px;
+  height: 6px;
   background: var(--accent);
-}
-
-.nav-ride {
-  justify-self: center;
-  width: 72px;
-  height: 72px;
-  margin-top: -26px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  background: var(--accent);
-  color: var(--accent-ink);
-  box-shadow: 0 0 0 5px var(--bg), 0 10px 30px rgba(63,122,0,0.28);
-  transition: transform 180ms var(--ease-out);
-}
-
-.nav-ride::before {
-  content: "";
-  position: absolute;
-  inset: -5px;
-  border-radius: 50%;
-  background: conic-gradient(var(--line-red), var(--line-orange), var(--line-green), var(--line-blue), var(--line-silver), var(--line-red));
-  z-index: -1;
-  opacity: 0;
-  transition: opacity 200ms var(--ease-out);
+  clip-path: polygon(0 0, 100% 0, 82% 100%, 50% 62%, 18% 100%);
 }
 
 .nav-ride {
   position: relative;
   isolation: isolate;
+  justify-self: center;
+  width: 70px;
+  height: 70px;
+  margin-top: -24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--accent-ink);
+  border-radius: 50%;
+  /* Origami medallion: two-tone faceted disc (lit top-left face, shaded bottom-right). */
+  background: conic-gradient(from 225deg, #3a7d53 0 25%, #2f6b45 0 50%, #255a39 0 75%, #2b6441 0);
+  box-shadow: 0 0 0 4px var(--cream), 0 0 0 5px var(--paper-edge), 0 10px 18px -6px rgba(47, 107, 69, 0.55);
+  transition: transform var(--dur-quick) var(--ease-fold);
+}
+
+.nav-ride::before {
+  content: "";
+  position: absolute;
+  inset: -9px;
+  border-radius: 50%;
+  background: conic-gradient(var(--line-red) 0 20%, var(--line-orange) 0 40%, var(--line-green) 0 60%, var(--line-blue) 0 80%, var(--line-silver) 0);
+  -webkit-mask: radial-gradient(circle, transparent 62%, #000 63%);
+  mask: radial-gradient(circle, transparent 62%, #000 63%);
+  z-index: -1;
+  opacity: 0;
+  transform: rotate(-30deg) scale(0.9);
+  transition: opacity 220ms var(--ease-out), transform var(--dur-fold) var(--ease-fold);
 }
 
 .nav-ride[aria-current="page"]::before {
   opacity: 1;
+  transform: none;
 }
 
 .nav-ride:active {
@@ -262,11 +277,282 @@ h3 {
 .nav-ride[data-live="true"]::after {
   content: "";
   position: absolute;
-  top: 6px;
-  right: 8px;
+  top: 5px;
+  right: 7px;
   width: 12px;
   height: 12px;
   border-radius: 50%;
   background: var(--hot);
-  box-shadow: 0 0 0 3px var(--accent);
+  box-shadow: 0 0 0 3px var(--cream);
+  animation: live-blink 1.6s ease-in-out infinite;
+}
+
+@keyframes live-blink {
+  50% {
+    opacity: 0.45;
+  }
+}
+
+/* ======================================================================
+   Paper primitives (docs/design.md section 3). Components in
+   src/components/paper/ wrap these; plain markup can use the classes too.
+   ====================================================================== */
+
+/* A sheet of card stock. */
+.paper {
+  position: relative;
+  background-color: var(--cream);
+  background-image: var(--grain);
+  border: 1px solid var(--paper-edge);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* A stack of sheets (offset sheet peeking out behind). */
+.paper--stack {
+  box-shadow: var(--shadow-stack);
+}
+
+/* Kraft board variant (backgrounds, inset wells). */
+.paper--kraft {
+  background-color: var(--kraft);
+}
+
+/* Dog-eared corner: top-right corner folded down. */
+.paper--fold {
+  --fold: 18px;
+  clip-path: polygon(0 0, calc(100% - var(--fold)) 0, 100% var(--fold), 100% 100%, 0 100%);
+}
+
+.paper--fold::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  right: -1px;
+  width: var(--fold);
+  height: var(--fold);
+  background: linear-gradient(225deg, transparent 50%, var(--fold-shadow) 50%, var(--cream-3) 100%);
+  box-shadow: -1px 1px 2px var(--paper-lift);
+}
+
+/* Slight hand-placed tilt for noticeboard items. */
+.paper--tilt-l {
+  transform: rotate(-1.2deg);
+}
+
+.paper--tilt-r {
+  transform: rotate(1deg);
+}
+
+/* Diagonal crease running across a card (subtle). */
+.paper--crease {
+  background-image: linear-gradient(115deg, transparent 49.7%, rgba(92, 66, 32, 0.07) 50%, rgba(255, 255, 255, 0.5) 50.4%, transparent 51%), var(--grain);
+}
+
+/* Washi tape strip. Position it with inline top/left/rotate. */
+.paper-tape {
+  position: absolute;
+  width: 64px;
+  height: 18px;
+  background: rgba(233, 214, 160, 0.78);
+  background-image: repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.25) 0 4px, transparent 4px 8px);
+  clip-path: polygon(2% 0, 98% 6%, 100% 50%, 97% 100%, 3% 94%, 0 50%);
+  box-shadow: 0 1px 1px rgba(74, 52, 22, 0.12);
+  pointer-events: none;
+}
+
+/* Push pin head. */
+.paper-pin {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 35% 30%, #fff8 0 18%, transparent 22%), var(--pin, var(--brick));
+  box-shadow: 0 2px 2px rgba(42, 36, 29, 0.35), inset 0 -2px 2px rgba(0, 0, 0, 0.2);
+  pointer-events: none;
+}
+
+/* Rubber stamp text (rotated, inked border, uneven ink). */
+.paper-stamp {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border: 2px solid currentColor;
+  border-radius: 4px;
+  color: var(--brick);
+  font-family: var(--font-display);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  transform: rotate(-4deg);
+  opacity: 0.88;
+}
+
+/* Hand-written label. */
+.hand {
+  font-family: var(--font-hand);
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+/* Paper button: a folded card that presses down. */
+.paper-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--tap-min);
+  padding: 0 18px;
+  border: 1px solid var(--paper-edge);
+  border-radius: 8px;
+  background-color: var(--cream);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.7), rgba(217, 201, 171, 0.18)), var(--grain);
+  color: var(--ink);
+  font-weight: 650;
+  font-size: 15px;
+  box-shadow: 0 2px 0 var(--fold-shadow), 0 3px 6px -2px var(--paper-lift-2);
+  transition: transform 120ms var(--ease-out), box-shadow 120ms var(--ease-out);
+}
+
+.paper-btn:active:not(:disabled) {
+  transform: translateY(2px);
+  box-shadow: 0 0 0 var(--fold-shadow), 0 1px 2px var(--paper-lift);
+}
+
+.paper-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.paper-btn--primary {
+  background-color: var(--accent);
+  background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(0, 0, 0, 0.08)), var(--grain);
+  color: var(--accent-ink);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 0 #1f4a2f, 0 4px 8px -2px rgba(47, 107, 69, 0.45);
+}
+
+.paper-btn--primary:active:not(:disabled) {
+  box-shadow: 0 0 0 #1f4a2f, 0 1px 2px rgba(47, 107, 69, 0.4);
+}
+
+.paper-btn--danger {
+  background-color: var(--brick);
+  color: #fffaf0;
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 2px 0 #7e3920, 0 4px 8px -2px rgba(180, 83, 47, 0.45);
+}
+
+.paper-btn--ghost {
+  background: transparent;
+  box-shadow: none;
+  border-style: dashed;
+}
+
+.paper-btn--sm {
+  min-height: 36px;
+  padding: 0 12px;
+  font-size: 13px;
+}
+
+/* Small paper tag / badge: a punched luggage tag. */
+.paper-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 24px;
+  padding: 0 9px 0 14px;
+  border-radius: var(--radius-chip);
+  background: var(--badge-bg, var(--cream-3));
+  color: var(--badge-ink, var(--ink));
+  font-size: 12px;
+  font-weight: 650;
+  clip-path: polygon(7px 0, 100% 0, 100% 100%, 7px 100%, 0 50%);
+  position: relative;
+}
+
+.paper-badge::before {
+  content: "";
+  position: absolute;
+  left: 6px;
+  top: 50%;
+  width: 4px;
+  height: 4px;
+  margin-top: -2px;
+  border-radius: 50%;
+  background: var(--cream);
+}
+
+/* Section eyebrow in the display face. */
+.paper-eyebrow {
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+/* Fold-in entrance for cards and sheets. */
+@keyframes paper-unfold {
+  from {
+    opacity: 0;
+    transform: perspective(600px) rotateX(-14deg) translateY(6px);
+    transform-origin: top center;
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.paper-unfold {
+  animation: paper-unfold var(--dur-fold) var(--ease-fold) both;
+}
+
+/* Bobbing paper flag / marker idle motion. */
+@keyframes paper-bob {
+  50% {
+    transform: translateY(-2px) rotate(-1.5deg);
+  }
+}
+
+/* ---------- Demo simulation trigger (bottom-left) ---------- */
+.sim-trigger {
+  position: fixed;
+  left: 10px;
+  bottom: calc(var(--nav-gap) + var(--nav-height) + 14px + env(safe-area-inset-bottom, 0px));
+  z-index: 45;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-start;
+  gap: 6px;
+}
+
+.sim-trigger__fab {
+  width: var(--tap-min);
+  height: var(--tap-min);
+  border-radius: 50%;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--muted);
+  opacity: 0.85;
+}
+
+.sim-trigger__menu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 6px;
+  min-width: 168px;
+}
+
+.sim-trigger__menu button {
+  justify-content: flex-start;
+  width: 100%;
 }
