@@ -5,6 +5,7 @@ import { TEAMS, type TeamRouteId } from "@/contracts/routes";
 import { LineChip } from "@/components/LineChip";
 import { SideQuestCard } from "@/components/SideQuestCard";
 import { ClockIcon, TeamIcon, TrophyIcon } from "@/components/icons";
+import { PaperCard, Stamp } from "@/components/paper/Paper";
 import { HoldToEnd } from "./HoldToEnd";
 import { StateBadge } from "./TopCard";
 import { formatClock, formatPoints, useCountUp, useNow } from "./util";
@@ -26,21 +27,14 @@ interface LivePanelProps {
   ending: boolean;
 }
 
+/** A small card of stock with a big number on it. */
 function Stat({ label, children, accent }: { label: string; children: React.ReactNode; accent?: boolean }) {
   return (
-    <div
-      style={{
-        padding: "10px 10px 9px",
-        borderRadius: 16,
-        background: accent ? "rgba(63,122,0,0.08)" : "rgba(18,22,29,0.045)",
-        border: `1px solid ${accent ? "rgba(63,122,0,0.22)" : "var(--glass-border)"}`,
-        minWidth: 0,
-      }}
-    >
+    <div className={styles.statCard} data-accent={accent ? "true" : undefined}>
       <div
         className="num"
         style={{
-          fontSize: 25,
+          fontSize: 23,
           fontWeight: 800,
           lineHeight: 1.05,
           color: accent ? "var(--accent)" : "var(--ink)",
@@ -51,7 +45,7 @@ function Stat({ label, children, accent }: { label: string; children: React.Reac
       >
         {children}
       </div>
-      <div style={{ fontSize: 11.5, fontWeight: 600, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+      <div style={{ fontSize: 11.5, fontWeight: 650, color: "var(--muted)", marginTop: 3, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
         {label}
       </div>
     </div>
@@ -63,37 +57,13 @@ function CrewChip({ crew }: { crew: CrewBonus }) {
   const who = names.length > 2 ? `${names.slice(0, 2).join(", ")} +${names.length - 2}` : names.join(", ");
   return (
     <div
-      className={styles.pop}
+      className={`${styles.pop} ${styles.chip}`}
       title={crew.message}
-      style={{
-        display: "flex",
-        alignItems: "center",
-        gap: 8,
-        marginTop: 10,
-        padding: "7px 10px 7px 7px",
-        borderRadius: "var(--radius-pill)",
-        background: "rgba(255,61,127,0.12)",
-        border: "1px solid rgba(255,61,127,0.35)",
-        fontSize: 13,
-        fontWeight: 700,
-      }}
+      style={{ display: "flex", marginTop: 10, minHeight: 40, padding: "0 10px 0 6px", background: "#f8e4e7", fontSize: 13 }}
     >
-      <span
-        className="num"
-        style={{
-          display: "inline-flex",
-          alignItems: "center",
-          gap: 3,
-          padding: "2px 8px",
-          borderRadius: "var(--radius-pill)",
-          background: "var(--hot)",
-          color: "#fff",
-          fontWeight: 800,
-          flexShrink: 0,
-        }}
-      >
-        <TeamIcon size={15} weight={2.4} />x{crew.multiplier.toFixed(1).replace(/\.0$/, "")}
-      </span>
+      <Stamp color="var(--hot)" rotate={-3} style={{ fontSize: 12, padding: "1px 6px", flexShrink: 0 }}>
+        <TeamIcon size={14} weight={2.4} />x{crew.multiplier.toFixed(1).replace(/\.0$/, "")}
+      </Stamp>
       <span style={{ minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>Crew with {who}</span>
       {crew.bonusPoints > 0 ? (
         <span className="num" style={{ marginLeft: "auto", color: "var(--accent)", flexShrink: 0 }}>
@@ -113,28 +83,21 @@ export function LivePanel(p: LivePanelProps) {
   const stops = `${p.stopsCredited} ${p.stopsCredited === 1 ? "stop" : "stops"}`;
 
   return (
-    <section
+    <PaperCard
+      as="section"
+      stack
       aria-label="Live ride"
-      className={`glass ${styles.rise}`}
+      className={`${styles.bottomPanel} ${styles.livePanel}`}
       style={{
         position: "absolute",
-        left: 12,
-        right: 12,
-        bottom: "calc(var(--nav-clearance) + 14px)",
-        maxWidth: 520,
-        margin: "0 auto",
-        zIndex: 5,
-        borderRadius: 28,
-        padding: 14,
-        maxHeight: p.sideQuest ? "calc(100svh - var(--nav-clearance) - 160px)" : undefined,
+        maxHeight: p.sideQuest ? "calc(100svh - var(--nav-clearance) - 200px)" : undefined,
         overflowY: p.sideQuest ? "auto" : undefined,
-        boxShadow: "var(--shadow-float)",
       }}
     >
       <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8 }}>
-        <span style={{ display: "inline-flex", alignItems: "center", gap: 8, fontSize: 12, fontWeight: 800, letterSpacing: "0.12em", color: "var(--hot)" }}>
+        <span style={{ display: "inline-flex", alignItems: "center", gap: 7, fontFamily: "var(--font-display)", fontSize: 12, fontWeight: 800, letterSpacing: "0.14em", color: "var(--hot)" }}>
           <span className={styles.liveDot} aria-hidden="true" />
-          LIVE
+          LIVE RIDE
         </span>
         <div style={{ display: "flex", alignItems: "center", gap: 6, minWidth: 0 }}>
           <StateBadge active state={p.state} />
@@ -142,51 +105,46 @@ export function LivePanel(p: LivePanelProps) {
         </div>
       </div>
 
-      <div style={{ display: "flex", alignItems: "flex-end", justifyContent: "space-between", gap: 12, marginTop: 4 }}>
-        <div style={{ minWidth: 0 }}>
-          <div
-            className="num"
-            role="timer"
-            aria-label={`Ride time ${formatClock(elapsed)}`}
-            style={{ fontSize: 64, fontWeight: 800, lineHeight: 0.95, letterSpacing: "-0.05em" }}
-          >
-            {formatClock(elapsed)}
-          </div>
-          <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "var(--muted)", marginTop: 5 }}>
-            <ClockIcon size={15} weight={2.2} />
-            ride time · {onTrain ? `${onTrain} · ${stops}` : stops}
-          </p>
+      <div style={{ marginTop: 4 }}>
+        <div className="num" role="timer" aria-label={`Ride time ${formatClock(elapsed)}`} style={{ fontSize: 50, fontWeight: 800, lineHeight: 1, letterSpacing: "-0.04em" }}>
+          {formatClock(elapsed)}
         </div>
+        <p style={{ display: "flex", alignItems: "center", gap: 5, fontSize: 12.5, fontWeight: 600, color: "var(--muted)", marginTop: 4 }}>
+          <ClockIcon size={15} weight={2.2} />
+          ride time · {onTrain ? `${onTrain} · ${stops}` : stops}
+        </p>
       </div>
 
       {p.message ? (
-        <p aria-live="polite" style={{ fontSize: 13, color: "var(--muted)", marginTop: 8, lineHeight: 1.35 }}>
+        <p aria-live="polite" style={{ fontSize: 13, color: "var(--muted)", marginTop: 6, lineHeight: 1.35 }}>
           {p.message}
         </p>
       ) : null}
 
       {p.crew && p.crew.teammates.length > 0 ? <CrewChip crew={p.crew} /> : null}
 
-      {p.sideQuest ? <div style={{ marginTop: 12 }}><SideQuestCard quest={p.sideQuest} homeTeam={p.homeTeam} compact /></div> : null}
+      {p.sideQuest ? (
+        <div style={{ marginTop: 10 }}>
+          <SideQuestCard quest={p.sideQuest} homeTeam={p.homeTeam} compact />
+        </div>
+      ) : null}
 
-      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr 0.75fr", gap: 8, marginTop: 12 }}>
+      <div style={{ display: "grid", gridTemplateColumns: "1fr 1.25fr 0.8fr", gap: 8, marginTop: 10 }}>
         <Stat label="pts this ride" accent>
           {p.pointsAwarded != null ? `+${formatPoints(ridePoints)}` : "+0"}
         </Stat>
-        <Stat label={p.homeTeam ? `${TEAMS[p.homeTeam].name} pts` : "team points"}>
-          {p.teamStats ? formatPoints(teamPoints) : "—"}
-        </Stat>
+        <Stat label={p.homeTeam ? `${TEAMS[p.homeTeam].name} pts` : "team points"}>{p.teamStats ? formatPoints(teamPoints) : "—"}</Stat>
         <Stat label="team rank">
           <span style={{ display: "inline-flex", alignItems: "center", gap: 4 }}>
-            <TrophyIcon size={18} weight={2.3} style={{ color: "var(--muted)" }} />
+            <TrophyIcon size={17} weight={2.3} style={{ color: "var(--gold-ink)" }} />
             {p.teamStats ? `#${p.teamStats.rank}` : "—"}
           </span>
         </Stat>
       </div>
 
-      <div style={{ marginTop: 12 }}>
+      <div style={{ marginTop: 10 }}>
         <HoldToEnd onEnd={p.onEnd} busy={p.ending} />
       </div>
-    </section>
+    </PaperCard>
   );
 }
