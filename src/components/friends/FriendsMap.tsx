@@ -1,6 +1,6 @@
 "use client";
 
-// Lightweight live map for the Friends tab: the four T lines plus a marker per friend that glides
+// Lightweight papercut live map for Friends: the four T lines as cut-paper ribbons plus a paper disc per friend that glides
 // between position updates (CSS transition), so it reads as live tracking.
 import { useEffect, useMemo, useState } from "react";
 import type { Friend } from "@/contracts";
@@ -72,8 +72,17 @@ export function FriendsMap({ friends, selectedId, onSelect }: { friends: Friend[
 
   return (
     <svg viewBox={`${vb.x.toFixed(0)} ${vb.y.toFixed(0)} ${vb.w.toFixed(0)} ${vb.h.toFixed(0)}`} role="img" aria-label="Map of the T showing where your friends are" style={{ width: "100%", height: "100%", display: "block" }}>
+      {/* Papercut lines: a soft shadow strip under each cut ribbon. */}
+      <g transform="translate(3 4)">
+        {paths.map((p) => (
+          <path key={`sh-${p.key}`} d={p.d} stroke="#4a3416" strokeOpacity={0.22} strokeWidth={11} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        ))}
+      </g>
       {paths.map((p) => (
-        <path key={p.key} d={p.d} stroke={p.color} strokeWidth={7} strokeOpacity={0.55} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+        <path key={p.key} d={p.d} stroke={p.color} strokeWidth={10} fill="none" strokeLinecap="round" strokeLinejoin="round" />
+      ))}
+      {paths.map((p) => (
+        <path key={`cr-${p.key}`} d={p.d} stroke="#fffaf0" strokeOpacity={0.35} strokeWidth={1.4} fill="none" strokeLinecap="round" strokeLinejoin="round" />
       ))}
       {friends.map((f) => {
         const p = project(f.lat, f.lng);
@@ -100,11 +109,12 @@ export function FriendsMap({ friends, selectedId, onSelect }: { friends: Friend[
                 <animate attributeName="opacity" values="0.35;0;0.35" dur="2.4s" repeatCount="indefinite" />
               </circle>
             ) : null}
-            <circle r={selected ? 27 : 22} fill="var(--surface)" stroke={color} strokeWidth={selected ? 6 : 4.5} />
+            <circle r={selected ? 27 : 22} cx={2} cy={3} fill="#4a3416" opacity={0.25} />
+            <circle r={selected ? 27 : 22} fill="var(--cream)" stroke={color} strokeWidth={selected ? 6 : 4.5} />
             <text textAnchor="middle" dominantBaseline="central" fontSize={selected ? 18 : 15} fontWeight={800} fill="var(--ink)">
               {f.initials}
             </text>
-            <text y={selected ? 46 : 41} textAnchor="middle" fontSize={17} fontWeight={700} fill="var(--ink)" stroke="var(--bg)" strokeWidth={5} paintOrder="stroke">
+            <text y={selected ? 46 : 41} textAnchor="middle" fontSize={17} fontWeight={700} fill="var(--ink)" stroke="var(--cream)" strokeWidth={5} paintOrder="stroke">
               {f.name.split(" ")[0]}
             </text>
           </g>
