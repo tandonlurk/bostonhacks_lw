@@ -220,7 +220,7 @@ export const perksFixture: PerksResponse = [
   { id: "perk-museum", title: "$5 off museum entry", partner: "Harbor Discovery Club", costTokens: 25, remaining: 3, rotatesAt: "2026-11-21T21:00:00.000Z" },
 ];
 
-export const redeemPerkFixture: RedeemPerkResponse = { redemptionCode: "TCITY-7F3K-92QD", tokensLeft: 4 };
+export const redeemPerkFixture: RedeemPerkResponse = { redemptionCode: "TSPOTS-7F3K-92QD", tokensLeft: 4 };
 
 export const tokensFixture: TokensResponse = {
   balance: 14,

@@ -82,7 +82,7 @@ export function JoinForm({ onJoin, loading }: { onJoin: (name: string, team: Tea
           opacity: loading ? 0.6 : 1,
         }}
       >
-        {loading ? "Joining…" : "Join T-City"}
+        {loading ? "Joining…" : "Join tspots"}
       </button>
     </form>
   );

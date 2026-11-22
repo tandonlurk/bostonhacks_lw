@@ -8,7 +8,7 @@ import styles from "./onboarding.module.css";
 const interests = ["Coffee stops", "Art & culture", "Food adventures", "Live music", "Hidden gems", "Outdoors", "Sports", "Campus life"];
 const steps = ["Your line", "Your location", "Your interests", "Your photo"];
 const artworks = [
-  "      .----------.\n      |  T-SPOTS  |\n      | [ ]  [ ]  |\n      | [ ]  [ ]  |\n      |____  ____|\n       (o)----(o)\n  ==================",
+  "      .----------.\n      |  TSPOTS   |\n      | [ ]  [ ]  |\n      | [ ]  [ ]  |\n      |____  ____|\n       (o)----(o)\n  ==================",
   "       .-----.\n      /   +   \\\n     |    |    |\n      \\   |   /\n       \\  |  /\n        \\ | /\n         \\|/\n     .----+----.",
   "       *     +\n    +     .     *\n       .-----.\n      /  . .  \\\n      |   v   |\n       '-----'\n    *    |    +\n       __|__",
   "       .-----.\n      /       \\\n     |  o   o  |\n     |    u    |\n      \\  ___  /\n       '-----'\n     .-'     '-.\n    /  HELLO!   \\",
@@ -110,7 +110,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
   }
 
   return (
-    <section className={styles.flow} aria-label="T-spots onboarding">
+    <section className={styles.flow} aria-label="tspots onboarding">
       <div className={styles.flowHeader}>
         <span className={styles.stepMeta}>{complete ? "YOUR CITY AWAITS" : `A LITTLE ABOUT YOU · ${step + 1} OF 4`}</span>
         <button className={styles.closeButton} type="button" onClick={onClose} aria-label="Return to landing page">Close</button>
@@ -141,7 +141,7 @@ export function OnboardingFlow({ onClose }: { onClose: () => void }) {
         <div className={styles.flowGrid}>
           <aside className={styles.stepArt} aria-hidden="true">
             <div className={styles.ticket} style={{ "--line-color": team ? TEAMS[team].color : "#003DA5" } as CSSProperties}>
-              <span className={styles.ticketLabel}>T-SPOTS / ALL ABOARD</span>
+              <span className={styles.ticketLabel}>TSPOTS / ALL ABOARD</span>
               <pre>{artworks[step]}</pre>
               <span className={styles.ticketLine}>{step === 0 ? (team ? `${team.toUpperCase()} LINE` : "FIND YOUR LINE") : step === 1 ? "YOU ARE HERE" : step === 2 ? "TAKE THE SCENIC ROUTE" : "A FACE IN THE CITY"}</span>
               <span className={styles.ticketCode}>BOSTON, MA · ONE CITY. EVERY LINE.</span>

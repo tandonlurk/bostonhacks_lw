@@ -46,7 +46,7 @@ export async function perkCatalog():Promise<Perk[]> {
 }
 export async function redeemPerk(riderId:string,perkId:string):Promise<RedeemPerkResponse> {
   if(typeof riderId!=="string" || !riderId.trim() || typeof perkId!=="string") throw new ScoringError("invalid_redemption","riderId and perkId are required.");
-  const redemptionCode=`TCITY-${randomBytes(8).toString("hex").toUpperCase()}`;
+  const redemptionCode=`TSPOTS-${randomBytes(8).toString("hex").toUpperCase()}`;
   if(!hasDb()) {
     const state=memoryGame();const catalog=catalogMemory();
     if(!state.riders.has(riderId)) throw new ScoringError("rider_not_found","Unknown rider.",404);
