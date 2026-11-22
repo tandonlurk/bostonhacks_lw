@@ -1,7 +1,7 @@
 "use client";
 
 import { TEAMS, TEAM_ROUTE_IDS } from "@/contracts/routes";
-import { GAME_META, GAME_ORDER, HEAT, type HeatLevel } from "./gameMeta";
+import { GAME_META, GAME_ORDER, HEAT, HOTSPOT_COLOR, type HeatLevel } from "./gameMeta";
 import { GLOW } from "./mapModel";
 
 const HEAT_ORDER: HeatLevel[] = ["ok", "slow", "crawl"];
@@ -43,6 +43,12 @@ export function Legend({ heatAvailable }: { heatAvailable: boolean }) {
             </svg>
             Delayed line
           </Row>
+          <Row>
+            <svg aria-hidden="true" width="22" height="8" style={{ flexShrink: 0 }}>
+              <line x1="2" y1="4" x2="20" y2="4" stroke={HOTSPOT_COLOR} strokeWidth="3" strokeLinecap="round" strokeDasharray="6 4" />
+            </svg>
+            Hotspot route
+          </Row>
         </div>
       </Group>
 
@@ -82,7 +88,7 @@ export function Legend({ heatAvailable }: { heatAvailable: boolean }) {
           })}
         </div>
         <p style={{ fontSize: 12, color: "var(--muted)", marginTop: 8 }}>
-          Pink-ringed badges are live because the line is delayed. Grey ones are practice rounds.
+          Pink-ringed badges are live because the line is delayed. Grey ones are practice rounds. Violet rings tagged 5x are your hotspots: meet a rider there for a bonus.
         </p>
       </Group>
     </section>

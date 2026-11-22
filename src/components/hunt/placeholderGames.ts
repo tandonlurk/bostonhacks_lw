@@ -1,11 +1,11 @@
 // Offline fallback for the server catalog at GET /api/hunts/map.
 // Practice trivia and real landmark claims remain browsable while it loads.
-import type { Landmark } from "@/contracts";
+import type { Hotspot, Landmark } from "@/contracts";
 import type { TeamRouteId } from "@/contracts/routes";
 import { MAP_STATIONS } from "./mapModel";
 
 /** To add a kind (e.g. hotspots): extend this union, add GAME_META in gameMeta.tsx and a case in StationSheet's GameView. */
-export type GameKind = "clue" | "trivia" | "photo" | "landmark" | "challenge";
+export type GameKind = "clue" | "trivia" | "photo" | "landmark" | "challenge" | "hotspot";
 
 export interface StationGame {
   id: string;
@@ -78,6 +78,21 @@ export function withChallenges(map: Map<string, StationGames>, maxPoints: number
     const games = sg.games.filter((g) => g.kind !== "photo");
     games.splice(1, 0, { id: `${id}:challenge`, kind: "challenge", title: "Delay photo challenge", rewardPoints: maxPoints, rewardTokens: 0 });
     out.set(id, { ...sg, games });
+  }
+  return out;
+}
+
+/**
+ * Real hotspots (GET /api/hotspots) add a "hotspot" game, listed first, at their station. They show with or without a
+ * delay, so a hotspot station that has no other games gets an entry of its own (not live: hotspots aren't delay games).
+ */
+export function withHotspots(map: Map<string, StationGames>, hotspots: Hotspot[]): Map<string, StationGames> {
+  if (!hotspots.length) return map;
+  const out = new Map(map);
+  for (const h of hotspots) {
+    const game: StationGame = { id: `${h.stationId}:hotspot`, kind: "hotspot", title: `Hotspot meet, ${h.multiplier}x`, rewardPoints: h.meetPoints, rewardTokens: 0 };
+    const sg = out.get(h.stationId);
+    out.set(h.stationId, sg ? { ...sg, games: [game, ...sg.games.filter((g) => g.kind !== "hotspot")] } : { stopId: h.stationId, live: false, games: [game] });
   }
   return out;
 }

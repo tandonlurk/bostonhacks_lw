@@ -10,6 +10,7 @@ import type { TeamRouteId } from "@/contracts/routes";
 import { useDelay } from "@/hooks/useDelay";
 import { useHeatmap } from "@/hooks/useHeatmap";
 import { useLandmarks } from "@/hooks/useLandmarks";
+import { USE_MOCKS } from "@/hooks/useMocks";
 import { usePerks } from "@/hooks/usePerks";
 import { useRider } from "@/hooks/useRider";
 import { useTokens } from "@/hooks/useTokens";
@@ -18,7 +19,8 @@ import { GameStrip } from "./GameStrip";
 import { HuntHeader } from "./HuntHeader";
 import { Legend } from "./Legend";
 import { STATION_BY_ID } from "./mapModel";
-import { placeholderGameMap, withChallenges } from "./placeholderGames";
+import { liveHotspots, mockHotspots } from "./hotspotMeet";
+import { placeholderGameMap, withChallenges, withHotspots } from "./placeholderGames";
 import { StationSheet } from "./StationSheet";
 import { TransitMap } from "./TransitMap";
 import { useChallenges } from "./useChallenges";
@@ -37,7 +39,8 @@ const serverSearch = () => "";
 /**
  * Hunt tab: a full-bleed transit map of delays and the mini-games they unlock, with perks folded in.
  * Deep links (handy for demos): ?station=place-kencl opens a station, &game=trivia jumps into a game,
- * ?preview=clear shows the calm no-delay state even while a delay is live.
+ * ?preview=clear shows the calm no-delay state even while a delay is live, and ?game=hotspot (station optional)
+ * opens the rider's hotspot meet.
  */
 export function HuntScreen() {
   const search = useSyncExternalStore(noop, readSearch, serverSearch);
@@ -57,15 +60,17 @@ export function HuntScreen() {
   const delayedTeams = useMemo(() => (delayKey ? (delayKey.split(",") as TeamRouteId[]) : NO_TEAMS), [delayKey]);
   const { data: challenges, sideQuests, refresh: refreshChallenges } = useChallenges(riderId, true);
   const {data: stationCatalog, error: catalogError, refresh: refreshGames} = useStationGames();
-  const [hotspots,setHotspots] = useState<Hotspot[]>([]);
+  const [hotspotFeed,setHotspots] = useState<Hotspot[]>([]);
   const [route,setRoute] = useState<Hotspot|null>(null);
   const [questsOpen,setQuestsOpen] = useState(false);
+  // Hotspots come from HotspotPanel's feed; mock mode without a joined rider falls back to the fixture.
+  const hotspots = useMemo(() => liveHotspots(USE_MOCKS && !riderId ? mockHotspots() : hotspotFeed), [hotspotFeed, riderId]);
   const challengeMax = challenges?.challenges.length ? Math.max(...challenges.challenges.map((c) => c.points)) : null;
   const games = useMemo(
-    () => stationCatalog && !forceClear
+    () => withHotspots(stationCatalog && !forceClear
       ? new Map(stationCatalog.map(s => [s.stopId,{stopId:s.stopId,live:s.delayed,games:s.games}]))
-      : withChallenges(placeholderGameMap(delayedTeams, landmarks), challengeMax),
-    [stationCatalog, forceClear, delayedTeams, landmarks, challengeMax],
+      : withChallenges(placeholderGameMap(delayedTeams, landmarks), challengeMax), hotspots),
+    [stationCatalog, forceClear, delayedTeams, landmarks, challengeMax, hotspots],
   );
 
   const heat = useMemo(() => {
@@ -76,17 +81,19 @@ export function HuntScreen() {
 
   const stripStations = useMemo(() => {
     const list = [...games.values()];
+    const hot = new Set(hotspots.map((h) => h.stationId));
     const rank = (id: string) => {
       const s = STATION_BY_ID.get(id);
-      return (s?.importance ?? 0) + (heat.get(id) ?? 0) * 4;
+      return (s?.importance ?? 0) + (heat.get(id) ?? 0) * 4 + (hot.has(id) ? 20 : 0);
     };
     return list.sort((a, b) => Number(b.live) - Number(a.live) || rank(b.stopId) - rank(a.stopId)).slice(0, 14);
-  }, [games, heat]);
+  }, [games, heat, hotspots]);
   const liveCount = useMemo(() => [...games.values()].filter((g) => g.live).length, [games]);
 
   // Deep-link values apply until the user picks something (undefined = untouched).
-  const linkStation = params.get("station");
   const linkGame = params.get("game");
+  // ?game=hotspot alone opens the rider's first hotspot.
+  const linkStation = params.get("station") ?? (linkGame === "hotspot" ? (hotspots[0]?.stationId ?? null) : null);
   const [pickedStation, setSelected] = useState<string | null | undefined>(undefined);
   const [pickedGame, setActiveGame] = useState<string | null | undefined>(undefined);
   const selected = pickedStation !== undefined ? pickedStation : linkStation && STATION_BY_ID.has(linkStation) ? linkStation : null;
@@ -161,6 +168,7 @@ export function HuntScreen() {
         perks={perks}
         landmarks={landmarks}
         challenges={challenges}
+        hotspots={hotspots}
         onEarned={earned}
       />
     </div>
