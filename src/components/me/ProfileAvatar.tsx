@@ -7,7 +7,7 @@ import { CameraIcon } from "@/components/icons";
 import { useProfileAvatar } from "@/hooks/useProfileLocal";
 import { DefaultAvatar } from "./DefaultAvatar";
 import { fileToAvatarDataUrl } from "./downscaleImage";
-import { glowVar, lineVar } from "./team";
+import { lineVar } from "./team";
 import s from "./me.module.css";
 
 interface ProfileAvatarProps {
@@ -18,7 +18,7 @@ interface ProfileAvatarProps {
   onError?: (message: string) => void;
 }
 
-/** Profile picture inside an Instagram-style story ring in the rider's line color. Tap to pick a new photo. */
+/** Passport photo inside a cut-paper ring in the rider's line color. Tap to pick a new photo. */
 export function ProfileAvatar({ name, team, size = 124, onError }: ProfileAvatarProps) {
   const [avatar] = useProfileAvatar();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -39,16 +39,17 @@ export function ProfileAvatar({ name, team, size = 124, onError }: ProfileAvatar
           aria-hidden="true"
           style={{
             position: "absolute",
-            right: 2,
-            bottom: 4,
+            right: -4,
+            bottom: -2,
             display: "grid",
             placeItems: "center",
-            width: 36,
-            height: 36,
+            width: 32,
+            height: 32,
             borderRadius: "50%",
             background: "var(--accent)",
             color: "var(--accent-ink)",
-            border: "3px solid var(--bg)",
+            border: "2px solid var(--cream)",
+            boxShadow: "0 2px 0 var(--fold-shadow)",
           }}
         >
           <CameraIcon size={18} weight={2.2} />
@@ -63,7 +64,7 @@ export function AvatarRing({ team, children }: { team: TeamRouteId; children: Re
   return (
     <span
       className={s.ring}
-      style={{ display: "block", ["--ring-a" as string]: glowVar(team), ["--ring-b" as string]: lineVar(team) }}
+      style={{ display: "block", ["--ring-b" as string]: lineVar(team) }}
     >
       <span className={s.ringInner} style={{ display: "block" }}>
         {children}

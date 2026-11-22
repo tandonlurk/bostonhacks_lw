@@ -2,6 +2,7 @@
 
 import { CheckIcon, EditIcon, PlusIcon } from "@/components/icons";
 import { Sheet } from "@/components/ui/Sheet";
+import { PaperButton } from "@/components/paper/Paper";
 import { INTERESTS, resolveInterests } from "./interestCatalog";
 import { SectionTitle } from "./SectionTitle";
 import s from "./me.module.css";
@@ -48,9 +49,10 @@ export function InterestsSection({ selected, onEdit }: { selected: string[]; onE
             alignItems: "center",
             gap: 14,
             padding: 14,
-            borderRadius: "var(--radius-card)",
-            border: "1.5px dashed var(--surface-3)",
-            background: "var(--surface)",
+            borderRadius: 6,
+            border: "1.5px dashed var(--faint)",
+            background: "transparent",
+            color: "var(--ink)",
             textAlign: "left",
           }}
         >
@@ -66,8 +68,8 @@ export function InterestsSection({ selected, onEdit }: { selected: string[]; onE
                   marginLeft: i ? -10 : 0,
                   borderRadius: "50%",
                   background: color,
-                  color: "var(--accent-ink)",
-                  border: "3px solid var(--surface)",
+                  color: "#fffaf0",
+                  border: "3px solid var(--cream)",
                   transform: `rotate(${(i - 1) * 8}deg)`,
                 }}
               >
@@ -158,23 +160,9 @@ export function InterestsSheet({
           background: "linear-gradient(transparent, var(--surface) 30%)",
         }}
       >
-        <button
-          type="button"
-          onClick={onClose}
-          className={s.press}
-          style={{
-            width: "100%",
-            minHeight: 52,
-            border: "none",
-            borderRadius: "var(--radius-pill)",
-            background: "var(--accent)",
-            color: "var(--accent-ink)",
-            fontWeight: 800,
-            fontSize: 16,
-          }}
-        >
+        <PaperButton variant="primary" onClick={onClose} style={{ width: "100%", minHeight: 52, fontWeight: 800, fontSize: 16 }}>
           {selected.length ? `Done · ${selected.length} picked` : "Done"}
-        </button>
+        </PaperButton>
       </div>
     </Sheet>
   );

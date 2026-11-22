@@ -1,9 +1,9 @@
 import { useMemo } from "react";
 import type { TeamRouteId } from "@/contracts/routes";
 import { linePaths, makeProjector, stationsFor } from "@/components/map/projection";
-import { glowVar } from "./team";
+import { lineVar } from "./team";
 
-/** The rider's real line, drawn faintly behind the profile hero like a cover photo. */
+/** The rider's real line as a faint papercut strip behind the passport page (decorative). */
 export function TeamLineBackdrop({ team }: { team: TeamRouteId }) {
   const { paths, dots, w, h } = useMemo(() => {
     const st = stationsFor(team);
@@ -23,7 +23,9 @@ export function TeamLineBackdrop({ team }: { team: TeamRouteId }) {
     };
   }, [team]);
 
-  const glow = glowVar(team);
+  const fill = lineVar(team);
+  const sw = Math.max(w, h) / 70;
+  const off = sw * 0.45;
   return (
     <svg
       aria-hidden="true"
@@ -34,20 +36,26 @@ export function TeamLineBackdrop({ team }: { team: TeamRouteId }) {
         inset: 0,
         width: "100%",
         height: "100%",
-        opacity: 0.24,
-        WebkitMaskImage: "radial-gradient(120% 90% at 50% 35%, #000 30%, transparent 78%)",
-        maskImage: "radial-gradient(120% 90% at 50% 35%, #000 30%, transparent 78%)",
+        opacity: 0.2,
+        WebkitMaskImage: "radial-gradient(120% 90% at 60% 40%, #000 30%, transparent 80%)",
+        maskImage: "radial-gradient(120% 90% at 60% 40%, #000 30%, transparent 80%)",
         pointerEvents: "none",
       }}
     >
-      <g fill="none" stroke={glow} strokeLinecap="round" strokeLinejoin="round">
+      {/* Papercut: a shadow strip under the cut line, then the line itself, then punched station holes. */}
+      <g fill="none" stroke="#4a3416" strokeOpacity={0.55} strokeLinecap="round" strokeLinejoin="round" transform={`translate(${off} ${off})`}>
         {paths.map((d, i) => (
-          <path key={i} d={d} strokeWidth={Math.max(w, h) / 90} />
+          <path key={i} d={d} strokeWidth={sw} />
         ))}
       </g>
-      <g fill="var(--bg)" stroke={glow} strokeWidth={Math.max(w, h) / 260}>
+      <g fill="none" stroke={fill} strokeLinecap="round" strokeLinejoin="round">
+        {paths.map((d, i) => (
+          <path key={i} d={d} strokeWidth={sw} />
+        ))}
+      </g>
+      <g fill="var(--cream)" stroke="#4a3416" strokeOpacity={0.4} strokeWidth={sw / 6}>
         {dots.map((d) => (
-          <circle key={d.id} cx={d.x} cy={d.y} r={Math.max(w, h) / 150} />
+          <circle key={d.id} cx={d.x} cy={d.y} r={sw * 0.32} />
         ))}
       </g>
     </svg>

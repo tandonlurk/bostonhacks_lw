@@ -28,12 +28,12 @@ interface ActivityListProps {
   empty: React.ReactNode;
 }
 
-/** Compact feed of token ledger entries, newest first. */
+/** Token ledger entries as a torn paper receipt, newest first. */
 export function ActivityList({ entries, team, now, empty }: ActivityListProps) {
   if (!entries.length) return <>{empty}</>;
   const sorted = [...entries].sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   return (
-    <ul style={{ listStyle: "none", display: "flex", flexDirection: "column", gap: 2 }}>
+    <ul className={s.receipt} style={{ listStyle: "none", display: "flex", flexDirection: "column" }}>
       {sorted.map((e, i) => {
         const kind = kindOf(e.reason);
         const { Icon, color } = kindVisual(kind, team);
@@ -41,7 +41,7 @@ export function ActivityList({ entries, team, now, empty }: ActivityListProps) {
         return (
           <li
             key={`${e.createdAt}-${e.reason}-${i}`}
-            className={s.rise}
+            className={`${s.rise} ${s.receiptRow}`}
             style={{ display: "flex", alignItems: "center", gap: 12, minHeight: 60, padding: "8px 0" }}
           >
             <span
@@ -50,18 +50,19 @@ export function ActivityList({ entries, team, now, empty }: ActivityListProps) {
                 display: "grid",
                 placeItems: "center",
                 flex: "none",
-                width: 44,
-                height: 44,
-                borderRadius: 14,
+                width: 40,
+                height: 40,
+                borderRadius: 4,
                 color,
-                background: `color-mix(in srgb, ${color} 14%, var(--surface))`,
-                border: `1px solid color-mix(in srgb, ${color} 30%, transparent)`,
+                background: `color-mix(in srgb, ${color} 12%, var(--cream))`,
+                border: `1.5px solid color-mix(in srgb, ${color} 45%, transparent)`,
+                transform: `rotate(${i % 2 ? 2 : -2}deg)`,
               }}
             >
               <Icon size={22} />
             </span>
             <span style={{ flex: 1, minWidth: 0 }}>
-              <span style={{ display: "block", fontWeight: 700, fontSize: 15 }}>{KIND_COPY[kind].title}</span>
+              <span style={{ display: "block", fontWeight: 700, fontSize: 15, color: "var(--ink)" }}>{KIND_COPY[kind].title}</span>
               <span style={{ display: "block", fontSize: 13, color: "var(--muted)" }}>
                 <time dateTime={e.createdAt}>{relativeTime(e.createdAt, now)}</time>
               </span>
@@ -75,6 +76,7 @@ export function ActivityList({ entries, team, now, empty }: ActivityListProps) {
                 gap: 4,
                 fontSize: 17,
                 fontWeight: 800,
+                fontFamily: "var(--font-mono)",
                 color: gain ? "var(--accent)" : "var(--muted)",
               }}
             >
