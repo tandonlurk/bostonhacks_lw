@@ -29,7 +29,7 @@ export function Sheet({ open, onClose, title, hideTitle, children }: SheetProps)
         type="button"
         aria-label="Close"
         onClick={onClose}
-        style={{ position: "absolute", inset: 0, border: "none", background: "rgba(0,0,0,0.55)", animation: "fade-in 200ms" }}
+        style={{ position: "absolute", inset: 0, border: "none", background: "rgba(42,36,29,0.42)", animation: "fade-in 200ms" }}
       />
       <div
         role="dialog"
@@ -44,17 +44,21 @@ export function Sheet({ open, onClose, title, hideTitle, children }: SheetProps)
           overflowY: "auto",
           margin: "0 auto",
           maxWidth: 520,
-          background: "var(--surface)",
+          // A sheet of card stock slid up over the screen: cream stock, grain, cut edge, lifted shadow.
+          backgroundColor: "var(--cream)",
+          backgroundImage: "var(--grain)",
           borderRadius: "var(--radius-sheet) var(--radius-sheet) 0 0",
-          border: "1px solid var(--glass-border)",
+          border: "1px solid var(--paper-edge)",
           borderBottom: "none",
+          boxShadow: "0 -2px 0 var(--cream-3), 0 -14px 30px -12px var(--paper-lift-2)",
           padding: "10px var(--space-4) calc(var(--space-5) + env(safe-area-inset-bottom, 0px))",
           animation: "sheet-up 280ms var(--ease-out)",
         }}
       >
-        <div aria-hidden="true" style={{ width: 40, height: 5, borderRadius: 3, background: "var(--surface-3)", margin: "0 auto 10px" }} />
+        {/* Grab handle drawn as a strip of washi tape. */}
+        <div aria-hidden="true" style={{ width: 54, height: 12, margin: "0 auto 10px", background: "rgba(233,214,160,0.85)", backgroundImage: "repeating-linear-gradient(90deg, rgba(255,255,255,0.3) 0 4px, transparent 4px 8px)", clipPath: "polygon(3% 0, 97% 8%, 100% 50%, 96% 100%, 4% 92%, 0 50%)", transform: "rotate(-2deg)" }} />
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 8, marginBottom: hideTitle ? 0 : 12 }}>
-          {hideTitle ? <span /> : <h2 style={{ fontSize: 20, fontWeight: 800 }}>{title}</h2>}
+          {hideTitle ? <span /> : <h2 style={{ fontSize: 22, fontWeight: 700 }}>{title}</h2>}
           <button
             type="button"
             onClick={onClose}
@@ -65,8 +69,9 @@ export function Sheet({ open, onClose, title, hideTitle, children }: SheetProps)
               width: "var(--tap-min)",
               height: "var(--tap-min)",
               borderRadius: "50%",
-              border: "none",
-              background: "var(--surface-2)",
+              border: "1px solid var(--paper-edge)",
+              background: "var(--cream-2)",
+              boxShadow: "var(--shadow-press)",
             }}
           >
             <CloseIcon size={18} />
